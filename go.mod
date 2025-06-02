@@ -2,7 +2,10 @@ module github.com/orgs/SapphireDAOO/contract-api
 
 go 1.24.3
 
-require github.com/ethereum/go-ethereum v1.15.11
+require (
+	github.com/ethereum/go-ethereum v1.15.11
+	github.com/joho/godotenv v1.5.1
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
