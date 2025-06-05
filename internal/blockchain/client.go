@@ -1,14 +1,17 @@
 package blockchain
 
 import (
+	"context"
 	"log"
+	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Client struct {
-	rpc *ethclient.Client
+	rpc     *ethclient.Client
+	chainId *big.Int
 }
 
 func NewClient() *Client {
@@ -20,5 +23,11 @@ func NewClient() *Client {
 		log.Fatalf("Failed to connect to blockchain: %v", err)
 	}
 
-	return &Client{rpc: conn}
+	chainId, err := conn.ChainID(context.Background())
+
+	if err != nil {
+		log.Fatalf("failed to retrieve chain ID: %v", err)
+	}
+
+	return &Client{rpc: conn, chainId: chainId}
 }
