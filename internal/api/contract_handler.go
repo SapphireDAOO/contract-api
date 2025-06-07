@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"math/big"
 	"net/http"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
@@ -35,6 +36,31 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		"State": "success",
 	})
 
+	http.Redirect(w, r, "", http.StatusFound)
 }
 
-func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) {}
+func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		orderId      [32]byte
+		resolution   blockchain.MarketplaceAction
+		sellersShare *big.Int
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	}
+
+	txHash, err := h.Contract.ReleaseEscrow(input.orderId, input.resolution, input.sellersShare)
+
+	if err != nil {
+		http.Error(w, "Error sending transaction: "+err.Error(), http.StatusBadRequest)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]any{
+		"status": "success",
+		"hash":   txHash,
+	})
+
+}
