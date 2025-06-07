@@ -24,14 +24,10 @@ const (
 	Pending MarketplaceAction = iota
 	Release
 	Refund
-	DisputeDismissed
+	DismissDispute
+	SettleDispute
+	ResolveDispute
 )
-
-// relase
-// dispute
-// dismiss
-// settle
-// resolve
 
 func NewContract() *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
@@ -71,4 +67,61 @@ func (c Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcess
 	}
 
 	return nil
+}
+
+func (c Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sellersShare *big.Int) (*common.Hash, error) {
+	auth, err := auth(c.chainId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var data []byte
+
+	switch action {
+	case Release:
+		data = c.paymentProcessor.PackReleasePayment(orderId)
+
+	case SettleDispute:
+		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(SettleDispute), sellersShare)
+
+	case DismissDispute:
+		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(DismissDispute), nil)
+
+	case ResolveDispute:
+		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(ResolveDispute), nil)
+
+	default:
+		return nil, errors.New("unsupported marketplace action")
+
+	}
+
+	tx, err := bind.Transact(c.instance, auth, data)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := tx.Hash()
+	return &hash, nil
+
+}
+
+func (c Contract) getDisputeResolution(action MarketplaceAction) uint8 {
+
+	if action == DismissDispute {
+		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
+		return value
+	}
+
+	if action == ResolveDispute {
+		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTERESOLVED(), c.paymentProcessor.UnpackDISPUTERESOLVED)
+		return value
+	}
+
+	if action == SettleDispute {
+		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
+		return value
+	}
+
+	return 0
 }
