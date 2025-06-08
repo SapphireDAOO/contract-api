@@ -4,7 +4,7 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 
 ---
 
-### Endpoint: `/createInvoice`
+### Endpoint: `/create-invoice`
 
 - **Method:** `POST`
 - **Description:** Creates one or more on-chain invoices.
@@ -23,16 +23,24 @@ This API exposes selected smart contract functions through HTTP endpoints for in
   ]
   ```
 
-  **Note:**
+#### Field Details
 
-- `Price` must be in **USD**, with **8 decimal places**.
+| Field                   | Type    | Required | Description                                                                      |
+| ----------------------- | ------- | -------- | -------------------------------------------------------------------------------- |
+| `Seller`                | string  | ✅       | Ethereum address of the seller                                                   |
+| `Buyer`                 | string  | ✅       | Ethereum address of the buyer                                                    |
+| `InvoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds                                               |
+| `TimeBeforeCancelation` | integer | ✅       | Time window (in seconds) before buyer can cancel the invoice                     |
+| `ReleaseWindow`         | integer | ✅       | Time window (in seconds) the seller has to release funds after payment           |
+| `Price`                 | string  | ✅       | Invoice price in **USD**, using **8 decimal places** (e.g., `100000000` = $1.00) |
 
-For example:
+**Note:**
 
-- `100000000` = **$1.00**
-- `2500000000` = **$25.00**
-
-This value will be converted to the payment token amount using on-chain oracle pricing.
+- `Price` must be in USD with 8 decimals.  
+  For example:
+  - `100000000` = **$1.00**
+  - `2500000000` = **$25.00**
+- This value will be converted to the payment token amount using on-chain oracle pricing.
 
 ### Endpoint: `/release`
 
@@ -44,17 +52,17 @@ This value will be converted to the payment token amount using on-chain oracle p
 {
   "orderId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "resolution": 1,
-  "sellersShare": "900000000000000000"
+  "sellersShare": "9000"
 }
 ```
 
 #### Field Details
 
-| Field          | Type    | Required                                    | Description                                                            |
-| -------------- | ------- | ------------------------------------------- | ---------------------------------------------------------------------- |
-| `orderId`      | string  | ✅                                          | 32-byte hex string representing the invoice/order ID                   |
-| `resolution`   | integer | ✅                                          | Enum value specifying the type of action (see MarketplaceAction below) |
-| `sellersShare` | string  | ❌ Only if `resolution = 4` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `6500` = 65%)             |
+| Field          | Type    | Required                                    | Description                                                             |
+| -------------- | ------- | ------------------------------------------- | ----------------------------------------------------------------------- |
+| `orderId`      | string  | ✅                                          | 32-byte hex string representing the invoice/order ID                    |
+| `resolution`   | integer | ✅                                          | Enum value specifying the type of action (see MarketplaceAction below)  |
+| `sellersShare` | string  | ❌ Only if `resolution = 4` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `6500` = 65%) |
 
 #### MarketplaceAction Enum (`resolution`)
 
