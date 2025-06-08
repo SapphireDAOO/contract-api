@@ -23,4 +23,6 @@ func main() {
 		log.Fatalf("Server error: %v\n", err)
 	}
 
+	log.Printf("Listening on port: %s", port)
+
 }
