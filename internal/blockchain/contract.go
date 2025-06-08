@@ -23,10 +23,8 @@ type MarketplaceAction int
 const (
 	Pending MarketplaceAction = iota
 	Release
-	Refund
 	DismissDispute
 	SettleDispute
-	ResolveDispute
 )
 
 func NewContract() *Contract {
@@ -88,9 +86,6 @@ func (c Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sell
 	case DismissDispute:
 		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(DismissDispute), nil)
 
-	case ResolveDispute:
-		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(ResolveDispute), nil)
-
 	default:
 		return nil, errors.New("unsupported marketplace action")
 
@@ -110,11 +105,6 @@ func (c Contract) getDisputeResolution(action MarketplaceAction) uint8 {
 
 	if action == DismissDispute {
 		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
-		return value
-	}
-
-	if action == ResolveDispute {
-		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTERESOLVED(), c.paymentProcessor.UnpackDISPUTERESOLVED)
 		return value
 	}
 

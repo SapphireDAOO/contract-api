@@ -70,7 +70,5 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 | ----- | -------------- | -------------------------------------- |
 | `0`   | Pending        | Default state, no action taken         |
 | `1`   | Release        | Release funds to the seller            |
-| `2`   | Refund         | Refund funds to the buyer              |
-| `3`   | DismissDispute | Dismiss an active dispute              |
-| `4`   | SettleDispute  | Resolve a dispute by splitting funds   |
-| `5`   | ResolveDispute | Resolve a dispute without custom share |
+| `2`   | DismissDispute | Dismiss an active dispute              |
+| `3`   | SettleDispute  | Resolve a dispute by splitting funds   |
