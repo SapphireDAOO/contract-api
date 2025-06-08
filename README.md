@@ -54,7 +54,7 @@ This value will be converted to the payment token amount using on-chain oracle p
 | -------------- | ------- | ------------------------------------------- | ---------------------------------------------------------------------- |
 | `orderId`      | string  | ✅                                          | 32-byte hex string representing the invoice/order ID                   |
 | `resolution`   | integer | ✅                                          | Enum value specifying the type of action (see MarketplaceAction below) |
-| `sellersShare` | string  | ❌ Only if `resolution = 4` (SettleDispute) | Seller's share in wei (only needed when settling a dispute)            |
+| `sellersShare` | string  | ❌ Only if `resolution = 4` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `6500` = 65%)             |
 
 #### MarketplaceAction Enum (`resolution`)
 
