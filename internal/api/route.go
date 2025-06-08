@@ -2,6 +2,8 @@ package api
 
 import (
 	"net/http"
+
+	"github.com/orgs/SapphireDAOO/contract-api/internal"
 )
 
 func Route() *http.ServeMux {
@@ -9,8 +11,8 @@ func Route() *http.ServeMux {
 
 	handler := NewContractHandler()
 
-	mux.Handle("POST /createInvoice", http.HandlerFunc(handler.CreateInvoice))
-	mux.Handle("POST /release", http.HandlerFunc(handler.ReleaseEscrow))
+	mux.Handle("POST /createInvoice", internal.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
+	mux.Handle("POST /release", internal.AccessControlMiddleWare(http.HandlerFunc(handler.ReleaseEscrow)))
 
 	return mux
 }
