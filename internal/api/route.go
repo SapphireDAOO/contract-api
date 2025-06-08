@@ -11,7 +11,7 @@ func Route() *http.ServeMux {
 
 	handler := NewContractHandler()
 
-	mux.Handle("POST /createInvoice", internal.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
+	mux.Handle("POST /create-invoice", internal.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
 	mux.Handle("POST /release", internal.AccessControlMiddleWare(http.HandlerFunc(handler.ReleaseEscrow)))
 
 	return mux
