@@ -62,7 +62,7 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 | -------------- | ------- | ------------------------------------------- | ----------------------------------------------------------------------- |
 | `orderId`      | string  | ✅                                          | 32-byte hex string representing the invoice/order ID                    |
 | `resolution`   | integer | ✅                                          | Enum value specifying the type of action (see MarketplaceAction below)  |
-| `sellersShare` | string  | ❌ Only if `resolution = 4` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `6500` = 65%) |
+| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `6500` = 65%) |
 
 #### MarketplaceAction Enum (`resolution`)
 
