@@ -16,20 +16,10 @@ type Contract struct {
 	chainId          *big.Int
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0xf7B10AD9F2220120af40e974590715856E85E00a"
+const PAYMENT_PROCESSOR_ADDRESS string = "0x05e6989466427b0bc350DDD897538D8867b1bB58"
 
-type MarketplaceAction int
-
-const (
-	Pending MarketplaceAction = iota
-	Release
-	DismissDispute
-	SettleDispute
-)
-
-func NewContract() *Contract {
+func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
-	client := NewClient()
 
 	contract := paymentprocessor.NewPaymentprocessor()
 
@@ -38,7 +28,7 @@ func NewContract() *Contract {
 	return &Contract{address: address, instance: instance, paymentProcessor: contract, chainId: client.chainId}
 }
 
-func (c Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) error {
+func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) error {
 
 	if len(param) == 0 {
 		return errors.New("parameter cannot be empty")
@@ -67,7 +57,7 @@ func (c Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcess
 	return nil
 }
 
-func (c Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sellersShare *big.Int) (*common.Hash, error) {
+func (c *Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sellersShare *big.Int) (*common.Hash, error) {
 	auth, err := auth(c.chainId)
 
 	if err != nil {
@@ -81,10 +71,10 @@ func (c Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sell
 		data = c.paymentProcessor.PackReleasePayment(orderId)
 
 	case SettleDispute:
-		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(SettleDispute), sellersShare)
+		data = c.paymentProcessor.PackHandleDispute(orderId, c.getDisputeResolution(SettleDispute), sellersShare)
 
 	case DismissDispute:
-		data = c.paymentProcessor.PackResolveDispute(orderId, c.getDisputeResolution(DismissDispute), nil)
+		data = c.paymentProcessor.PackHandleDispute(orderId, c.getDisputeResolution(DismissDispute), nil)
 
 	default:
 		return nil, errors.New("unsupported marketplace action")
@@ -101,7 +91,7 @@ func (c Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sell
 
 }
 
-func (c Contract) getDisputeResolution(action MarketplaceAction) uint8 {
+func (c *Contract) getDisputeResolution(action MarketplaceAction) uint8 {
 
 	if action == DismissDispute {
 		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
@@ -109,7 +99,7 @@ func (c Contract) getDisputeResolution(action MarketplaceAction) uint8 {
 	}
 
 	if action == SettleDispute {
-		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
+		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTESETTLED(), c.paymentProcessor.UnpackDISPUTESETTLED)
 		return value
 	}
 

@@ -17,7 +17,7 @@ func AccessControlMiddleWare(next http.Handler) http.Handler {
 			return
 		}
 
-		hash := sha256.Sum256([]byte(key))
+		hash := sha256.Sum256([]byte(providedKey))
 		hashedKey := hex.EncodeToString(hash[:])
 
 		if hashedKey != key {
