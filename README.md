@@ -66,9 +66,20 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 
 #### MarketplaceAction Enum (`resolution`)
 
-| Value | Name           | Description                            |
-| ----- | -------------- | -------------------------------------- |
-| `0`   | Pending        | Default state, no action taken         |
-| `1`   | Release        | Release funds to the seller            |
-| `2`   | DismissDispute | Dismiss an active dispute              |
-| `3`   | SettleDispute  | Resolve a dispute by splitting funds   |
+| Value | Name           | Description                          |
+| ----- | -------------- | ------------------------------------ |
+| `0`   | Pending        | Default state, no action taken       |
+| `1`   | Release        | Release funds to the seller          |
+| `2`   | DismissDispute | Dismiss an active dispute            |
+| `3`   | SettleDispute  | Resolve a dispute by splitting funds |
+
+### Endpoint: `/user-data`
+
+- **Method:** `GET`
+- **Description:** Retrieves invoice data for a given wallet address.
+
+#### Query Parameters:
+
+| Name    | Type   | Required | Description                                 |
+| ------- | ------ | -------- | ------------------------------------------- |
+| address | string | ✅       | Wallet address to fetch associated invoices |
