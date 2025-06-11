@@ -14,6 +14,7 @@ func Route(contract *blockchain.Contract) *http.ServeMux {
 
 	mux.Handle("POST /create-invoice", internal.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
 	mux.Handle("POST /release", internal.AccessControlMiddleWare(http.HandlerFunc(handler.ReleaseEscrow)))
+	mux.Handle("GET /user-data", http.HandlerFunc(GetUserData))
 
 	return mux
 }
