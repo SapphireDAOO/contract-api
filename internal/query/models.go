@@ -12,9 +12,9 @@ type Data struct {
 }
 
 type User struct {
-	OwnedSmartInvoices []SmartInvoice `json:"ownedSmartInvoices"`
-	PaidSmartInvoices  []SmartInvoice `json:"paidSmartInvoices"`
-	MetaInvoices       []any          `json:"metaInvoices"`
+	IssuedInvoices   []SmartInvoice `json:"issuedInvoices"`
+	ReceivedInvoices []SmartInvoice `json:"receivedtInvoices"`
+	MetaInvoices     []any          `json:"metaInvoices"`
 }
 
 type SmartInvoice struct {
@@ -43,29 +43,15 @@ type MetaInvoice struct {
 }
 
 func (s SmartInvoice) MarshalJSON() ([]byte, error) {
-
-	newSmartInvoice := struct {
-		AmountPaid  *string      `json:"amountPaid"`
-		CreatedAt   string       `json:"createdAt"`
-		InvoiceId   string       `json:"invoiceId"`
-		PaidAt      *string      `json:"paidAt"`
-		Price       string       `json:"price"`
-		State       string       `json:"state"`
-		ReleasedAt  *string      `json:"releasedAt"`
-		Seller      string       `json:"seller"`
-		MetaInvoice *MetaInvoice `json:"metaInvoice"`
+	type Alias SmartInvoice
+	return json.Marshal(&struct {
+		*Alias
+		Buyer  string `json:"buyer"`
+		Seller string `json:"seller"`
 	}{
-		AmountPaid:  s.AmountPaid,
-		CreatedAt:   s.CreatedAt,
-		InvoiceId:   s.InvoiceId,
-		PaidAt:      s.PaidAt,
-		Price:       s.Price,
-		State:       s.State,
-		ReleasedAt:  s.ReleasedAt,
-		Seller:      s.Seller.ID,
-		MetaInvoice: s.MetaInvoice,
-	}
-
-	return json.Marshal(&newSmartInvoice)
+		Alias:  (*Alias)(&s),
+		Buyer:  s.Buyer.ID,
+		Seller: s.Seller.ID,
+	})
 
 }

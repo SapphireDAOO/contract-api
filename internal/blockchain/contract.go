@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -10,55 +11,78 @@ import (
 )
 
 type Contract struct {
-	address          common.Address
+	address          *common.Address
 	instance         *bind.BoundContract
 	paymentProcessor *paymentprocessor.Paymentprocessor
-	chainId          *big.Int
+	client           Client
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x05e6989466427b0bc350DDD897538D8867b1bB58"
+const PAYMENT_PROCESSOR_ADDRESS string = "0x145fd69Ec18d2F2063c8D67aA300442b3FaaD49f"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
 
 	contract := paymentprocessor.NewPaymentprocessor()
 
-	instance := contract.Instance(client.rpc, address)
+	instance := contract.Instance(client.eth, address)
 
-	return &Contract{address: address, instance: instance, paymentProcessor: contract, chainId: client.chainId}
+	return &Contract{address: &address, instance: instance, paymentProcessor: contract, client: *client}
 }
 
-func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) error {
-
+func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) (*common.Hash, error) {
 	if len(param) == 0 {
-		return errors.New("parameter cannot be empty")
+		return nil, errors.New("parameter cannot be empty")
 	}
 
-	auth, err := auth(c.chainId)
+	auth, err := auth(c.client.chainId)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(param) == 1 {
-		_, err := bind.Transact(c.instance, auth, c.paymentProcessor.PackCreateSingleInvoice(param[0]))
-		if err != nil {
-			return err
-		}
-	} else {
-		data := c.paymentProcessor.PackCreateMetaInvoice(param[0].Buyer, param)
-		_, err := bind.Transact(c.instance, auth, data)
+		data := c.paymentProcessor.PackCreateSingleInvoice(param[0])
+
+		tx, err := bind.Transact(c.instance, auth, data)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
+
+		receipt, err := bind.WaitMined(context.Background(), c.client.eth, tx.Hash())
+
+		if err != nil {
+			return nil, err
+		}
+
+		invoiceKey := receipt.Logs[0].Topics[1]
+
+		return &invoiceKey, nil
+	} else {
+
+		data := c.paymentProcessor.PackCreateMetaInvoice(param[0].Buyer, param)
+
+		tx, err := bind.Transact(c.instance, auth, data)
+
+		if err != nil {
+			return nil, err
+		}
+
+		receipt, err := bind.WaitMined(context.Background(), c.client.eth, tx.Hash())
+
+		if err != nil {
+			return nil, err
+		}
+
+		invoiceKey := receipt.Logs[2].Topics[1]
+
+		return &invoiceKey, nil
 	}
 
-	return nil
 }
 
 func (c *Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sellersShare *big.Int) (*common.Hash, error) {
-	auth, err := auth(c.chainId)
+	auth, err := auth(c.client.chainId)
 
 	if err != nil {
 		return nil, err

@@ -10,63 +10,98 @@ import (
 	"time"
 )
 
-func GetInvoice(address string) (*Data, error) {
+func GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 	if address == "" {
+		return nil, fmt.Errorf("address cannot be empty")
+	}
+
+	payload := map[string]any{
+		"query": userQuery,
+		"variables": map[string]any{
+			"address": address,
+			"first":   first,
+			"skip":    skip,
+		},
+	}
+
+	body, err := handleRequest(payload)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var gqlResp Response
+	if err := json.Unmarshal(body, &gqlResp); err != nil {
+		return nil, err
+	}
+
+	userData := gqlResp.Data
+	userData.Address = address
+
+	return &userData, nil
+}
+
+func GetInvoiceData(id string, first, skip int) (*SmartInvoice, error) {
+
+	if id == "" {
 		return nil, fmt.Errorf("address cannot be empty")
 	}
 
 	payload := map[string]any{
 		"query": invoiceQuery,
 		"variables": map[string]any{
-			"address": address,
+			"id":    id,
+			"first": first,
+			"skip":  skip,
 		},
 	}
 
+	body, err := handleRequest(payload)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Data SmartInvoice `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp.Data, err
+}
+
+func handleRequest(payload map[string]any) ([]byte, error) {
 	jsonData, err := json.Marshal(payload)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode request: %w", err)
+		return nil, err
 	}
 
 	client := http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest("POST", os.Getenv("END_POINT"), bytes.NewBuffer(jsonData))
 
-	req.Header.Set("Content-Type", "application/json")
-
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, err
 	}
 
 	res, err := client.Do(req)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return nil, err
 	}
 
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
-
 	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, err
 	}
 
-	fmt.Println("Raw response:", string(body))
+	return body, nil
 
-	var gqlResp Response
-	if err := json.Unmarshal(body, &gqlResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	fmt.Println(gqlResp)
-
-	userData := gqlResp.Data
-	userData.Address = address
-
-	return &userData, nil
 }

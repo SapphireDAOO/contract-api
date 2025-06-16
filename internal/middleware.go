@@ -1,4 +1,4 @@
-package internal
+package middleware
 
 import (
 	"crypto/sha256"
@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func AccessControlMiddleWare(next http.Handler) http.Handler {
+func AccessControlMiddleWare(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := os.Getenv("KEY")
 		providedKey := r.Header.Get("X-API-KEY")
@@ -25,7 +25,6 @@ func AccessControlMiddleWare(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
-
+		next(w, r)
 	})
 }

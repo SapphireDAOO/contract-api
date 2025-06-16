@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/api"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
+	handler "github.com/orgs/SapphireDAOO/contract-api/api"
+	middleware "github.com/orgs/SapphireDAOO/contract-api/internal"
 )
 
 func main() {
-
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -22,12 +21,15 @@ func main() {
 		port = ":8080"
 	}
 
-	contract := blockchain.NewContract(blockchain.NewClient())
-	mux := api.Route(contract)
+	mux := http.NewServeMux()
+
+	mux.Handle("POST /create-invoice", middleware.AccessControlMiddleWare(handler.CreateInvoiceHandler))
+	mux.Handle("POST /release", middleware.AccessControlMiddleWare(handler.ReleaseEscrowHandler))
+	mux.Handle("GET /user-data", http.HandlerFunc(handler.GetUserDataHandler))
 
 	server := &http.Server{Addr: port, Handler: mux, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
 
-	log.Printf("Listening on port:%s", port)
+	log.Printf("Listening on port %s", port)
 
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server error: %v\n", err)

@@ -10,7 +10,7 @@ import (
 )
 
 type Client struct {
-	rpc     *ethclient.Client
+	eth     *ethclient.Client
 	chainId *big.Int
 }
 
@@ -29,5 +29,5 @@ func NewClient() *Client {
 		log.Fatalf("failed to retrieve chain ID: %v", err)
 	}
 
-	return &Client{rpc: conn, chainId: chainId}
+	return &Client{eth: conn, chainId: chainId}
 }

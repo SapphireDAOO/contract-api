@@ -1,9 +1,9 @@
 package query
 
-const invoiceQuery = `
-query ($address: String!) {
+const userQuery = `
+query ($address: String!, $first: Int = 10, $skip: Int = 0) {
   user(id: $address) {
-    ownedSmartInvoices {
+    issuedInvoices(first: $first, skip: $skip) {
       invoiceId
       amountPaid
       price
@@ -18,8 +18,7 @@ query ($address: String!) {
         invoiceId
       }
     }
-
-    paidSmartInvoices {
+    receivedInvoices(first: $first, skip: $skip) {
       invoiceId
       amountPaid
       price
@@ -34,8 +33,7 @@ query ($address: String!) {
         invoiceId
       }
     }
-
-    metaInvoices {
+    metaInvoices(first: $first, skip: $skip) {
       invoiceId
       price
       invoices {
@@ -49,4 +47,27 @@ query ($address: String!) {
     }
   }
 }
+`
+
+const invoiceQuery = `
+  query($id: String!, $first: Int = 10, $skip: Int = 0){
+    smartInvoice(id: $id){
+      invoiceId
+      state
+      escrow
+      paymentToken
+      amountPaid
+      price
+      paidAt
+      buyer {
+        id
+      }
+      seller {
+        id
+      }
+      metaInvoice {
+        id
+      }
+    }
+  }
 `
