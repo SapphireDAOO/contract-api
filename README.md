@@ -20,12 +20,13 @@ This API exposes selected smart contract functions through HTTP endpoints for in
   ```json
   [
     {
-      "Seller": "0xabc123...",
-      "Buyer": "0xdef456...",
-      "InvoiceExpiryDuration": 3600,
-      "TimeBeforeCancelation": 1800,
-      "ReleaseWindow": 900,
-      "Price": "100000000"
+      "orderId": "number",
+      "Seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+      "Buyer": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+      "InvoiceExpiryDuration": 864000,
+      "TimeBeforeCancelation": 864000,
+      "ReleaseWindow": 864000,
+      "Price": "8680000000"
     }
   ]
   ```
@@ -34,6 +35,7 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 
 | Field                   | Type    | Required | Description                                                                    |
 | ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
+| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "number")                         |
 | `Seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
 | `Buyer`                 | string  | ✅       | Ethereum address of the buyer (e.g., `0xdef456...`)                            |
 | `InvoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `3600` for 1 hour)                   |
@@ -174,11 +176,11 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 #### Query Parameters
 
-| Name    | Type    | Required | Description                                               |
-| ------- | ------- | -------- | --------------------------------------------------------- |
-|`orderId`| string  | ✅       | orderId ID to fetch associated invoices |
-| `first` | integer | ❌       | Number of invoices to fetch (default: `10`)               |
-| `skip`  | integer | ❌       | Number of invoices to skip for pagination (default: `0`)  |
+| Name      | Type    | Required | Description                                              |
+| --------- | ------- | -------- | -------------------------------------------------------- |
+| `orderId` | string  | ✅       | orderId ID to fetch associated invoices                  |
+| `first`   | integer | ❌       | Number of invoices to fetch (default: `10`)              |
+| `skip`    | integer | ❌       | Number of invoices to skip for pagination (default: `0`) |
 
 **Response**:
 

@@ -9,12 +9,12 @@ import (
 )
 
 func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get("orderId")
 	firstParam := r.URL.Query().Get("first")
 	skipParam := r.URL.Query().Get("skip")
 
 	if id == "" {
-		http.Error(w, "Missing id parameter", http.StatusBadRequest)
+		http.Error(w, "Missing orderId parameter", http.StatusBadRequest)
 		return
 	}
 
