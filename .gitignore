@@ -1,3 +1,4 @@
 .env
 api-test
-.vercel
+.air.toml
+tmp

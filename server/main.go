@@ -12,21 +12,25 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file")
+	if _, ok := os.LookupEnv("PRODUCTION"); !ok {
+		if err := godotenv.Load(); err != nil {
+			log.Println("Error loading .env file")
+		}
 	}
 	port := os.Getenv("PORT")
 
 	if port == "" {
-		port = ":8080"
+		port = "8080"
 	}
+
+	addr := ":" + port
 
 	contract := blockchain.NewContract(blockchain.NewClient())
 	mux := api.Route(contract)
 
-	server := &http.Server{Addr: port, Handler: mux, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
+	server := &http.Server{Addr: addr, Handler: mux, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
 
-	log.Printf("Listening on port %s", port)
+	log.Printf("Serveer running at port %s", addr)
 
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server error: %v\n", err)

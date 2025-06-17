@@ -21,7 +21,6 @@ func NewContractHandler(contract *blockchain.Contract) *ContractHandler {
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-
 	var invoice []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 	if err := json.NewDecoder(r.Body).Decode(&invoice); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)

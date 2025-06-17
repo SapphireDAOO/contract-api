@@ -13,7 +13,7 @@ type Data struct {
 
 type User struct {
 	IssuedInvoices   []SmartInvoice `json:"issuedInvoices"`
-	ReceivedInvoices []SmartInvoice `json:"receivedtInvoices"`
+	ReceivedInvoices []SmartInvoice `json:"receivedInvoices"`
 	MetaInvoices     []any          `json:"metaInvoices"`
 }
 

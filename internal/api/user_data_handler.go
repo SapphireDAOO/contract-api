@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/query"
 )
@@ -12,6 +14,10 @@ func GetUserData(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	firstParam := r.URL.Query().Get("first")
 	skipParam := r.URL.Query().Get("skip")
+
+	address = strings.ToLower(address)
+
+	log.Println(address)
 
 	if address == "" {
 		http.Error(w, "Missing address parameter", http.StatusBadRequest)
@@ -41,7 +47,7 @@ func GetUserData(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("address")
+	id := r.URL.Query().Get("id")
 	firstParam := r.URL.Query().Get("first")
 	skipParam := r.URL.Query().Get("skip")
 
