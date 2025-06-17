@@ -30,7 +30,7 @@ func main() {
 
 	server := &http.Server{Addr: addr, Handler: mux, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
 
-	log.Printf("Serveer running at port %s", addr)
+	log.Printf("Server running at port %s", addr)
 
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server error: %v\n", err)

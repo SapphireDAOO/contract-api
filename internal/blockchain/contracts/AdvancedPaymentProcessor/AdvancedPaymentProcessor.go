@@ -41,12 +41,12 @@ type IAdvancedPaymentProcessorInvoice struct {
 	TimeBeforeCancelation uint32
 	Price                 *big.Int
 	AmountPaid            *big.Int
-	MetaInvoiceKey        [32]byte
+	MetaInvoiceOrderId    [32]byte
 }
 
 // IAdvancedPaymentProcessorInvoiceCreationParam is an auto generated low-level Go binding around an user-defined struct.
 type IAdvancedPaymentProcessorInvoiceCreationParam struct {
-	InvoiceKey            string
+	OrderId               string
 	Seller                common.Address
 	Buyer                 common.Address
 	InvoiceExpiryDuration uint32
@@ -67,7 +67,7 @@ type IAdvancedPaymentProcessorMetaInvoice struct {
 
 // PaymentprocessorMetaData contains all meta data concerning the Paymentprocessor contract.
 var PaymentprocessorMetaData = bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"paymentProcessorStorageAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"ownerAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"marketplaceAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nativeTokenAggregatorAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"ACCEPTED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"BASIS_POINTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"CANCELATION_ACCEPTED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"CANCELATION_REJECTED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"CANCELATION_REQUESTED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"CANCELED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DEFAULT_DECIMAL\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DISPUTED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DISPUTE_DISMISSED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DISPUTE_RESOLVED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DISPUTE_SETTLED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"INITIATED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"PAID\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"REFUNDED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"REJECTED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"RELEASED\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"acceptInvoice\",\"inputs\":[{\"name\":\"invoiceKeys\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"acceptInvoice\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cancelInvoice\",\"inputs\":[{\"name\":\"invoiceKeys\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cancelInvoice\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cancelOwnershipHandover\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"claimExpiredInvoiceRefunds\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"completeOwnershipHandover\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"computeSalt\",\"inputs\":[{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"createDispute\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createMetaInvoice\",\"inputs\":[{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"param\",\"type\":\"tuple[]\",\"internalType\":\"structIAdvancedPaymentProcessor.InvoiceCreationParam[]\",\"components\":[{\"name\":\"invoiceKey\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"releaseWindow\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createSingleInvoice\",\"inputs\":[{\"name\":\"param\",\"type\":\"tuple\",\"internalType\":\"structIAdvancedPaymentProcessor.InvoiceCreationParam\",\"components\":[{\"name\":\"invoiceKey\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"releaseWindow\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getInvoice\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIAdvancedPaymentProcessor.Invoice\",\"components\":[{\"name\":\"invoiceId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"escrow\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"resolutionInitiator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"state\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"resolutionState\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"paidAt\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"createdAt\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"releaseWindow\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"amountPaid\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"metaInvoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMarketplace\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMetaInvoice\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIAdvancedPaymentProcessor.MetaInvoice\",\"components\":[{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"upper\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"lower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"invoiceId\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMetaInvoiceIdForSub\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextInvoiceId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextMetaInvoiceId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPredictedAddress\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTokenValueFromUsd\",\"inputs\":[{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"handleCancelationRequest\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"accept\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"handleDispute\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"resolution\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"sellerShare\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownershipHandoverExpiresAt\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"payMetaInvoice\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"paySingleInvoice\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"ppStorage\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPaymentProcessorStorage\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"releasePayment\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"requestCancelation\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"requestCancelation\",\"inputs\":[{\"name\":\"invoiceKeys\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"requestOwnershipHandover\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"resolveDispute\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMarketplace\",\"inputs\":[{\"name\":\"marketplaceAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPriceFeed\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"aggregator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalMetaInvoiceCreated\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalUniqueInvoiceCreated\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"CancelationRequestHandled\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"accepted\",\"type\":\"bool\",\"indexed\":true,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CancelationRequested\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DisputeCreated\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DisputeDismissed\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DisputeResolved\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DisputeSettled\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"sellerAmount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"buyerAmount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EscrowCreated\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"escrow\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExpiredInvoiceRefunded\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceAccepted\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceCanceled\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceCreated\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"invoice\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAdvancedPaymentProcessor.Invoice\",\"components\":[{\"name\":\"invoiceId\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"escrow\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"resolutionInitiator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"state\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"resolutionState\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"paidAt\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"createdAt\",\"type\":\"uint48\",\"internalType\":\"uint48\"},{\"name\":\"releaseWindow\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"amountPaid\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"metaInvoiceKey\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoicePaid\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"escrowAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceRejected\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MetaInvoiceCreated\",\"inputs\":[{\"name\":\"metaInvoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"},{\"name\":\"metaInvoice\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIAdvancedPaymentProcessor.MetaInvoice\",\"components\":[{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"upper\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"lower\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"paymentToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"invoiceId\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipHandoverCanceled\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipHandoverRequested\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"oldOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PaymentReleased\",\"inputs\":[{\"name\":\"invoiceKey\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyInitialized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AlreadyRefunded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"BuyerCannotBeSeller\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CancelationRequestDeadlinePassed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DisputeWindowExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DuplicateResolutionAttempt\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidBuyer\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidDisputeResolution\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInvoiceState\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMetaInvoicePayment\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidNativePayment\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidPaymentToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSellersPayoutShare\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceAlreadyExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceResponseTimeExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceStillActive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NewOwnerIsZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoHandoverRequest\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotAuthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Unauthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnauthorizedBuyer\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnauthorizedParticipant\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnauthorizedSeller\",\"inputs\":[]}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"paymentProcessorStorageAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ownerAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"marketplaceAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"nativeTokenAggregatorAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AlreadyInitialized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AlreadyRefunded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"BuyerCannotBeSeller\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CancelationRequestDeadlinePassed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DisputeWindowExpired\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DuplicateResolutionAttempt\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidBuyer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidDisputeResolution\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidInvoiceState\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidMetaInvoicePayment\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidNativePayment\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPaymentToken\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSellersPayoutShare\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceAlreadyExists\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceDoesNotExist\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceExpired\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceResponseTimeExpired\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceStillActive\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NewOwnerIsZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoHandoverRequest\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotAuthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UnauthorizedBuyer\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UnauthorizedParticipant\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UnauthorizedSeller\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bool\",\"name\":\"accepted\",\"type\":\"bool\"}],\"name\":\"CancelationRequestHandled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"CancelationRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"DisputeCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"DisputeDismissed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"DisputeResolved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"sellerAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"buyerAmount\",\"type\":\"uint256\"}],\"name\":\"DisputeSettled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"}],\"name\":\"EscrowCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"ExpiredInvoiceRefunded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"InvoiceAccepted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"InvoiceCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"invoiceId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"resolutionInitiator\",\"type\":\"address\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"resolutionState\",\"type\":\"uint8\"},{\"internalType\":\"uint48\",\"name\":\"paidAt\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"createdAt\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"releaseWindow\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amountPaid\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"metaInvoiceOrderId\",\"type\":\"bytes32\"}],\"indexed\":false,\"internalType\":\"structIAdvancedPaymentProcessor.Invoice\",\"name\":\"invoice\",\"type\":\"tuple\"}],\"name\":\"InvoiceCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"escrowAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"InvoicePaid\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"InvoiceRejected\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"metaInvoiceOrderId\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"upper\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lower\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"invoiceId\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structIAdvancedPaymentProcessor.MetaInvoice\",\"name\":\"metaInvoice\",\"type\":\"tuple\"}],\"name\":\"MetaInvoiceCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"OwnershipHandoverCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"OwnershipHandoverRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oldOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"PaymentReleased\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ACCEPTED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"BASIS_POINTS\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"CANCELATION_ACCEPTED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"CANCELATION_REJECTED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"CANCELATION_REQUESTED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"CANCELED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_DECIMAL\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DISPUTED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DISPUTE_DISMISSED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DISPUTE_RESOLVED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DISPUTE_SETTLED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"INITIATED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"PAID\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"REFUNDED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"REJECTED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"RELEASED\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"orderIds\",\"type\":\"bytes32[]\"}],\"name\":\"acceptInvoice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"acceptInvoice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"orderIds\",\"type\":\"bytes32[]\"}],\"name\":\"cancelInvoice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"cancelInvoice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"claimExpiredInvoiceRefunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"completeOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"computeSalt\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"createDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"orderId\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"releaseWindow\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"}],\"internalType\":\"structIAdvancedPaymentProcessor.InvoiceCreationParam[]\",\"name\":\"param\",\"type\":\"tuple[]\"}],\"name\":\"createMetaInvoice\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"orderId\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"releaseWindow\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"}],\"internalType\":\"structIAdvancedPaymentProcessor.InvoiceCreationParam\",\"name\":\"param\",\"type\":\"tuple\"}],\"name\":\"createSingleInvoice\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"getInvoice\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"invoiceId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"resolutionInitiator\",\"type\":\"address\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"resolutionState\",\"type\":\"uint8\"},{\"internalType\":\"uint48\",\"name\":\"paidAt\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"createdAt\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"releaseWindow\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"invoiceExpiryDuration\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"timeBeforeCancelation\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amountPaid\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"metaInvoiceOrderId\",\"type\":\"bytes32\"}],\"internalType\":\"structIAdvancedPaymentProcessor.Invoice\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketplace\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"getMetaInvoice\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"upper\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lower\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"invoiceId\",\"type\":\"uint256\"}],\"internalType\":\"structIAdvancedPaymentProcessor.MetaInvoice\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"getMetaInvoiceIdForSub\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNextInvoiceId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNextMetaInvoiceId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"getPredictedAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"}],\"name\":\"getTokenValueFromUsd\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"accept\",\"type\":\"bool\"}],\"name\":\"handleCancelationRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"internalType\":\"uint8\",\"name\":\"resolution\",\"type\":\"uint8\"},{\"internalType\":\"uint256\",\"name\":\"sellerShare\",\"type\":\"uint256\"}],\"name\":\"handleDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"result\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"ownershipHandoverExpiresAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"result\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"}],\"name\":\"payMetaInvoice\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"paymentToken\",\"type\":\"address\"}],\"name\":\"paySingleInvoice\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ppStorage\",\"outputs\":[{\"internalType\":\"contractIPaymentProcessorStorage\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"releasePayment\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"requestCancelation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"orderIds\",\"type\":\"bytes32[]\"}],\"name\":\"requestCancelation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"orderId\",\"type\":\"bytes32\"}],\"name\":\"resolveDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"marketplaceAddress\",\"type\":\"address\"}],\"name\":\"setMarketplace\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"aggregator\",\"type\":\"address\"}],\"name\":\"setPriceFeed\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalMetaInvoiceCreated\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalUniqueInvoiceCreated\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}]",
 	ID:  "Paymentprocessor",
 }
 
@@ -506,9 +506,9 @@ func (paymentprocessor *Paymentprocessor) UnpackRELEASED(data []byte) (uint8, er
 // PackAcceptInvoice is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x40713eb5.
 //
-// Solidity: function acceptInvoice(bytes32[] invoiceKeys) returns()
-func (paymentprocessor *Paymentprocessor) PackAcceptInvoice(invoiceKeys [][32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("acceptInvoice", invoiceKeys)
+// Solidity: function acceptInvoice(bytes32[] orderIds) returns()
+func (paymentprocessor *Paymentprocessor) PackAcceptInvoice(orderIds [][32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("acceptInvoice", orderIds)
 	if err != nil {
 		panic(err)
 	}
@@ -518,9 +518,9 @@ func (paymentprocessor *Paymentprocessor) PackAcceptInvoice(invoiceKeys [][32]by
 // PackAcceptInvoice0 is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x47a424b5.
 //
-// Solidity: function acceptInvoice(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackAcceptInvoice0(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("acceptInvoice0", invoiceKey)
+// Solidity: function acceptInvoice(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackAcceptInvoice0(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("acceptInvoice0", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -530,9 +530,9 @@ func (paymentprocessor *Paymentprocessor) PackAcceptInvoice0(invoiceKey [32]byte
 // PackCancelInvoice is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xbfe06a2b.
 //
-// Solidity: function cancelInvoice(bytes32[] invoiceKeys) returns()
-func (paymentprocessor *Paymentprocessor) PackCancelInvoice(invoiceKeys [][32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("cancelInvoice", invoiceKeys)
+// Solidity: function cancelInvoice(bytes32[] orderIds) returns()
+func (paymentprocessor *Paymentprocessor) PackCancelInvoice(orderIds [][32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("cancelInvoice", orderIds)
 	if err != nil {
 		panic(err)
 	}
@@ -542,9 +542,9 @@ func (paymentprocessor *Paymentprocessor) PackCancelInvoice(invoiceKeys [][32]by
 // PackCancelInvoice0 is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xc0aa7e2e.
 //
-// Solidity: function cancelInvoice(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackCancelInvoice0(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("cancelInvoice0", invoiceKey)
+// Solidity: function cancelInvoice(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackCancelInvoice0(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("cancelInvoice0", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -566,9 +566,9 @@ func (paymentprocessor *Paymentprocessor) PackCancelOwnershipHandover() []byte {
 // PackClaimExpiredInvoiceRefunds is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xa489897b.
 //
-// Solidity: function claimExpiredInvoiceRefunds(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackClaimExpiredInvoiceRefunds(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("claimExpiredInvoiceRefunds", invoiceKey)
+// Solidity: function claimExpiredInvoiceRefunds(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackClaimExpiredInvoiceRefunds(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("claimExpiredInvoiceRefunds", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -590,9 +590,9 @@ func (paymentprocessor *Paymentprocessor) PackCompleteOwnershipHandover(pendingO
 // PackComputeSalt is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x9c074054.
 //
-// Solidity: function computeSalt(address seller, address buyer, bytes32 invoiceKey) pure returns(bytes32)
-func (paymentprocessor *Paymentprocessor) PackComputeSalt(seller common.Address, buyer common.Address, invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("computeSalt", seller, buyer, invoiceKey)
+// Solidity: function computeSalt(address seller, address buyer, bytes32 orderId) pure returns(bytes32)
+func (paymentprocessor *Paymentprocessor) PackComputeSalt(seller common.Address, buyer common.Address, orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("computeSalt", seller, buyer, orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -602,7 +602,7 @@ func (paymentprocessor *Paymentprocessor) PackComputeSalt(seller common.Address,
 // UnpackComputeSalt is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x9c074054.
 //
-// Solidity: function computeSalt(address seller, address buyer, bytes32 invoiceKey) pure returns(bytes32)
+// Solidity: function computeSalt(address seller, address buyer, bytes32 orderId) pure returns(bytes32)
 func (paymentprocessor *Paymentprocessor) UnpackComputeSalt(data []byte) ([32]byte, error) {
 	out, err := paymentprocessor.abi.Unpack("computeSalt", data)
 	if err != nil {
@@ -615,9 +615,9 @@ func (paymentprocessor *Paymentprocessor) UnpackComputeSalt(data []byte) ([32]by
 // PackCreateDispute is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x29092dc0.
 //
-// Solidity: function createDispute(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackCreateDispute(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("createDispute", invoiceKey)
+// Solidity: function createDispute(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackCreateDispute(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("createDispute", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -677,9 +677,9 @@ func (paymentprocessor *Paymentprocessor) UnpackCreateSingleInvoice(data []byte)
 // PackGetInvoice is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xcb802c8b.
 //
-// Solidity: function getInvoice(bytes32 invoiceKey) view returns((uint256,address,address,address,address,address,uint8,uint8,uint48,uint48,uint32,uint32,uint32,uint256,uint256,bytes32))
-func (paymentprocessor *Paymentprocessor) PackGetInvoice(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("getInvoice", invoiceKey)
+// Solidity: function getInvoice(bytes32 orderId) view returns((uint256,address,address,address,address,address,uint8,uint8,uint48,uint48,uint32,uint32,uint32,uint256,uint256,bytes32))
+func (paymentprocessor *Paymentprocessor) PackGetInvoice(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("getInvoice", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -689,7 +689,7 @@ func (paymentprocessor *Paymentprocessor) PackGetInvoice(invoiceKey [32]byte) []
 // UnpackGetInvoice is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0xcb802c8b.
 //
-// Solidity: function getInvoice(bytes32 invoiceKey) view returns((uint256,address,address,address,address,address,uint8,uint8,uint48,uint48,uint32,uint32,uint32,uint256,uint256,bytes32))
+// Solidity: function getInvoice(bytes32 orderId) view returns((uint256,address,address,address,address,address,uint8,uint8,uint48,uint48,uint32,uint32,uint32,uint256,uint256,bytes32))
 func (paymentprocessor *Paymentprocessor) UnpackGetInvoice(data []byte) (IAdvancedPaymentProcessorInvoice, error) {
 	out, err := paymentprocessor.abi.Unpack("getInvoice", data)
 	if err != nil {
@@ -727,9 +727,9 @@ func (paymentprocessor *Paymentprocessor) UnpackGetMarketplace(data []byte) (com
 // PackGetMetaInvoice is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x8ccef592.
 //
-// Solidity: function getMetaInvoice(bytes32 invoiceKey) view returns((address,uint256,uint256,uint256,address,uint256))
-func (paymentprocessor *Paymentprocessor) PackGetMetaInvoice(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("getMetaInvoice", invoiceKey)
+// Solidity: function getMetaInvoice(bytes32 orderId) view returns((address,uint256,uint256,uint256,address,uint256))
+func (paymentprocessor *Paymentprocessor) PackGetMetaInvoice(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("getMetaInvoice", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -739,7 +739,7 @@ func (paymentprocessor *Paymentprocessor) PackGetMetaInvoice(invoiceKey [32]byte
 // UnpackGetMetaInvoice is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x8ccef592.
 //
-// Solidity: function getMetaInvoice(bytes32 invoiceKey) view returns((address,uint256,uint256,uint256,address,uint256))
+// Solidity: function getMetaInvoice(bytes32 orderId) view returns((address,uint256,uint256,uint256,address,uint256))
 func (paymentprocessor *Paymentprocessor) UnpackGetMetaInvoice(data []byte) (IAdvancedPaymentProcessorMetaInvoice, error) {
 	out, err := paymentprocessor.abi.Unpack("getMetaInvoice", data)
 	if err != nil {
@@ -752,9 +752,9 @@ func (paymentprocessor *Paymentprocessor) UnpackGetMetaInvoice(data []byte) (IAd
 // PackGetMetaInvoiceIdForSub is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x5cbc9082.
 //
-// Solidity: function getMetaInvoiceIdForSub(bytes32 invoiceKey) view returns(bytes32)
-func (paymentprocessor *Paymentprocessor) PackGetMetaInvoiceIdForSub(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("getMetaInvoiceIdForSub", invoiceKey)
+// Solidity: function getMetaInvoiceIdForSub(bytes32 orderId) view returns(bytes32)
+func (paymentprocessor *Paymentprocessor) PackGetMetaInvoiceIdForSub(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("getMetaInvoiceIdForSub", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -764,7 +764,7 @@ func (paymentprocessor *Paymentprocessor) PackGetMetaInvoiceIdForSub(invoiceKey 
 // UnpackGetMetaInvoiceIdForSub is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x5cbc9082.
 //
-// Solidity: function getMetaInvoiceIdForSub(bytes32 invoiceKey) view returns(bytes32)
+// Solidity: function getMetaInvoiceIdForSub(bytes32 orderId) view returns(bytes32)
 func (paymentprocessor *Paymentprocessor) UnpackGetMetaInvoiceIdForSub(data []byte) ([32]byte, error) {
 	out, err := paymentprocessor.abi.Unpack("getMetaInvoiceIdForSub", data)
 	if err != nil {
@@ -877,9 +877,9 @@ func (paymentprocessor *Paymentprocessor) UnpackGetTokenValueFromUsd(data []byte
 // PackHandleCancelationRequest is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xa9a6618a.
 //
-// Solidity: function handleCancelationRequest(bytes32 invoiceKey, bool accept) returns()
-func (paymentprocessor *Paymentprocessor) PackHandleCancelationRequest(invoiceKey [32]byte, accept bool) []byte {
-	enc, err := paymentprocessor.abi.Pack("handleCancelationRequest", invoiceKey, accept)
+// Solidity: function handleCancelationRequest(bytes32 orderId, bool accept) returns()
+func (paymentprocessor *Paymentprocessor) PackHandleCancelationRequest(orderId [32]byte, accept bool) []byte {
+	enc, err := paymentprocessor.abi.Pack("handleCancelationRequest", orderId, accept)
 	if err != nil {
 		panic(err)
 	}
@@ -889,9 +889,9 @@ func (paymentprocessor *Paymentprocessor) PackHandleCancelationRequest(invoiceKe
 // PackHandleDispute is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xc768634f.
 //
-// Solidity: function handleDispute(bytes32 invoiceKey, uint8 resolution, uint256 sellerShare) returns()
-func (paymentprocessor *Paymentprocessor) PackHandleDispute(invoiceKey [32]byte, resolution uint8, sellerShare *big.Int) []byte {
-	enc, err := paymentprocessor.abi.Pack("handleDispute", invoiceKey, resolution, sellerShare)
+// Solidity: function handleDispute(bytes32 orderId, uint8 resolution, uint256 sellerShare) returns()
+func (paymentprocessor *Paymentprocessor) PackHandleDispute(orderId [32]byte, resolution uint8, sellerShare *big.Int) []byte {
+	enc, err := paymentprocessor.abi.Pack("handleDispute", orderId, resolution, sellerShare)
 	if err != nil {
 		panic(err)
 	}
@@ -951,9 +951,9 @@ func (paymentprocessor *Paymentprocessor) UnpackOwnershipHandoverExpiresAt(data 
 // PackPayMetaInvoice is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x97f2ef98.
 //
-// Solidity: function payMetaInvoice(bytes32 invoiceKey, address paymentToken) payable returns()
-func (paymentprocessor *Paymentprocessor) PackPayMetaInvoice(invoiceKey [32]byte, paymentToken common.Address) []byte {
-	enc, err := paymentprocessor.abi.Pack("payMetaInvoice", invoiceKey, paymentToken)
+// Solidity: function payMetaInvoice(bytes32 orderId, address paymentToken) payable returns()
+func (paymentprocessor *Paymentprocessor) PackPayMetaInvoice(orderId [32]byte, paymentToken common.Address) []byte {
+	enc, err := paymentprocessor.abi.Pack("payMetaInvoice", orderId, paymentToken)
 	if err != nil {
 		panic(err)
 	}
@@ -963,9 +963,9 @@ func (paymentprocessor *Paymentprocessor) PackPayMetaInvoice(invoiceKey [32]byte
 // PackPaySingleInvoice is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x91a61baf.
 //
-// Solidity: function paySingleInvoice(bytes32 invoiceKey, address paymentToken) payable returns()
-func (paymentprocessor *Paymentprocessor) PackPaySingleInvoice(invoiceKey [32]byte, paymentToken common.Address) []byte {
-	enc, err := paymentprocessor.abi.Pack("paySingleInvoice", invoiceKey, paymentToken)
+// Solidity: function paySingleInvoice(bytes32 orderId, address paymentToken) payable returns()
+func (paymentprocessor *Paymentprocessor) PackPaySingleInvoice(orderId [32]byte, paymentToken common.Address) []byte {
+	enc, err := paymentprocessor.abi.Pack("paySingleInvoice", orderId, paymentToken)
 	if err != nil {
 		panic(err)
 	}
@@ -1000,9 +1000,9 @@ func (paymentprocessor *Paymentprocessor) UnpackPpStorage(data []byte) (common.A
 // PackReleasePayment is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x7aa1ed58.
 //
-// Solidity: function releasePayment(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackReleasePayment(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("releasePayment", invoiceKey)
+// Solidity: function releasePayment(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackReleasePayment(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("releasePayment", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -1024,9 +1024,9 @@ func (paymentprocessor *Paymentprocessor) PackRenounceOwnership() []byte {
 // PackRequestCancelation is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x0982cb6a.
 //
-// Solidity: function requestCancelation(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackRequestCancelation(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("requestCancelation", invoiceKey)
+// Solidity: function requestCancelation(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackRequestCancelation(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("requestCancelation", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -1036,9 +1036,9 @@ func (paymentprocessor *Paymentprocessor) PackRequestCancelation(invoiceKey [32]
 // PackRequestCancelation0 is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x7afd65c9.
 //
-// Solidity: function requestCancelation(bytes32[] invoiceKeys) returns()
-func (paymentprocessor *Paymentprocessor) PackRequestCancelation0(invoiceKeys [][32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("requestCancelation0", invoiceKeys)
+// Solidity: function requestCancelation(bytes32[] orderIds) returns()
+func (paymentprocessor *Paymentprocessor) PackRequestCancelation0(orderIds [][32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("requestCancelation0", orderIds)
 	if err != nil {
 		panic(err)
 	}
@@ -1060,9 +1060,9 @@ func (paymentprocessor *Paymentprocessor) PackRequestOwnershipHandover() []byte 
 // PackResolveDispute is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xc8218e3e.
 //
-// Solidity: function resolveDispute(bytes32 invoiceKey) returns()
-func (paymentprocessor *Paymentprocessor) PackResolveDispute(invoiceKey [32]byte) []byte {
-	enc, err := paymentprocessor.abi.Pack("resolveDispute", invoiceKey)
+// Solidity: function resolveDispute(bytes32 orderId) returns()
+func (paymentprocessor *Paymentprocessor) PackResolveDispute(orderId [32]byte) []byte {
+	enc, err := paymentprocessor.abi.Pack("resolveDispute", orderId)
 	if err != nil {
 		panic(err)
 	}
@@ -1157,9 +1157,9 @@ func (paymentprocessor *Paymentprocessor) PackTransferOwnership(newOwner common.
 
 // PaymentprocessorCancelationRequestHandled represents a CancelationRequestHandled event raised by the Paymentprocessor contract.
 type PaymentprocessorCancelationRequestHandled struct {
-	InvoiceKey [32]byte
-	Accepted   bool
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId  [32]byte
+	Accepted bool
+	Raw      *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorCancelationRequestHandledEventName = "CancelationRequestHandled"
@@ -1172,7 +1172,7 @@ func (PaymentprocessorCancelationRequestHandled) ContractEventName() string {
 // UnpackCancelationRequestHandledEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event CancelationRequestHandled(bytes32 indexed invoiceKey, bool indexed accepted)
+// Solidity: event CancelationRequestHandled(bytes32 indexed orderId, bool indexed accepted)
 func (paymentprocessor *Paymentprocessor) UnpackCancelationRequestHandledEvent(log *types.Log) (*PaymentprocessorCancelationRequestHandled, error) {
 	event := "CancelationRequestHandled"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1199,8 +1199,8 @@ func (paymentprocessor *Paymentprocessor) UnpackCancelationRequestHandledEvent(l
 
 // PaymentprocessorCancelationRequested represents a CancelationRequested event raised by the Paymentprocessor contract.
 type PaymentprocessorCancelationRequested struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorCancelationRequestedEventName = "CancelationRequested"
@@ -1213,7 +1213,7 @@ func (PaymentprocessorCancelationRequested) ContractEventName() string {
 // UnpackCancelationRequestedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event CancelationRequested(bytes32 indexed invoiceKey)
+// Solidity: event CancelationRequested(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackCancelationRequestedEvent(log *types.Log) (*PaymentprocessorCancelationRequested, error) {
 	event := "CancelationRequested"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1240,8 +1240,8 @@ func (paymentprocessor *Paymentprocessor) UnpackCancelationRequestedEvent(log *t
 
 // PaymentprocessorDisputeCreated represents a DisputeCreated event raised by the Paymentprocessor contract.
 type PaymentprocessorDisputeCreated struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorDisputeCreatedEventName = "DisputeCreated"
@@ -1254,7 +1254,7 @@ func (PaymentprocessorDisputeCreated) ContractEventName() string {
 // UnpackDisputeCreatedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event DisputeCreated(bytes32 indexed invoiceKey)
+// Solidity: event DisputeCreated(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackDisputeCreatedEvent(log *types.Log) (*PaymentprocessorDisputeCreated, error) {
 	event := "DisputeCreated"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1281,8 +1281,8 @@ func (paymentprocessor *Paymentprocessor) UnpackDisputeCreatedEvent(log *types.L
 
 // PaymentprocessorDisputeDismissed represents a DisputeDismissed event raised by the Paymentprocessor contract.
 type PaymentprocessorDisputeDismissed struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorDisputeDismissedEventName = "DisputeDismissed"
@@ -1295,7 +1295,7 @@ func (PaymentprocessorDisputeDismissed) ContractEventName() string {
 // UnpackDisputeDismissedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event DisputeDismissed(bytes32 indexed invoiceKey)
+// Solidity: event DisputeDismissed(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackDisputeDismissedEvent(log *types.Log) (*PaymentprocessorDisputeDismissed, error) {
 	event := "DisputeDismissed"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1322,8 +1322,8 @@ func (paymentprocessor *Paymentprocessor) UnpackDisputeDismissedEvent(log *types
 
 // PaymentprocessorDisputeResolved represents a DisputeResolved event raised by the Paymentprocessor contract.
 type PaymentprocessorDisputeResolved struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorDisputeResolvedEventName = "DisputeResolved"
@@ -1336,7 +1336,7 @@ func (PaymentprocessorDisputeResolved) ContractEventName() string {
 // UnpackDisputeResolvedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event DisputeResolved(bytes32 indexed invoiceKey)
+// Solidity: event DisputeResolved(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackDisputeResolvedEvent(log *types.Log) (*PaymentprocessorDisputeResolved, error) {
 	event := "DisputeResolved"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1363,7 +1363,7 @@ func (paymentprocessor *Paymentprocessor) UnpackDisputeResolvedEvent(log *types.
 
 // PaymentprocessorDisputeSettled represents a DisputeSettled event raised by the Paymentprocessor contract.
 type PaymentprocessorDisputeSettled struct {
-	InvoiceKey   [32]byte
+	OrderId      [32]byte
 	SellerAmount *big.Int
 	BuyerAmount  *big.Int
 	Raw          *types.Log // Blockchain specific contextual infos
@@ -1379,7 +1379,7 @@ func (PaymentprocessorDisputeSettled) ContractEventName() string {
 // UnpackDisputeSettledEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event DisputeSettled(bytes32 indexed invoiceKey, uint256 sellerAmount, uint256 buyerAmount)
+// Solidity: event DisputeSettled(bytes32 indexed orderId, uint256 sellerAmount, uint256 buyerAmount)
 func (paymentprocessor *Paymentprocessor) UnpackDisputeSettledEvent(log *types.Log) (*PaymentprocessorDisputeSettled, error) {
 	event := "DisputeSettled"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1406,9 +1406,9 @@ func (paymentprocessor *Paymentprocessor) UnpackDisputeSettledEvent(log *types.L
 
 // PaymentprocessorEscrowCreated represents a EscrowCreated event raised by the Paymentprocessor contract.
 type PaymentprocessorEscrowCreated struct {
-	InvoiceKey [32]byte
-	Escrow     common.Address
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Escrow  common.Address
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorEscrowCreatedEventName = "EscrowCreated"
@@ -1421,7 +1421,7 @@ func (PaymentprocessorEscrowCreated) ContractEventName() string {
 // UnpackEscrowCreatedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event EscrowCreated(bytes32 indexed invoiceKey, address indexed escrow)
+// Solidity: event EscrowCreated(bytes32 indexed orderId, address indexed escrow)
 func (paymentprocessor *Paymentprocessor) UnpackEscrowCreatedEvent(log *types.Log) (*PaymentprocessorEscrowCreated, error) {
 	event := "EscrowCreated"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1448,8 +1448,8 @@ func (paymentprocessor *Paymentprocessor) UnpackEscrowCreatedEvent(log *types.Lo
 
 // PaymentprocessorExpiredInvoiceRefunded represents a ExpiredInvoiceRefunded event raised by the Paymentprocessor contract.
 type PaymentprocessorExpiredInvoiceRefunded struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorExpiredInvoiceRefundedEventName = "ExpiredInvoiceRefunded"
@@ -1462,7 +1462,7 @@ func (PaymentprocessorExpiredInvoiceRefunded) ContractEventName() string {
 // UnpackExpiredInvoiceRefundedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event ExpiredInvoiceRefunded(bytes32 indexed invoiceKey)
+// Solidity: event ExpiredInvoiceRefunded(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackExpiredInvoiceRefundedEvent(log *types.Log) (*PaymentprocessorExpiredInvoiceRefunded, error) {
 	event := "ExpiredInvoiceRefunded"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1489,8 +1489,8 @@ func (paymentprocessor *Paymentprocessor) UnpackExpiredInvoiceRefundedEvent(log 
 
 // PaymentprocessorInvoiceAccepted represents a InvoiceAccepted event raised by the Paymentprocessor contract.
 type PaymentprocessorInvoiceAccepted struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorInvoiceAcceptedEventName = "InvoiceAccepted"
@@ -1503,7 +1503,7 @@ func (PaymentprocessorInvoiceAccepted) ContractEventName() string {
 // UnpackInvoiceAcceptedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceAccepted(bytes32 indexed invoiceKey)
+// Solidity: event InvoiceAccepted(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackInvoiceAcceptedEvent(log *types.Log) (*PaymentprocessorInvoiceAccepted, error) {
 	event := "InvoiceAccepted"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1530,8 +1530,8 @@ func (paymentprocessor *Paymentprocessor) UnpackInvoiceAcceptedEvent(log *types.
 
 // PaymentprocessorInvoiceCanceled represents a InvoiceCanceled event raised by the Paymentprocessor contract.
 type PaymentprocessorInvoiceCanceled struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorInvoiceCanceledEventName = "InvoiceCanceled"
@@ -1544,7 +1544,7 @@ func (PaymentprocessorInvoiceCanceled) ContractEventName() string {
 // UnpackInvoiceCanceledEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceCanceled(bytes32 indexed invoiceKey)
+// Solidity: event InvoiceCanceled(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackInvoiceCanceledEvent(log *types.Log) (*PaymentprocessorInvoiceCanceled, error) {
 	event := "InvoiceCanceled"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1571,9 +1571,9 @@ func (paymentprocessor *Paymentprocessor) UnpackInvoiceCanceledEvent(log *types.
 
 // PaymentprocessorInvoiceCreated represents a InvoiceCreated event raised by the Paymentprocessor contract.
 type PaymentprocessorInvoiceCreated struct {
-	InvoiceKey [32]byte
-	Invoice    IAdvancedPaymentProcessorInvoice
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Invoice IAdvancedPaymentProcessorInvoice
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorInvoiceCreatedEventName = "InvoiceCreated"
@@ -1586,7 +1586,7 @@ func (PaymentprocessorInvoiceCreated) ContractEventName() string {
 // UnpackInvoiceCreatedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceCreated(bytes32 indexed invoiceKey, (uint256,address,address,address,address,address,uint8,uint8,uint48,uint48,uint32,uint32,uint32,uint256,uint256,bytes32) invoice)
+// Solidity: event InvoiceCreated(bytes32 indexed orderId, (uint256,address,address,address,address,address,uint8,uint8,uint48,uint48,uint32,uint32,uint32,uint256,uint256,bytes32) invoice)
 func (paymentprocessor *Paymentprocessor) UnpackInvoiceCreatedEvent(log *types.Log) (*PaymentprocessorInvoiceCreated, error) {
 	event := "InvoiceCreated"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1613,7 +1613,7 @@ func (paymentprocessor *Paymentprocessor) UnpackInvoiceCreatedEvent(log *types.L
 
 // PaymentprocessorInvoicePaid represents a InvoicePaid event raised by the Paymentprocessor contract.
 type PaymentprocessorInvoicePaid struct {
-	InvoiceKey    [32]byte
+	OrderId       [32]byte
 	PaymentToken  common.Address
 	EscrowAddress common.Address
 	Amount        *big.Int
@@ -1630,7 +1630,7 @@ func (PaymentprocessorInvoicePaid) ContractEventName() string {
 // UnpackInvoicePaidEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoicePaid(bytes32 indexed invoiceKey, address paymentToken, address escrowAddress, uint256 amount)
+// Solidity: event InvoicePaid(bytes32 indexed orderId, address paymentToken, address escrowAddress, uint256 amount)
 func (paymentprocessor *Paymentprocessor) UnpackInvoicePaidEvent(log *types.Log) (*PaymentprocessorInvoicePaid, error) {
 	event := "InvoicePaid"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1657,8 +1657,8 @@ func (paymentprocessor *Paymentprocessor) UnpackInvoicePaidEvent(log *types.Log)
 
 // PaymentprocessorInvoiceRejected represents a InvoiceRejected event raised by the Paymentprocessor contract.
 type PaymentprocessorInvoiceRejected struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorInvoiceRejectedEventName = "InvoiceRejected"
@@ -1671,7 +1671,7 @@ func (PaymentprocessorInvoiceRejected) ContractEventName() string {
 // UnpackInvoiceRejectedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceRejected(bytes32 indexed invoiceKey)
+// Solidity: event InvoiceRejected(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackInvoiceRejectedEvent(log *types.Log) (*PaymentprocessorInvoiceRejected, error) {
 	event := "InvoiceRejected"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1698,9 +1698,9 @@ func (paymentprocessor *Paymentprocessor) UnpackInvoiceRejectedEvent(log *types.
 
 // PaymentprocessorMetaInvoiceCreated represents a MetaInvoiceCreated event raised by the Paymentprocessor contract.
 type PaymentprocessorMetaInvoiceCreated struct {
-	MetaInvoiceKey [32]byte
-	MetaInvoice    IAdvancedPaymentProcessorMetaInvoice
-	Raw            *types.Log // Blockchain specific contextual infos
+	MetaInvoiceOrderId [32]byte
+	MetaInvoice        IAdvancedPaymentProcessorMetaInvoice
+	Raw                *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorMetaInvoiceCreatedEventName = "MetaInvoiceCreated"
@@ -1713,7 +1713,7 @@ func (PaymentprocessorMetaInvoiceCreated) ContractEventName() string {
 // UnpackMetaInvoiceCreatedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event MetaInvoiceCreated(bytes32 indexed metaInvoiceKey, (address,uint256,uint256,uint256,address,uint256) metaInvoice)
+// Solidity: event MetaInvoiceCreated(bytes32 indexed metaInvoiceOrderId, (address,uint256,uint256,uint256,address,uint256) metaInvoice)
 func (paymentprocessor *Paymentprocessor) UnpackMetaInvoiceCreatedEvent(log *types.Log) (*PaymentprocessorMetaInvoiceCreated, error) {
 	event := "MetaInvoiceCreated"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {
@@ -1864,8 +1864,8 @@ func (paymentprocessor *Paymentprocessor) UnpackOwnershipTransferredEvent(log *t
 
 // PaymentprocessorPaymentReleased represents a PaymentReleased event raised by the Paymentprocessor contract.
 type PaymentprocessorPaymentReleased struct {
-	InvoiceKey [32]byte
-	Raw        *types.Log // Blockchain specific contextual infos
+	OrderId [32]byte
+	Raw     *types.Log // Blockchain specific contextual infos
 }
 
 const PaymentprocessorPaymentReleasedEventName = "PaymentReleased"
@@ -1878,7 +1878,7 @@ func (PaymentprocessorPaymentReleased) ContractEventName() string {
 // UnpackPaymentReleasedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event PaymentReleased(bytes32 indexed invoiceKey)
+// Solidity: event PaymentReleased(bytes32 indexed orderId)
 func (paymentprocessor *Paymentprocessor) UnpackPaymentReleasedEvent(log *types.Log) (*PaymentprocessorPaymentReleased, error) {
 	event := "PaymentReleased"
 	if log.Topics[0] != paymentprocessor.abi.Events[event].ID {

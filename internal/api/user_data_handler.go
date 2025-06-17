@@ -2,49 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/query"
 )
-
-func GetUserData(w http.ResponseWriter, r *http.Request) {
-	address := r.URL.Query().Get("address")
-	firstParam := r.URL.Query().Get("first")
-	skipParam := r.URL.Query().Get("skip")
-
-	address = strings.ToLower(address)
-
-	log.Println(address)
-
-	if address == "" {
-		http.Error(w, "Missing address parameter", http.StatusBadRequest)
-		return
-	}
-
-	first := 10
-	skip := 0
-
-	if val, err := strconv.Atoi(firstParam); err == nil {
-		first = val
-	}
-
-	if val, err := strconv.Atoi(skipParam); err == nil {
-		skip = val
-	}
-
-	data, err := query.GetUserInvoiceData(address, first, skip)
-
-	if err != nil {
-		http.Error(w, "failed to fetch invoice data"+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
-}
 
 func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")

@@ -17,7 +17,7 @@ type Contract struct {
 	client           Client
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x145fd69Ec18d2F2063c8D67aA300442b3FaaD49f"
+const PAYMENT_PROCESSOR_ADDRESS string = "0x7f98897854Ab2B2370C3BF2694514f05375Ea606"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
