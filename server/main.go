@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	handler "github.com/orgs/SapphireDAOO/contract-api/api"
-	middleware "github.com/orgs/SapphireDAOO/contract-api/internal"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/api"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 )
 
 func main() {
@@ -21,11 +21,8 @@ func main() {
 		port = ":8080"
 	}
 
-	mux := http.NewServeMux()
-
-	mux.Handle("POST /create-invoice", middleware.AccessControlMiddleWare(handler.CreateInvoiceHandler))
-	mux.Handle("POST /release", middleware.AccessControlMiddleWare(handler.ReleaseEscrowHandler))
-	mux.Handle("GET /user-data", http.HandlerFunc(handler.GetUserDataHandler))
+	contract := blockchain.NewContract(blockchain.NewClient())
+	mux := api.Route(contract)
 
 	server := &http.Server{Addr: port, Handler: mux, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
 
