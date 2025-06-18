@@ -12,14 +12,13 @@ import (
 )
 
 func main() {
-
 	if _, ok := os.LookupEnv("PRODUCTION"); !ok {
 		if err := godotenv.Load(); err != nil {
 			log.Fatalln("Error loading .env file")
 		}
 	}
-	port := os.Getenv("PORT")
 
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
