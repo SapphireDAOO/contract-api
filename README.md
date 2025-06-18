@@ -35,7 +35,7 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 
 | Field                   | Type    | Required | Description                                                                    |
 | ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
-| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "number")                         |
+| `OrderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "number")                         |
 | `Seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
 | `Buyer`                 | string  | ✅       | Ethereum address of the buyer (e.g., `0xdef456...`)                            |
 | `InvoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `3600` for 1 hour)                   |

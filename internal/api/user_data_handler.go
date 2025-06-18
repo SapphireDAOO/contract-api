@@ -3,33 +3,27 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/query"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
 func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("orderId")
-	firstParam := r.URL.Query().Get("first")
-	skipParam := r.URL.Query().Get("skip")
 
 	if id == "" {
 		http.Error(w, "Missing orderId parameter", http.StatusBadRequest)
 		return
 	}
 
-	first := 10
-	skip := 0
+	orderId, err := utils.Keccak256(id)
 
-	if val, err := strconv.Atoi(firstParam); err == nil {
-		first = val
+	if err != nil {
+		http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
+		return
 	}
 
-	if val, err := strconv.Atoi(skipParam); err == nil {
-		skip = val
-	}
-
-	data, err := query.GetInvoiceData(id, first, skip)
+	data, err := query.GetInvoiceData(orderId.Hex())
 
 	if err != nil {
 		http.Error(w, "failed to fetch invoice data"+err.Error(), http.StatusInternalServerError)

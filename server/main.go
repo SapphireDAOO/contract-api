@@ -12,9 +12,10 @@ import (
 )
 
 func main() {
+
 	if _, ok := os.LookupEnv("PRODUCTION"); !ok {
 		if err := godotenv.Load(); err != nil {
-			log.Println("Error loading .env file")
+			log.Fatalln("Error loading .env file")
 		}
 	}
 	port := os.Getenv("PORT")

@@ -46,9 +46,8 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) {
-
 	var input struct {
-		orderId      [32]byte
+		orderId      string
 		resolution   blockchain.MarketplaceAction
 		sellersShare *big.Int
 	}
@@ -58,7 +57,14 @@ func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.Contract.ReleaseEscrow(input.orderId, input.resolution, input.sellersShare)
+	orderId, err := utils.Keccak256(input.orderId)
+
+	if err != nil {
+		http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
+		return
+	}
+
+	txHash, err := h.Contract.ReleaseEscrow(*orderId, input.resolution, input.sellersShare)
 	if err != nil {
 		http.Error(w, "Error sending transaction: "+err.Error(), http.StatusBadRequest)
 		return

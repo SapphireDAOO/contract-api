@@ -41,8 +41,7 @@ func GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 	return &userData, nil
 }
 
-func GetInvoiceData(id string, first, skip int) (*SmartInvoice, error) {
-
+func GetInvoiceData(id string) (*SmartInvoice, error) {
 	if id == "" {
 		return nil, fmt.Errorf("address cannot be empty")
 	}
@@ -50,9 +49,7 @@ func GetInvoiceData(id string, first, skip int) (*SmartInvoice, error) {
 	payload := map[string]any{
 		"query": invoiceQuery,
 		"variables": map[string]any{
-			"id":    id,
-			"first": first,
-			"skip":  skip,
+			"id": id,
 		},
 	}
 
@@ -63,14 +60,16 @@ func GetInvoiceData(id string, first, skip int) (*SmartInvoice, error) {
 	}
 
 	var resp struct {
-		Data SmartInvoice `json:"data"`
+		Data struct {
+			SmartInvoice SmartInvoice `json:"smartInvoice"`
+		}
 	}
 
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, err
 	}
 
-	return &resp.Data, err
+	return &resp.Data.SmartInvoice, err
 }
 
 func handleRequest(payload map[string]any) ([]byte, error) {
@@ -92,6 +91,11 @@ func handleRequest(payload map[string]any) ([]byte, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("non-200 status code: %d, body: %s", res.StatusCode, string(bodyBytes))
 	}
 
 	defer res.Body.Close()

@@ -50,7 +50,7 @@ query ($address: String!, $first: Int = 10, $skip: Int = 0) {
 `
 
 const invoiceQuery = `
-  query($id: String!, $first: Int = 10, $skip: Int = 0){
+  query($id: String!){
     smartInvoice(id: $id){
       invoiceId
       state

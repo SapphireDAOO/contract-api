@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/hex"
-	"log"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,7 +10,6 @@ import (
 
 func GenerateToken(invoiceKey *common.Hash) (string, error) {
 	val := "0x" + hex.EncodeToString(invoiceKey[:])
-	log.Println("Value", val)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"invoiceKey": val,
