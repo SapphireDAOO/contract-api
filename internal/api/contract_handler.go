@@ -4,20 +4,23 @@ import (
 	"encoding/json"
 	"math/big"
 	"net/http"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	paymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/AdvancedPaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
-const WEB_URL string = "https://sapphire-dao-website-six.vercel.app/checkout/?data="
+const TX_URL string = "https://amoy.polygonscan.com/tx/"
 
 type ContractHandler struct {
 	Contract *blockchain.Contract
+	baseUrl  string
 }
 
-func NewContractHandler(contract *blockchain.Contract) *ContractHandler {
-	return &ContractHandler{Contract: contract}
+func NewContractHandler(contract *blockchain.Contract, baseUrl string) *ContractHandler {
+	return &ContractHandler{Contract: contract, baseUrl: baseUrl}
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
@@ -41,15 +44,15 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"url": WEB_URL + token,
+		"url": h.baseUrl + token,
 	})
 }
 
 func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		orderId      string
-		resolution   blockchain.MarketplaceAction
-		sellersShare *big.Int
+		OrderId      string                       `json:"orderId"`
+		Resolution   blockchain.MarketplaceAction `json:"resolution"`
+		SellersShare *big.Int                     `json:"sellersShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -57,14 +60,20 @@ func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	orderId, err := utils.Keccak256(input.orderId)
+	var id common.Hash
 
-	if err != nil {
-		http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
-		return
+	if len(input.OrderId) == 66 && strings.HasPrefix(input.OrderId, "0x") {
+		id = common.HexToHash(input.OrderId)
+	} else {
+		hashed, err := utils.Keccak256(input.OrderId)
+		if err != nil {
+			http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
+			return
+		}
+		id = *hashed
 	}
 
-	txHash, err := h.Contract.ReleaseEscrow(*orderId, input.resolution, input.sellersShare)
+	txHash, err := h.Contract.ReleaseEscrow(id, input.Resolution, input.SellersShare)
 	if err != nil {
 		http.Error(w, "Error sending transaction: "+err.Error(), http.StatusBadRequest)
 		return
@@ -73,7 +82,7 @@ func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"status": "success",
-		"hash":   txHash,
+		"hash":   TX_URL + txHash.Hex(),
 	})
 
 }

@@ -17,7 +17,7 @@ type Contract struct {
 	client           Client
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x7f98897854Ab2B2370C3BF2694514f05375Ea606"
+const PAYMENT_PROCESSOR_ADDRESS string = "0xf041a2Cd5f87fC7d02C3A42B02dC479582538D26"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
@@ -84,6 +84,10 @@ func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProces
 func (c *Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sellersShare *big.Int) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
+	if sellersShare == nil {
+		sellersShare = big.NewInt(0)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +102,7 @@ func (c *Contract) ReleaseEscrow(orderId [32]byte, action MarketplaceAction, sel
 		data = c.paymentProcessor.PackHandleDispute(orderId, c.getDisputeResolution(SettleDispute), sellersShare)
 
 	case DismissDispute:
-		data = c.paymentProcessor.PackHandleDispute(orderId, c.getDisputeResolution(DismissDispute), nil)
+		data = c.paymentProcessor.PackHandleDispute(orderId, c.getDisputeResolution(DismissDispute), sellersShare)
 
 	default:
 		return nil, errors.New("unsupported marketplace action")

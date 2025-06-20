@@ -11,11 +11,19 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 )
 
+const WEB_URL string = "https://sapphire-dao-website-six.vercel.app/checkout/?data="
+
+const BASE_URL string = "http://localhost:3000/checkout/?data="
+
 func main() {
+	var url string
 	if _, ok := os.LookupEnv("PRODUCTION"); !ok {
 		if err := godotenv.Load(); err != nil {
 			log.Fatalln("Error loading .env file")
 		}
+		url = BASE_URL
+	} else {
+		url = WEB_URL
 	}
 
 	port := os.Getenv("PORT")
@@ -26,7 +34,8 @@ func main() {
 	addr := ":" + port
 
 	contract := blockchain.NewContract(blockchain.NewClient())
-	mux := api.Route(contract)
+
+	mux := api.Route(contract, url)
 
 	server := &http.Server{Addr: addr, Handler: mux, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
 

@@ -7,10 +7,10 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 )
 
-func Route(contract *blockchain.Contract) *http.ServeMux {
+func Route(contract *blockchain.Contract, url string) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	handler := NewContractHandler(contract)
+	handler := NewContractHandler(contract, url)
 
 	mux.Handle("POST /create-invoice", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
 	mux.Handle("POST /release", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.ReleaseEscrow)))
