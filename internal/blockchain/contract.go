@@ -74,7 +74,7 @@ func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProces
 			return nil, err
 		}
 
-		invoiceKey := receipt.Logs[2].Topics[1]
+		invoiceKey := receipt.Logs[len(param)].Topics[1]
 
 		return &invoiceKey, nil
 	}
