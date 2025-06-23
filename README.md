@@ -1,6 +1,6 @@
 # Sapphire Contract API – REST Endpoints
 
-This API exposes selected smart contract functions through HTTP endpoints for invoice creation, escrow resolution, and invoice data retrieval. It interacts with the Sapphire DAO's blockchain contracts on the Polygon Amoy testnet.
+This API exposes smart contract functions through HTTP endpoints for invoice creation, escrow management, and invoice data retrieval. It interacts with the Sapphire DAO's blockchain contracts on the Polygon Amoy testnet using the `AdvancedPaymentProcessor` contract at address `0x57BFD7c3D1d14b82AB7Ad135B2E56e330F65D27f`.
 
 **Base URL**: `https://contract-api-production.up.railway.app/`
 
@@ -15,18 +15,18 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 ### Endpoint: `/create-invoice`
 
 - **Method**: POST
-- **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract.
+- **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract's `createSingleInvoice` or `createMetaInvoice` functions.
 - **Request Body**:
   ```json
   [
     {
-      "orderId": "number",
-      "Seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-      "Buyer": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
-      "InvoiceExpiryDuration": 864000,
-      "TimeBeforeCancelation": 864000,
-      "ReleaseWindow": 864000,
-      "Price": "8680000000"
+      "orderId": "string",
+      "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+      "buyer": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+      "invoiceExpiryDuration": 864000,
+      "timeBeforeCancelation": 864000,
+      "releaseWindow": 864000,
+      "price": "8680000000"
     }
   ]
   ```
@@ -35,26 +35,27 @@ This API exposes selected smart contract functions through HTTP endpoints for in
 
 | Field                   | Type    | Required | Description                                                                    |
 | ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
-| `OrderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "number")                         |
-| `Seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
-| `Buyer`                 | string  | ✅       | Ethereum address of the buyer (e.g., `0xdef456...`)                            |
-| `InvoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `3600` for 1 hour)                   |
-| `TimeBeforeCancelation` | integer | ✅       | Time window (in seconds) before the buyer can cancel the invoice               |
-| `ReleaseWindow`         | integer | ✅       | Time window (in seconds) the seller has to release funds after payment         |
-| `Price`                 | string  | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00) |
+| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "string")                        |
+| `seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
+| `buyer`                 | string  | ✅       | Ethereum address of the buyer (e.g., `0xdef456...`)                            |
+| `invoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `864000` for 10 days)                |
+| `timeBeforeCancelation` | integer | ✅       | Time window (in seconds) before the buyer can cancel the invoice               |
+| `releaseWindow`         | integer | ✅       | Time window (in seconds) the seller has to release funds after payment         |
+| `price`                 | string  | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00) |
 
 **Notes**:
 
-- `Price` is specified in USD with 8 decimal places (e.g., `100000000` = $1.00, `2500000000` = $25.00).
+- `price` is specified in USD with 8 decimal places (e.g., `100000000` = $1.00, `2500000000` = $25.00).
 - The price is converted to the payment token amount using on-chain oracle pricing.
-- Multiple invoices can be created in a single request by including multiple objects in the array.
+- A single invoice uses `createSingleInvoice`; multiple invoices in the array use `createMetaInvoice` with the first `buyer` address.
+- The endpoint returns a checkout URL with a token generated from the invoice key (derived from transaction logs).
 
 **Response**:
 
 - **Success (200)**:
   ```json
   {
-    "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=<token>"
+    "url": "https://contract-api-production.up.railway.app/<token>"
   }
   ```
   - `url`: A checkout URL with a generated token for the created invoice(s).
@@ -64,14 +65,14 @@ This API exposes selected smart contract functions through HTTP endpoints for in
     "error": "invalid request body"
   }
   ```
-  - Returned if the request body is malformed.
+  - Returned if the request body is malformed or empty.
 - **Error (400)**:
   ```json
   {
     "error": "Error sending transaction: <reason>"
   }
   ```
-  - Returned if the blockchain transaction fails.
+  - Returned if the blockchain transaction fails (e.g., invalid parameters or insufficient gas).
 - **Error (500)**:
   ```json
   {
@@ -87,12 +88,13 @@ curl -X POST https://contract-api-production.up.railway.app/create-invoice \
 -H "Content-Type: application/json" \
 -d '[
   {
-    "Seller": "0xabc123...",
-    "Buyer": "0xdef456...",
-    "InvoiceExpiryDuration": 3600,
-    "TimeBeforeCancelation": 1800,
-    "ReleaseWindow": 900,
-    "Price": "100000000"
+    "orderId": "inv001",
+    "seller": "0xabc123...",
+    "buyer": "0xdef456...",
+    "invoiceExpiryDuration": 864000,
+    "timeBeforeCancelation": 864000,
+    "releaseWindow": 864000,
+    "price": "100000000"
   }
 ]'
 ```
@@ -102,7 +104,7 @@ curl -X POST https://contract-api-production.up.railway.app/create-invoice \
 ### Endpoint: `/release`
 
 - **Method**: POST
-- **Description**: Releases escrow funds or resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract.
+- **Description**: Releases escrow funds or resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `releasePayment` or `handleDispute` functions.
 - **Request Body**:
   ```json
   {
@@ -114,20 +116,26 @@ curl -X POST https://contract-api-production.up.railway.app/create-invoice \
 
 #### Field Details
 
-| Field          | Type    | Required                                    | Description                                                                |
-| -------------- | ------- | ------------------------------------------- | -------------------------------------------------------------------------- |
-| `orderId`      | string  | ✅                                          | 32-byte hex string representing the invoice/order ID (e.g., `0xabc123...`) |
-| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)        |
-| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `6500` = 65%)    |
+| Field          | Type    | Required                                    | Description                                                                                          |
+| -------------- | ------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `orderId`      | string  | ✅                                          | Invoice/order ID; either a 32-byte hex string (e.g., `0xabc123...`) or a string hashed via Keccak256 |
+| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)                                  |
+| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%)                              |
 
 #### MarketplaceAction Enum (`resolution`)
 
-| Value | Name           | Description                          |
-| ----- | -------------- | ------------------------------------ |
-| `0`   | Pending        | Default state, no action taken       |
-| `1`   | Release        | Release funds to the seller          |
-| `2`   | DismissDispute | Dismiss an active dispute            |
-| `3`   | SettleDispute  | Resolve a dispute by splitting funds |
+| Value | Name           | Description                          | Contract Function                       |
+| ----- | -------------- | ------------------------------------ | --------------------------------------- |
+| `0`   | Pending        | Default state, no action taken       | N/A                                     |
+| `1`   | Release        | Release funds to the seller          | `releasePayment`                        |
+| `2`   | DismissDispute | Dismiss an active dispute            | `handleDispute` with `DISPUTEDISMISSED` |
+| `3`   | SettleDispute  | Resolve a dispute by splitting funds | `handleDispute` with `DISPUTESETTLED`   |
+
+**Notes**:
+
+- If `orderId` is a 66-character hex string starting with `0x`, it is used directly; otherwise, it is hashed using Keccak256.
+- `sellersShare` is required only for `SettleDispute` and defaults to `0` if not provided.
+- The transaction hash is returned with a Polygon Amoy explorer URL prefix (`https://amoy.polygonscan.com/tx/`).
 
 **Response**:
 
@@ -135,11 +143,11 @@ curl -X POST https://contract-api-production.up.railway.app/create-invoice \
   ```json
   {
     "status": "success",
-    "hash": "0x123456..."
+    "hash": "https://amoy.polygonscan.com/tx/0x123456..."
   }
   ```
   - `status`: Indicates the transaction was successful.
-  - `hash`: Transaction hash of the escrow release or dispute resolution.
+  - `hash`: Transaction hash with the Polygon Amoy explorer URL.
 - **Error (400)**:
   ```json
   {
@@ -153,7 +161,14 @@ curl -X POST https://contract-api-production.up.railway.app/create-invoice \
     "error": "Error sending transaction: <reason>"
   }
   ```
-  - Returned if the blockchain transaction fails.
+  - Returned if the blockchain transaction fails (e.g., invalid `orderId` or unsupported action).
+- **Error (500)**:
+  ```json
+  {
+    "error": "failed to generate order ID hash"
+  }
+  ```
+  - Returned if Keccak256 hashing fails.
 
 **Example**:
 
@@ -161,9 +176,8 @@ curl -X POST https://contract-api-production.up.railway.app/create-invoice \
 curl -X POST https://contract-api-production.up.railway.app/release \
 -H "Content-Type: application/json" \
 -d '{
-  "orderId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "resolution": 1,
-  "sellersShare": "9000"
+  "orderId": "inv001",
+  "resolution": 1
 }'
 ```
 
@@ -172,15 +186,18 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 ### Endpoint: `/invoice-data`
 
 - **Method**: GET
-- **Description**: Retrieves invoice data for a given wallet address or invoice ID from The Graph.
+- **Description**: Retrieves invoice data for a given `orderId` from The Graph, with the `orderId` hashed via Keccak256.
 
 #### Query Parameters
 
-| Name      | Type    | Required | Description                                              |
-| --------- | ------- | -------- | -------------------------------------------------------- |
-| `orderId` | string  | ✅       | orderId ID to fetch associated invoices                  |
-| `first`   | integer | ❌       | Number of invoices to fetch (default: `10`)              |
-| `skip`    | integer | ❌       | Number of invoices to skip for pagination (default: `0`) |
+| Name      | Type   | Required | Description                                                  |
+| --------- | ------ | -------- | ------------------------------------------------------------ |
+| `orderId` | string | ✅       | Order ID to fetch associated invoices (hashed via Keccak256) |
+
+**Notes**:
+
+- The `orderId` is hashed using Keccak256 before querying The Graph.
+- Pagination parameters (`first`, `skip`) are not supported in this implementation.
 
 **Response**:
 
@@ -199,7 +216,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
     ]
   }
   ```
-  - Returns an array of invoices associated with the provided `orderId`.
+  - Returns an array of invoices associated with the hashed `orderId`.
 - **Error (400)**:
   ```json
   {
@@ -207,6 +224,13 @@ curl -X POST https://contract-api-production.up.railway.app/release \
   }
   ```
   - Returned if the `orderId` query parameter is missing.
+- **Error (500)**:
+  ```json
+  {
+    "error": "failed to generate order ID hash"
+  }
+  ```
+  - Returned if Keccak256 hashing fails.
 - **Error (500)**:
   ```json
   {
@@ -218,25 +242,25 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 **Example**:
 
 ```bash
-curl "https://contract-api-production.up.railway.app/invoice-data?orderId=0xabc123...&first=5&skip=0"
+curl "https://contract-api-production.up.railway.app/invoice-data?orderId=inv001"
 ```
 
 ---
 
 ## Notes
 
-- All endpoints are protected by an `AccessControlMiddleWare` for authentication/authorization (implementation details not provided).
-- The `/create-invoice` endpoint generates a checkout URL with a token for the frontend to process payments.
-- The `/release` endpoint supports multiple actions (`Release`, `DismissDispute`, `SettleDispute`) based on the `resolution` value.
-- The `/invoice-data` endpoint supports pagination via `first` and `skip` parameters, defaulting to 10 invoices with no offset.
+- All endpoints are routed through a multiplexer (`http.ServeMux`) defined in the `Route` function.
+- The `/create-invoice` and `/release` endpoints are protected by `AccessControlMiddleWare` for authentication/authorization.
+- The `/create-invoice` endpoint generates a checkout URL with a token derived from the invoice key in the transaction logs.
+- The `/release` endpoint supports `Release`, `DismissDispute`, and `SettleDispute` actions, with appropriate contract function calls (`releasePayment` or `handleDispute`).
+- The `/invoice-data` endpoint queries The Graph using a Keccak256-hashed `orderId`.
 - Prices are in USD with 8 decimal places and converted to token amounts on-chain using an oracle.
-- All blockchain interactions occur on the Polygon Amoy testnet.
+- All blockchain interactions occur on the Polygon Amoy testnet, with transactions linked to `https://amoy.polygonscan.com/tx/`.
+- The `AdvancedPaymentProcessor` contract is deployed at `0x57BFD7c3D1d14b82AB7Ad135B2E56e330F65D27f`.
 
 ---
 
 ## Error Handling
 
-- **400 Bad Request**: Invalid request body or missing required parameters.
-- **500 Internal Server Error**: Failures in blockchain transactions, token generation, or GraphQL queries.
-
----
+- **400 Bad Request**: Invalid request body, missing required parameters, or blockchain transaction failures.
+- **500 Internal Server Error**: Failures in token generation, Keccak256 hashing, or GraphQL queries.
