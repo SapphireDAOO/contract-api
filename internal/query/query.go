@@ -66,7 +66,7 @@ const invoiceQuery = `
         id
       }
       metaInvoice {
-        id
+        invoiceId
       }
     }
   }

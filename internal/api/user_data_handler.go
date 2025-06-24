@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 
@@ -20,21 +19,27 @@ func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
 
 	id := pathParts[1]
 
-	log.Println("ID", id)
-
 	if id == "" {
 		http.Error(w, "Missing orderId parameter", http.StatusBadRequest)
 		return
 	}
 
-	orderId, err := utils.Keccak256(id)
+	var (
+		data *query.SmartInvoice
+		err  error
+	)
 
-	if err != nil {
-		http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
-		return
+	data, err = query.GetInvoiceData(id)
+
+	if data.Buyer.ID == "" {
+		orderId, err := utils.Keccak256(id)
+
+		if err != nil {
+			http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
+			return
+		}
+		data, err = query.GetInvoiceData(orderId.Hex())
 	}
-
-	data, err := query.GetInvoiceData(orderId.Hex())
 
 	if err != nil {
 		http.Error(w, "failed to fetch invoice data"+err.Error(), http.StatusInternalServerError)

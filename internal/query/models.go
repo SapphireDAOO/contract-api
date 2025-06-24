@@ -46,12 +46,14 @@ func (s SmartInvoice) MarshalJSON() ([]byte, error) {
 	type Alias SmartInvoice
 	return json.Marshal(&struct {
 		*Alias
-		Buyer  string `json:"buyer"`
-		Seller string `json:"seller"`
+		Buyer       string `json:"buyer"`
+		Seller      string `json:"seller"`
+		MetaInvoice string `json:"metaInvoice"`
 	}{
-		Alias:  (*Alias)(&s),
-		Buyer:  s.Buyer.ID,
-		Seller: s.Seller.ID,
+		Alias:       (*Alias)(&s),
+		Buyer:       s.Buyer.ID,
+		Seller:      s.Seller.ID,
+		MetaInvoice: s.MetaInvoice.InvoiceID,
 	})
 
 }
