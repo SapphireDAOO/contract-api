@@ -2,14 +2,25 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/query"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
 func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("orderId")
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+
+	if len(pathParts) != 2 || pathParts[0] != "invoices" || pathParts[1] == "" {
+		http.Error(w, "Invalid or missing invoice ID", http.StatusBadRequest)
+		return
+	}
+
+	id := pathParts[1]
+
+	log.Println("ID", id)
 
 	if id == "" {
 		http.Error(w, "Missing orderId parameter", http.StatusBadRequest)

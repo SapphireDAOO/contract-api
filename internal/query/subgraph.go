@@ -87,6 +87,8 @@ func handleRequest(payload map[string]any) ([]byte, error) {
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
+
 	res, err := client.Do(req)
 
 	if err != nil {

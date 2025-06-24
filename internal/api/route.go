@@ -12,9 +12,9 @@ func Route(contract *blockchain.Contract, url string) *http.ServeMux {
 
 	handler := NewContractHandler(contract, url)
 
-	mux.Handle("POST /create-invoice", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
+	mux.Handle("POST /create", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
 	mux.Handle("POST /release", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.ReleaseEscrow)))
-	mux.Handle("GET /invoice-data", http.HandlerFunc(GetInvoiceData))
+	mux.Handle("GET /invoices/{id}", http.HandlerFunc(GetInvoiceData))
 
 	return mux
 }

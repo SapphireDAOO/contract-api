@@ -6,13 +6,13 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 
 ## Endpoints
 
-- [POST `/create-invoice`](#endpoint-create-invoice)
+- [POST `/create`](#endpoint-create)
 - [POST `/release`](#endpoint-release)
-- [GET `/invoice-data`](#endpoint-invoice-data)
+- [GET `/invoices`](#endpoint-invoices)
 
 ---
 
-### Endpoint: `/create-invoice`
+### Endpoint: `/create`
 
 - **Method**: POST
 - **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract's `createSingleInvoice` or `createMetaInvoice` functions.
@@ -84,7 +84,7 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/create-invoice \
+curl -X POST https://contract-api-production.up.railway.app/create \
 -H "Content-Type: application/json" \
 -d '[
   {
@@ -183,7 +183,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 ---
 
-### Endpoint: `/invoice-data`
+### Endpoint: `/invoices`
 
 - **Method**: GET
 - **Description**: Retrieves invoice data for a given `orderId` from The Graph, with the `orderId` hashed via Keccak256.
@@ -242,7 +242,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 **Example**:
 
 ```bash
-curl "https://contract-api-production.up.railway.app/invoice-data?orderId=inv001"
+curl "https://contract-api-production.up.railway.app/invoices?orderId=inv001"
 ```
 
 ---
@@ -250,10 +250,10 @@ curl "https://contract-api-production.up.railway.app/invoice-data?orderId=inv001
 ## Notes
 
 - All endpoints are routed through a multiplexer (`http.ServeMux`) defined in the `Route` function.
-- The `/create-invoice` and `/release` endpoints are protected by `AccessControlMiddleWare` for authentication/authorization.
-- The `/create-invoice` endpoint generates a checkout URL with a token derived from the invoice key in the transaction logs.
+- The `/create` and `/release` endpoints are protected by `AccessControlMiddleWare` for authentication/authorization.
+- The `/create` endpoint generates a checkout URL with a token derived from the invoice key in the transaction logs.
 - The `/release` endpoint supports `Release`, `DismissDispute`, and `SettleDispute` actions, with appropriate contract function calls (`releasePayment` or `handleDispute`).
-- The `/invoice-data` endpoint queries The Graph using a Keccak256-hashed `orderId`.
+- The `/invoices` endpoint queries The Graph using a Keccak256-hashed `orderId`.
 - Prices are in USD with 8 decimal places and converted to token amounts on-chain using an oracle.
 - All blockchain interactions occur on the Polygon Amoy testnet, with transactions linked to `https://amoy.polygonscan.com/tx/`.
 - The `AdvancedPaymentProcessor` contract is deployed at `0x57BFD7c3D1d14b82AB7Ad135B2E56e330F65D27f`.
