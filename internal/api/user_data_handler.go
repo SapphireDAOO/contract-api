@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -13,14 +14,14 @@ func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 
 	if len(pathParts) != 2 || pathParts[0] != "invoices" || pathParts[1] == "" {
-		http.Error(w, "Invalid or missing invoice ID", http.StatusBadRequest)
+		utils.Error(w, http.StatusBadRequest, errors.New("invalid URL path structure"), "Invalid or missing invoice ID")
 		return
 	}
 
 	id := pathParts[1]
 
 	if id == "" {
-		http.Error(w, "Missing orderId parameter", http.StatusBadRequest)
+		utils.Error(w, http.StatusBadRequest, errors.New("empty invoice id in path"), "Missing orderId parameter")
 		return
 	}
 
@@ -35,14 +36,14 @@ func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
 		orderId, err := utils.Keccak256(id)
 
 		if err != nil {
-			http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
+			utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
 			return
 		}
 		data, err = query.GetInvoiceData(orderId.Hex())
 	}
 
 	if err != nil {
-		http.Error(w, "failed to fetch invoice data"+err.Error(), http.StatusInternalServerError)
+		utils.Error(w, http.StatusInternalServerError, err, "failed to fetch invoice data")
 		return
 	}
 

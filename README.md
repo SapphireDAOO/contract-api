@@ -35,7 +35,7 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 
 | Field                   | Type    | Required | Description                                                                    |
 | ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
-| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "string")                         |
+| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "string")                        |
 | `seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
 | `buyer`                 | string  | ✅       | Ethereum address of the buyer (e.g., `0xdef456...`)                            |
 | `invoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `864000` for 10 days)                |
@@ -44,12 +44,14 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 | `price`                 | string  | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00) |
 
 **Notes**:
+
 - `price` is specified in USD with 8 decimal places (e.g., `100000000` = $1.00, `2500000000` = $25.00).
 - The price is converted to the payment token amount using on-chain oracle pricing.
 - A single invoice uses `createSingleInvoice`; multiple invoices in the array use `createMetaInvoice` with the first `buyer` address.
 - The endpoint returns a checkout URL with a token generated from the invoice key (derived from transaction logs).
 
 **Response**:
+
 - **Success (200)**:
   ```json
   {
@@ -80,6 +82,7 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
   - Returned if token generation fails.
 
 **Example**:
+
 ```bash
 curl -X POST https://contract-api-production.up.railway.app/create \
 -H "Content-Type: application/json" \
@@ -113,11 +116,11 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 #### Field Details
 
-| Field          | Type    | Required                                    | Description                                                                                          |
-| -------------- | ------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `orderId`      | string  | ✅                                          | Invoice/order ID; either a 32-byte hex string (e.g., `0xabc123...`) or a string hashed via Keccak256 |
-| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)                                  |
-| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%)                              |
+| Field          | Type    | Required                                    | Description                                                             |
+| -------------- | ------- | ------------------------------------------- | ----------------------------------------------------------------------- |
+| `orderId`      | string  | ✅                                          | Client-side identifier for the invoice (e.g., "string")                 |
+| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)     |
+| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%) |
 
 #### MarketplaceAction Enum (`resolution`)
 
@@ -129,11 +132,13 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 | `3`   | SettleDispute  | Resolve a dispute by splitting funds | `handleDispute` with `DISPUTESETTLED`   |
 
 **Notes**:
+
 - If `orderId` is a 66-character hex string starting with `0x`, it is used directly; otherwise, it is hashed using Keccak256.
 - `sellersShare` is required only for `SettleDispute` and defaults to `0` if not provided.
 - The transaction hash is returned with a Polygon Amoy explorer URL prefix (`https://amoy.polygonscan.com/tx/`).
 
 **Response**:
+
 - **Success (200)**:
   ```json
   {
@@ -166,6 +171,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
   - Returned if Keccak256 hashing fails.
 
 **Example**:
+
 ```bash
 curl -X POST https://contract-api-production.up.railway.app/release \
 -H "Content-Type: application/json" \
@@ -184,15 +190,17 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 #### Path Parameters
 
-| Name | Type   | Required | Description                                                  |
-| ---- | ------ | -------- | ------------------------------------------------------------ |
-| `id` | string | ✅       | Order ID to fetch associated invoices (hashed via Keccak256) |
+| Name | Type   | Required | Description                           |
+| ---- | ------ | -------- | ------------------------------------- |
+| `id` | string | ✅       | Order ID to fetch associated invoices |
 
 **Notes**:
+
 - The `id` is extracted from the URL path (`/invoices/{id}`) and hashed using Keccak256 before querying The Graph.
 - Pagination parameters (`first`, `skip`) are not supported in this implementation.
 
 **Response**:
+
 - **Success (200)**:
   ```json
   {
@@ -239,6 +247,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
   - Returned if the query to The Graph fails.
 
 **Example**:
+
 ```bash
 curl "https://contract-api-production.up.railway.app/invoices/inv001"
 ```

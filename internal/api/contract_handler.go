@@ -25,21 +25,22 @@ func NewContractHandler(contract *blockchain.Contract, baseUrl string) *Contract
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	var invoice []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
+
 	if err := json.NewDecoder(r.Body).Decode(&invoice); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		utils.Error(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	invoiceKey, err := h.Contract.CreateInvoice(invoice)
 
 	if err != nil {
-		http.Error(w, "Error sending transaction: "+err.Error(), http.StatusBadRequest)
+		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
 	}
 
 	token, err := utils.GenerateToken(invoiceKey)
 	if err != nil {
-		http.Error(w, "failed to generate token", http.StatusInternalServerError)
+		utils.Error(w, http.StatusInternalServerError, err, "failed to generate token")
 		return
 	}
 
@@ -56,7 +57,7 @@ func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.Error(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
@@ -67,7 +68,7 @@ func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) 
 	} else {
 		hashed, err := utils.Keccak256(input.OrderId)
 		if err != nil {
-			http.Error(w, "failed to generate order ID hash", http.StatusInternalServerError)
+			utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
 			return
 		}
 		id = *hashed
@@ -75,7 +76,7 @@ func (h *ContractHandler) ReleaseEscrow(w http.ResponseWriter, r *http.Request) 
 
 	txHash, err := h.Contract.ReleaseEscrow(id, input.Resolution, input.SellersShare)
 	if err != nil {
-		http.Error(w, "Error sending transaction: "+err.Error(), http.StatusBadRequest)
+		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
 	}
 
