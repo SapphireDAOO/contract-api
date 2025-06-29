@@ -62,30 +62,34 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 - **Error (400)**:
   ```json
   {
-    "error": "invalid request body"
+    "error": "invalid request body",
+    "reason": "<decoding error message>"
   }
   ```
-  - Returned if the request body is malformed or empty.
-- **Error (400)**:
-  ```json
-  {
-    "error": "Error sending transaction: <reason>"
-  }
-  ```
-  - Returned if the blockchain transaction fails (e.g., invalid parameters or insufficient gas).
+  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or incorrect field types).
 - **Error (500)**:
   ```json
   {
-    "error": "failed to generate token"
+    "error": "Error sending transaction",
+    "reason": "<blockchain error message>"
   }
   ```
-  - Returned if token generation fails.
+  - Returned if the blockchain transaction for creating an invoice fails (e.g., invalid parameters, insufficient gas, or contract reversion).
+- **Error (500)**:
+  ```json
+  {
+    "error": "failed to generate token",
+    "reason": "<token generation error message>"
+  }
+  ```
+  - Returned if token generation for the checkout URL fails.
 
 **Example**:
 
 ```bash
 curl -X POST https://contract-api-production.up.railway.app/create \
 -H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '[
   {
     "orderId": "inv001",
@@ -151,30 +155,34 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 - **Error (400)**:
   ```json
   {
-    "error": "Invalid request body"
+    "error": "invalid request body",
+    "reason": "<decoding error message>"
   }
   ```
-  - Returned if the request body is malformed.
-- **Error (400)**:
-  ```json
-  {
-    "error": "Error sending transaction: <reason>"
-  }
-  ```
-  - Returned if the blockchain transaction fails (e.g., invalid `orderId` or unsupported action).
+  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON, missing `orderId` or `resolution`, or invalid `sellersShare`).
 - **Error (500)**:
   ```json
   {
-    "error": "failed to generate order ID hash"
+    "error": "failed to generate order ID hash",
+    "reason": "<hashing error message>"
   }
   ```
-  - Returned if Keccak256 hashing fails.
+  - Returned if the Keccak256 hashing of the `orderId` fails.
+- **Error (500)**:
+  ```json
+  {
+    "error": "Error sending transaction",
+    "reason": "<blockchain error message>"
+  }
+  ```
+  - Returned if the blockchain transaction for releasing escrow fails (e.g., invalid `orderId`, unsupported `resolution`, or contract reversion).
 
 **Example**:
 
 ```bash
 curl -X POST https://contract-api-production.up.railway.app/release \
 -H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
   "orderId": "inv001",
   "resolution": 1
@@ -220,31 +228,35 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 - **Error (400)**:
   ```json
   {
-    "error": "Invalid or missing invoice ID"
+    "error": "Invalid or missing invoice ID",
+    "reason": "<specific error message>"
   }
   ```
   - Returned if the `id` path parameter is missing or the URL is malformed.
 - **Error (400)**:
   ```json
   {
-    "error": "Missing orderId parameter"
+    "error": "Missing orderId parameter",
+    "reason": "<specific error message>"
   }
   ```
   - Returned if the `id` is empty.
 - **Error (500)**:
   ```json
   {
-    "error": "failed to generate order ID hash"
+    "error": "failed to generate order ID hash",
+    "reason": "<hashing error message>"
   }
   ```
-  - Returned if Keccak256 hashing fails.
+  - Returned if the Keccak256 hashing of the `id` fails.
 - **Error (500)**:
   ```json
   {
-    "error": "failed to fetch invoice data: <reason>"
+    "error": "failed to fetch invoice data",
+    "reason": "<GraphQL query error message>"
   }
   ```
-  - Returned if the query to The Graph fails.
+  - Returned if the query to The Graph fails (e.g., network issues or invalid response).
 
 **Example**:
 
@@ -262,12 +274,4 @@ curl "https://contract-api-production.up.railway.app/invoices/inv001"
 - The `/release` endpoint supports `Release`, `DismissDispute`, and `SettleDispute` actions, with appropriate contract function calls (`releasePayment` or `handleDispute`).
 - The `/invoices/{id}` endpoint queries The Graph using a Keccak256-hashed `orderId` extracted from the URL path.
 - Prices are in USD with 8 decimal places and converted to token amounts on-chain using an oracle.
-- All blockchain interactions occur on the Polygon Amoy testnet, with transactions linked to `https://amoy.polygonscan.com/tx/`.
-- The `AdvancedPaymentProcessor` contract is deployed at `0x57BFD7c3D1d14b82AB7Ad135B2E56e330F65D27f`.
-
----
-
-## Error Handling
-
-- **400 Bad Request**: Invalid request body, missing or malformed parameters, or blockchain transaction failures.
-- **500 Internal Server Error**: Failures in token generation, Keccak256 hashing, or GraphQL queries.
+- All blockchain interactions occur on the Polygon Amoy testnet, with transactions linked
