@@ -3,6 +3,8 @@ ABI_FILE = $(ABI_FOLDER)/AdvancedPaymentProcessor.json
 GO_OUT = $(ABI_FOLDER)/AdvancedPaymentProcessor.go
 GO_PKG = paymentprocessor
 
+clean:
+	@rm -r internal/blockchain/contracts/AdvancedPaymentProcessor/AdvancedPaymentProcessor.go
 
 gen:
 	@mkdir -p $(ABI_FOLDER)

@@ -4,7 +4,7 @@ type MarketplaceAction int
 
 const (
 	Pending MarketplaceAction = iota
-	Release
+	ResolveDispute
 	DismissDispute
 	SettleDispute
 )

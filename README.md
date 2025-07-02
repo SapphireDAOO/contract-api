@@ -1,6 +1,6 @@
 # Sapphire Contract API – REST Endpoints
 
-This API exposes smart contract functions through HTTP endpoints for invoice creation, escrow management, and invoice data retrieval. It interacts with the Sapphire DAO's blockchain contracts on the Polygon Amoy testnet using the `AdvancedPaymentProcessor` contract at address `0x57BFD7c3D1d14b82AB7Ad135B2E56e330F65D27f`.
+This API exposes smart contract functions through HTTP endpoints for invoice creation, escrow management, dispute resolution, cancellation, refund, and invoice data retrieval. It interacts with the Sapphire DAO's `AdvancedPaymentProcessor` contract on the Ethereum Sepolia testnet at address `0x953ff222255730544c8e118a2ccb5dfb856bfbad`.
 
 **Base URL**: `https://contract-api-production.up.railway.app/`
 
@@ -8,6 +8,9 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 
 - [POST `/create`](#endpoint-create)
 - [POST `/release`](#endpoint-release)
+- [POST `/handleDispute`](#endpoint-handledispute)
+- [POST `/cancel`](#endpoint-cancel)
+- [POST `/refund`](#endpoint-refund)
 - [GET `/invoices/{id}`](#endpoint-invoicesid)
 
 ---
@@ -20,7 +23,7 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
   ```json
   [
     {
-      "orderId": "string",
+      "orderId": "inv001",
       "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
       "buyer": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
       "invoiceExpiryDuration": 864000,
@@ -35,9 +38,8 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 
 | Field                   | Type    | Required | Description                                                                    |
 | ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
-| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "string")                        |
+| `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001")                        |
 | `seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
-| `buyer`                 | string  | ✅       | Ethereum address of the buyer (e.g., `0xdef456...`)                            |
 | `invoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `864000` for 10 days)                |
 | `timeBeforeCancelation` | integer | ✅       | Time window (in seconds) before the buyer can cancel the invoice               |
 | `releaseWindow`         | integer | ✅       | Time window (in seconds) the seller has to release funds after payment         |
@@ -53,12 +55,38 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 **Response**:
 
 - **Success (200)**:
-  ```json
-  {
-    "url": "https://contract-api-production.up.railway.app/<token>"
-  }
-  ```
+  - For a single invoice:
+    ```json
+    {
+      "status": "success",
+      "url": "https://contract-api-production.up.railway.app/<token>",
+      "response": {
+        "key": "0x123...",
+        "orderId": "0xabc123..."
+      }
+    }
+    ```
+  - For multiple invoices:
+    ```json
+    {
+      "status": "success",
+      "url": "https://contract-api-production.up.railway.app/<token>",
+      "response": {
+        "key": "0x123...",
+        "orders": {
+          "0xdef456...": {
+            "seller": "0xabc123...",
+            "sub_order_ids": {
+              "inv001": "0x789abc..."
+            }
+          }
+        }
+      }
+    }
+    ```
+  - `status`: Indicates the transaction was successful.
   - `url`: A checkout URL with a generated token for the created invoice(s).
+  - `response`: Contains the invoice key and either `orderId` (single invoice) or `orders` (multiple invoices with seller and sub-order IDs).
 - **Error (400)**:
   ```json
   {
@@ -67,14 +95,22 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
   }
   ```
   - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or incorrect field types).
+- **Error (400)**:
+  ```json
+  {
+    "error": "no invoice parameters provided",
+    "reason": "invoice array is empty"
+  }
+  ```
+  - Returned if the invoice array is empty.
 - **Error (500)**:
   ```json
   {
-    "error": "Error sending transaction",
+    "error": "error processing invoice",
     "reason": "<blockchain error message>"
   }
   ```
-  - Returned if the blockchain transaction for creating an invoice fails (e.g., invalid parameters, insufficient gas, or contract reversion).
+  - Returned if the blockchain transaction fails (e.g., invalid parameters, insufficient gas, or contract reversion).
 - **Error (500)**:
   ```json
   {
@@ -108,12 +144,76 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 ### Endpoint: `/release`
 
 - **Method**: POST
-- **Description**: Releases escrow funds or resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `releasePayment` or `handleDispute` functions.
+- **Description**: Releases escrow funds for a specific invoice using the `AdvancedPaymentProcessor` contract's `releasePayment` function.
 - **Request Body**:
   ```json
   {
-    "orderId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-    "resolution": 1,
+    "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  }
+  ```
+
+#### Field Details
+
+| Field | Type   | Required | Description                                                   |
+| ----- | ------ | -------- | ------------------------------------------------------------- |
+| `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
+
+**Notes**:
+
+- The `id` must be a valid 66-character hex string starting with `0x`, representing the invoice ID.
+- The transaction hash is returned with a Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
+
+**Response**:
+
+- **Success (200)**:
+  ```json
+  {
+    "status": "success",
+    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
+  }
+  ```
+  - `status`: Indicates the transaction was successful.
+  - `hash`: Transaction hash with the Ethereum Sepolia explorer URL.
+- **Error (400)**:
+  ```json
+  {
+    "error": "invalid request body",
+    "reason": "<decoding error message>"
+  }
+  ```
+  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or missing `id`).
+- **Error (500)**:
+  ```json
+  {
+    "error": "Error sending transaction",
+    "reason": "<blockchain error message>"
+  }
+  ```
+  - Returned if the blockchain transaction fails (e.g., invalid `id` or contract reversion).
+
+**Example**:
+
+```bash
+curl -X POST https://contract-api-production.up.railway.app/release \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+}'
+```
+
+---
+
+### Endpoint: `/handleDispute`
+
+- **Method**: POST
+- **Description**: Resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `handleDispute` function.
+- **Request Body**:
+  ```json
+  {
+    "orderId": "inv001",
+    "resolution": 2,
+    "resolver": "0x789abc...",
     "sellersShare": "9000"
   }
   ```
@@ -122,8 +222,9 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 | Field          | Type    | Required                                    | Description                                                             |
 | -------------- | ------- | ------------------------------------------- | ----------------------------------------------------------------------- |
-| `orderId`      | string  | ✅                                          | Client-side identifier for the invoice (e.g., "string")                 |
+| `orderId`      | string  | ✅                                          | Invoice ID (hex string starting with `0x` or client-side identifier)    |
 | `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)     |
+| `resolver`     | string  | ❌ Optional                                 | Ethereum address of the resolver (optional)                             |
 | `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%) |
 
 #### MarketplaceAction Enum (`resolution`)
@@ -135,23 +236,17 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 | `2`   | DismissDispute | Dismiss an active dispute            | `handleDispute` with `DISPUTEDISMISSED` |
 | `3`   | SettleDispute  | Resolve a dispute by splitting funds | `handleDispute` with `DISPUTESETTLED`   |
 
-**Notes**:
-
-- If `orderId` is a 66-character hex string starting with `0x`, it is used directly; otherwise, it is hashed using Keccak256.
-- `sellersShare` is required only for `SettleDispute` and defaults to `0` if not provided.
-- The transaction hash is returned with a Polygon Amoy explorer URL prefix (`https://amoy.polygonscan.com/tx/`).
-
 **Response**:
 
 - **Success (200)**:
   ```json
   {
     "status": "success",
-    "hash": "https://amoy.polygonscan.com/tx/0x123456..."
+    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
   - `status`: Indicates the transaction was successful.
-  - `hash`: Transaction hash with the Polygon Amoy explorer URL.
+  - `hash`: Transaction hash with the Ethereum Sepolia explorer URL.
 - **Error (400)**:
   ```json
   {
@@ -159,7 +254,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
     "reason": "<decoding error message>"
   }
   ```
-  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON, missing `orderId` or `resolution`, or invalid `sellersShare`).
+  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON, missing `orderId` or `resolution`).
 - **Error (500)**:
   ```json
   {
@@ -175,93 +270,152 @@ curl -X POST https://contract-api-production.up.railway.app/create \
     "reason": "<blockchain error message>"
   }
   ```
-  - Returned if the blockchain transaction for releasing escrow fails (e.g., invalid `orderId`, unsupported `resolution`, or contract reversion).
+  - Returned if the blockchain transaction fails (e.g., invalid `orderId`, unsupported `resolution`, or contract reversion).
 
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/release \
+curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
   "orderId": "inv001",
-  "resolution": 1
+  "resolution": 2,
+  "resolver": "0x789abc...",
+  "sellersShare": "9000"
 }'
 ```
 
 ---
 
-### Endpoint: `/invoices/{id}`
+### Endpoint: `/cancel`
 
-- **Method**: GET
-- **Description**: Retrieves invoice data for a given `orderId` from The Graph, with the `orderId` hashed via Keccak256.
+- **Method**: POST
+- **Description**: Cancels a specific invoice using the `AdvancedPaymentProcessor` contract's `cancelInvoice` function.
+- **Request Body**:
+  ```json
+  {
+    "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  }
+  ```
 
-#### Path Parameters
+#### Field Details
 
-| Name | Type   | Required | Description                           |
-| ---- | ------ | -------- | ------------------------------------- |
-| `id` | string | ✅       | Order ID to fetch associated invoices |
+| Field | Type   | Required | Description                                                   |
+| ----- | ------ | -------- | ------------------------------------------------------------- |
+| `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
 
 **Notes**:
 
-- The `id` is extracted from the URL path (`/invoices/{id}`) and hashed using Keccak256 before querying The Graph.
-- Pagination parameters (`first`, `skip`) are not supported in this implementation.
+- The `id` must be a valid 66-character hex string starting with `0x`, representing the invoice ID.
+- The transaction hash is returned with a Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
 
 **Response**:
 
 - **Success (200)**:
   ```json
   {
-    "invoices": [
-      {
-        "orderId": "0xabc123...",
-        "seller": "0xabc123...",
-        "buyer": "0xdef456...",
-        "createdAt": "2025-06-17T22:32:00Z",
-        "price": "100000000",
-        "status": "Pending"
-      }
-    ]
+    "status": "success",
+    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
-  - Returns an array of invoices associated with the hashed `orderId`.
+  - `status`: Indicates the transaction was successful.
+  - `hash`: Transaction hash with the Ethereum Sepolia explorer URL.
 - **Error (400)**:
   ```json
   {
-    "error": "Invalid or missing invoice ID",
-    "reason": "<specific error message>"
+    "error": "invalid request body",
+    "reason": "<decoding error message>"
   }
   ```
-  - Returned if the `id` path parameter is missing or the URL is malformed.
-- **Error (400)**:
-  ```json
-  {
-    "error": "Missing orderId parameter",
-    "reason": "<specific error message>"
-  }
-  ```
-  - Returned if the `id` is empty.
+  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or missing `id`).
 - **Error (500)**:
   ```json
   {
-    "error": "failed to generate order ID hash",
-    "reason": "<hashing error message>"
+    "error": "Error sending transaction",
+    "reason": "<blockchain error message>"
   }
   ```
-  - Returned if the Keccak256 hashing of the `id` fails.
-- **Error (500)**:
-  ```json
-  {
-    "error": "failed to fetch invoice data",
-    "reason": "<GraphQL query error message>"
-  }
-  ```
-  - Returned if the query to The Graph fails (e.g., network issues or invalid response).
+  - Returned if the blockchain transaction fails (e.g., invalid `id` or contract reversion).
 
 **Example**:
 
 ```bash
-curl "https://contract-api-production.up.railway.app/invoices/inv001"
+curl -X POST https://contract-api-production.up.railway.app/cancel \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+}'
+```
+
+---
+
+### Endpoint: `/refund`
+
+- **Method**: POST
+- **Description**: Claims a refund for an expired invoice using the `AdvancedPaymentProcessor` contract's `claimExpiredInvoiceRefunds` function.
+- **Request Body**:
+  ```json
+  {
+    "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  }
+  ```
+
+#### Field Details
+
+| Field | Type   | Required | Description                                                   |
+| ----- | ------ | -------- | ------------------------------------------------------------- |
+| `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
+
+**Notes**:
+
+- The `id` must be a valid 66-character hex string starting with `0x`, representing the invoice ID.
+- The transaction hash is returned with a Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
+
+**Response**:
+
+- **Success (200)**:
+  ```json
+  {
+    "status": "success",
+    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
+  }
+  ```
+  - `status`: Indicates the transaction was successful.
+  - `hash`: Transaction hash with the Ethereum Sepolia explorer URL.
+- **Error (400)**:
+  ```json
+  {
+    "error": "invalid request body",
+    "reason": "<decoding error message>"
+  }
+  ```
+  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or missing `id`).
+- **Error (500)**:
+  ```json
+  {
+    "error": "Error sending transaction",
+    "reason": "<blockchain error message>"
+  }
+  ```
+  - Returned if the blockchain transaction fails (e.g., invalid `id` or contract reversion).
+
+**Example**:
+
+```bash
+curl -X POST https://contract-api-production.up.railway.app/refund \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+}'
+```
+
+**Example**:
+
+```bash
+curl "https://contract-api-production.up.railway.app/invoices/inv001?seller=0xabc123...&status=Pending"
 ```
 
 ---
@@ -269,9 +423,10 @@ curl "https://contract-api-production.up.railway.app/invoices/inv001"
 ## Notes
 
 - All endpoints are routed through a multiplexer (`http.ServeMux`) defined in the `Route` function.
-- The `/create` and `/release` endpoints are protected by `AccessControlMiddleWare` for authentication/authorization.
+- The `/create`, `/release`, `/handleDispute`, `/cancel`, and `/refund` endpoints are protected by `AccessControlMiddleWare` for authentication/authorization using the `X-API-KEY` header.
 - The `/create` endpoint generates a checkout URL with a token derived from the invoice key in the transaction logs.
-- The `/release` endpoint supports `Release`, `DismissDispute`, and `SettleDispute` actions, with appropriate contract function calls (`releasePayment` or `handleDispute`).
-- The `/invoices/{id}` endpoint queries The Graph using a Keccak256-hashed `orderId` extracted from the URL path.
+- The `/handleDispute` endpoint supports `Release`, `DismissDispute`, and `SettleDispute` actions, with appropriate contract function calls (`releasePayment` or `handleDispute`).
+- The `/invoices/{id}` endpoint queries The Graph using a Keccak256-hashed `orderId` extracted from the URL path, with optional filtering by `seller`, `buyer`, or `status`.
 - Prices are in USD with 8 decimal places and converted to token amounts on-chain using an oracle.
-- All blockchain interactions occur on the Polygon Amoy testnet, with transactions linked
+- All blockchain interactions occur on the Ethereum Sepolia testnet, with transaction hashes linked to `https://sepolia.etherscan.io/tx/`.
+- The `IAdvancedPaymentProcessorInvoiceCreationParam` struct defines the structure for invoice creation parameters, ensuring type safety for `orderId` (string), `seller` and `buyer` (Ethereum addresses), `invoiceExpiryDuration`, `timeBeforeCancelation`, and `releaseWindow` (uint32), and `price` (big.Int).
