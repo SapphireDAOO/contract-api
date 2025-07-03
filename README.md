@@ -1,6 +1,6 @@
 # Sapphire Contract API – REST Endpoints
 
-This API exposes smart contract functions through HTTP endpoints for invoice creation, escrow management, dispute resolution, cancellation, refund, and invoice data retrieval. It interacts with the Sapphire DAO's `AdvancedPaymentProcessor` contract on the Ethereum Sepolia testnet at address `0x953ff222255730544c8e118a2ccb5dfb856bfbad`.
+This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0xb9DD118C880759E62516fa2c88Eb76ba3fd42eae`. It supports invoice creation, escrow management, dispute resolution, cancellation, and refund operations.
 
 **Base URL**: `https://contract-api-production.up.railway.app/`
 
@@ -11,7 +11,6 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 - [POST `/handleDispute`](#endpoint-handledispute)
 - [POST `/cancel`](#endpoint-cancel)
 - [POST `/refund`](#endpoint-refund)
-- [GET `/invoices/{id}`](#endpoint-invoicesid)
 
 ---
 
@@ -25,7 +24,6 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
     {
       "orderId": "inv001",
       "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-      "buyer": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
       "invoiceExpiryDuration": 864000,
       "timeBeforeCancelation": 864000,
       "releaseWindow": 864000,
@@ -37,7 +35,7 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 #### Field Details
 
 | Field                   | Type    | Required | Description                                                                    |
-| ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
+|-------------------------|---------|----------|--------------------------------------------------------------------------------|
 | `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001")                        |
 | `seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
 | `invoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `864000` for 10 days)                |
@@ -48,8 +46,8 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
 **Notes**:
 
 - `price` is specified in USD with 8 decimal places (e.g., `100000000` = $1.00, `2500000000` = $25.00).
-- The price is converted to the payment token amount using on-chain oracle pricing.
-- A single invoice uses `createSingleInvoice`; multiple invoices in the array use `createMetaInvoice` with the first `buyer` address.
+- Prices are converted to payment token amounts using on-chain oracle pricing.
+- A single invoice triggers `createSingleInvoice`; multiple invoices trigger `createMetaInvoice`.
 - The endpoint returns a checkout URL with a token generated from the invoice key (derived from transaction logs).
 
 **Response**:
@@ -58,35 +56,29 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
   - For a single invoice:
     ```json
     {
-      "status": "success",
       "url": "https://contract-api-production.up.railway.app/<token>",
-      "response": {
-        "key": "0x123...",
-        "orderId": "0xabc123..."
-      }
+      "orderId": "inv001",
+      "key": "0x123..."
     }
     ```
   - For multiple invoices:
     ```json
     {
-      "status": "success",
       "url": "https://contract-api-production.up.railway.app/<token>",
-      "response": {
-        "key": "0x123...",
-        "orders": {
-          "0xdef456...": {
-            "seller": "0xabc123...",
-            "sub_order_ids": {
-              "inv001": "0x789abc..."
-            }
+      "key": "0x123...",
+      "seller": {
+        "0xabc123...": {
+          "hashed_order_id": "0xdef456...",
+          "hashed_sub_order_ids": {
+            "inv001": "0x789abc..."
           }
         }
       }
     }
     ```
-  - `status`: Indicates the transaction was successful.
-  - `url`: A checkout URL with a generated token for the created invoice(s).
-  - `response`: Contains the invoice key and either `orderId` (single invoice) or `orders` (multiple invoices with seller and sub-order IDs).
+  - `url`: Checkout URL with a generated token for the invoice(s).
+  - `key`: Invoice key derived from transaction logs.
+  - `orderId` (single invoice) or `seller` (multiple invoices): Contains order details and hashed sub-order IDs.
 - **Error (400)**:
   ```json
   {
@@ -94,7 +86,7 @@ This API exposes smart contract functions through HTTP endpoints for invoice cre
     "reason": "<decoding error message>"
   }
   ```
-  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or incorrect field types).
+  - Returned for malformed JSON or incorrect field types.
 - **Error (400)**:
   ```json
   {
@@ -130,7 +122,6 @@ curl -X POST https://contract-api-production.up.railway.app/create \
   {
     "orderId": "inv001",
     "seller": "0xabc123...",
-    "buyer": "0xdef456...",
     "invoiceExpiryDuration": 864000,
     "timeBeforeCancelation": 864000,
     "releaseWindow": 864000,
@@ -155,13 +146,13 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 #### Field Details
 
 | Field | Type   | Required | Description                                                   |
-| ----- | ------ | -------- | ------------------------------------------------------------- |
+|-------|--------|----------|---------------------------------------------------------------|
 | `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
 
 **Notes**:
 
-- The `id` must be a valid 66-character hex string starting with `0x`, representing the invoice ID.
-- The transaction hash is returned with a Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
+- The `id` must be a valid 66-character hex string starting with `0x`.
+- The transaction hash is returned with an Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
 
 **Response**:
 
@@ -181,7 +172,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
     "reason": "<decoding error message>"
   }
   ```
-  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or missing `id`).
+  - Returned for malformed JSON or missing `id`.
 - **Error (500)**:
   ```json
   {
@@ -207,7 +198,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 ### Endpoint: `/handleDispute`
 
 - **Method**: POST
-- **Description**: Resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `handleDispute` function.
+- **Description**: Resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `resolveDispute` or `handleDispute` functions.
 - **Request Body**:
   ```json
   {
@@ -221,20 +212,21 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 #### Field Details
 
 | Field          | Type    | Required                                    | Description                                                             |
-| -------------- | ------- | ------------------------------------------- | ----------------------------------------------------------------------- |
+|----------------|---------|---------------------------------------------|-------------------------------------------------------------------------|
 | `orderId`      | string  | ✅                                          | Invoice ID (hex string starting with `0x` or client-side identifier)    |
 | `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)     |
-| `resolver`     | string  | ❌ Optional                                 | Ethereum address of the resolver (optional)                             |
+| `resolver`     | string  | ❌ Optional                                 | Ethereum address of the resolver (required for `ResolveDispute`)        |
 | `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%) |
 
 #### MarketplaceAction Enum (`resolution`)
 
 | Value | Name           | Description                          | Contract Function                       |
-| ----- | -------------- | ------------------------------------ | --------------------------------------- |
+|-------|----------------|--------------------------------------|-----------------------------------------|
 | `0`   | Pending        | Default state, no action taken       | N/A                                     |
 | `1`   | Release        | Release funds to the seller          | `releasePayment`                        |
-| `2`   | DismissDispute | Dismiss an active dispute            | `handleDispute` with `DISPUTEDISMISSED` |
-| `3`   | SettleDispute  | Resolve a dispute by splitting funds | `handleDispute` with `DISPUTESETTLED`   |
+| `2`   | ResolveDispute | Resolve dispute with a resolver      | `resolveDispute`                        |
+| `3`   | SettleDispute  | Resolve dispute by splitting funds   | `handleDispute` with `DISPUTESETTLED`   |
+| `4`   | DismissDispute | Dismiss an active dispute            | `handleDispute` with `DISPUTEDISMISSED` |
 
 **Response**:
 
@@ -254,7 +246,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
     "reason": "<decoding error message>"
   }
   ```
-  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON, missing `orderId` or `resolution`).
+  - Returned for malformed JSON, missing `orderId`, or invalid `resolution`.
 - **Error (500)**:
   ```json
   {
@@ -262,7 +254,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
     "reason": "<hashing error message>"
   }
   ```
-  - Returned if the Keccak256 hashing of the `orderId` fails.
+  - Returned if Keccak256 hashing of `orderId` fails.
 - **Error (500)**:
   ```json
   {
@@ -302,13 +294,13 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 #### Field Details
 
 | Field | Type   | Required | Description                                                   |
-| ----- | ------ | -------- | ------------------------------------------------------------- |
+|-------|--------|----------|---------------------------------------------------------------|
 | `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
 
 **Notes**:
 
-- The `id` must be a valid 66-character hex string starting with `0x`, representing the invoice ID.
-- The transaction hash is returned with a Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
+- The `id` must be a valid 66-character hex string starting with `0x`.
+- The transaction hash is returned with an Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
 
 **Response**:
 
@@ -328,7 +320,7 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
     "reason": "<decoding error message>"
   }
   ```
-  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or missing `id`).
+  - Returned for malformed JSON or missing `id`.
 - **Error (500)**:
   ```json
   {
@@ -365,13 +357,13 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 #### Field Details
 
 | Field | Type   | Required | Description                                                   |
-| ----- | ------ | -------- | ------------------------------------------------------------- |
+|-------|--------|----------|---------------------------------------------------------------|
 | `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
 
 **Notes**:
 
-- The `id` must be a valid 66-character hex string starting with `0x`, representing the invoice ID.
-- The transaction hash is returned with a Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
+- The `id` must be a valid 66-character hex string starting with `0x`.
+- The transaction hash is returned with an Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
 
 **Response**:
 
@@ -391,7 +383,7 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
     "reason": "<decoding error message>"
   }
   ```
-  - Returned if the JSON request body cannot be decoded (e.g., malformed JSON or missing `id`).
+  - Returned for malformed JSON or missing `id`.
 - **Error (500)**:
   ```json
   {
@@ -412,12 +404,6 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 }'
 ```
 
-**Example**:
-
-```bash
-curl "https://contract-api-production.up.railway.app/invoices/inv001?seller=0xabc123...&status=Pending"
-```
-
 ---
 
 ## Notes
@@ -425,8 +411,7 @@ curl "https://contract-api-production.up.railway.app/invoices/inv001?seller=0xab
 - All endpoints are routed through a multiplexer (`http.ServeMux`) defined in the `Route` function.
 - The `/create`, `/release`, `/handleDispute`, `/cancel`, and `/refund` endpoints are protected by `AccessControlMiddleWare` for authentication/authorization using the `X-API-KEY` header.
 - The `/create` endpoint generates a checkout URL with a token derived from the invoice key in the transaction logs.
-- The `/handleDispute` endpoint supports `Release`, `DismissDispute`, and `SettleDispute` actions, with appropriate contract function calls (`releasePayment` or `handleDispute`).
-- The `/invoices/{id}` endpoint queries The Graph using a Keccak256-hashed `orderId` extracted from the URL path, with optional filtering by `seller`, `buyer`, or `status`.
+- The `/handleDispute` endpoint supports `Release`, `ResolveDispute`, `SettleDispute`, and `DismissDispute` actions, with appropriate contract function calls (`releasePayment`, `resolveDispute`, or `handleDispute`).
 - Prices are in USD with 8 decimal places and converted to token amounts on-chain using an oracle.
 - All blockchain interactions occur on the Ethereum Sepolia testnet, with transaction hashes linked to `https://sepolia.etherscan.io/tx/`.
-- The `IAdvancedPaymentProcessorInvoiceCreationParam` struct defines the structure for invoice creation parameters, ensuring type safety for `orderId` (string), `seller` and `buyer` (Ethereum addresses), `invoiceExpiryDuration`, `timeBeforeCancelation`, and `releaseWindow` (uint32), and `price` (big.Int).
+- The `IAdvancedPaymentProcessorInvoiceCreationParam` struct defines the structure for invoice creation parameters, ensuring type safety for `orderId` (string), `seller` (Ethereum addresses), `invoiceExpiryDuration`, `timeBeforeCancelation`, and `releaseWindow` (uint32), and `price` (big.Int).

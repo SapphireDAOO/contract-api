@@ -44,16 +44,18 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		var res *blockchain.SingleInvoiceResponse
 		res, err = h.Contract.CreateInvoice(invoice)
 		if err == nil {
-			token, err = utils.GenerateToken(res.Key)
+			token, err = utils.GenerateToken(*res.Key)
 			response = res
 		}
+		res.Url = h.baseUrl + token
 	} else {
 		var res *blockchain.MetaInvoiceResponse
 		res, err = h.Contract.CreateInvoices(invoice)
 		if err == nil {
-			token, err = utils.GenerateToken(res.Key)
+			token, err = utils.GenerateToken(*res.Key)
 			response = res
 		}
+		res.Url = h.baseUrl + token
 	}
 
 	if err != nil {
@@ -61,13 +63,8 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	url := h.baseUrl + token
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
-		"status":   "success",
-		"url":      url,
-		"response": response,
-	})
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {

@@ -21,19 +21,21 @@ type Contract struct {
 }
 
 type MetaInvoiceResponse struct {
-	Key    *common.Hash `json:"key,omitempty"`
-	Orders map[string]struct {
-		Seller      string            `json:"seller"`
-		SubOrderIds map[string]string `json:"sub_order_ids"`
-	} `json:"orders"`
+	Url    string  `json:"url"`
+	Key    *string `json:"-"`
+	Seller map[string]struct {
+		OrderId     string            `json:"hashed_order_id"`
+		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
+	} `json:"seller"`
 }
 
 type SingleInvoiceResponse struct {
-	Key     *common.Hash `json:"key,omitempty"`
-	OrderId string       `json:"order_id"`
+	Url     string  `json:"url"`
+	OrderId string  `json:"order_id"`
+	Key     *string `json:"hashed_order_id"`
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x953ff222255730544c8e118a2ccb5dfb856bfbad"
+const PAYMENT_PROCESSOR_ADDRESS string = "0xb9DD118C880759E62516fa2c88Eb76ba3fd42eae"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
@@ -74,14 +76,10 @@ func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProces
 
 	var res SingleInvoiceResponse
 
-	orderId, err := utils.Keccak256(param[0].OrderId)
+	key := invoiceKey.Hex()
 
-	if err != nil {
-		return nil, err
-	}
-
-	res.Key = &invoiceKey
-	res.OrderId = orderId.Hex()
+	res.Key = &key
+	res.OrderId = param[0].OrderId
 
 	return &res, nil
 }
@@ -112,14 +110,14 @@ func (c *Contract) CreateInvoices(param []paymentprocessor.IAdvancedPaymentProce
 		return nil, err
 	}
 
-	metaInvoiceKey := receipt.Logs[len(param)-1].Topics[1]
+	metaInvoiceKey := receipt.Logs[len(param)].Topics[1]
 
-	orders := make(map[string]struct {
-		Seller      string            `json:"seller"`
-		SubOrderIds map[string]string `json:"sub_order_ids"`
+	seller := make(map[string]struct {
+		OrderId     string            `json:"hashed_order_id"`
+		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
 	})
 	for i := range param {
-		seller := param[i].Seller.Hex()
+		sellerAddress := param[i].Seller.Hex()
 		id := param[i].OrderId
 
 		hashed, err := utils.Keccak256(id)
@@ -127,23 +125,24 @@ func (c *Contract) CreateInvoices(param []paymentprocessor.IAdvancedPaymentProce
 			return nil, err
 		}
 
-		orderId, err := computeOrderId(seller, metaInvoiceKey.Hex())
+		orderId, err := computeOrderId(sellerAddress, metaInvoiceKey.Hex())
 		if err != nil {
 			return nil, err
 		}
 
-		order := orders[orderId]
-		if order.SubOrderIds == nil {
-			order.SubOrderIds = make(map[string]string)
+		s := seller[sellerAddress]
+		if s.SubOrderIds == nil {
+			s.SubOrderIds = make(map[string]string)
 		}
-		order.Seller = seller
-		order.SubOrderIds[id] = hashed.Hex()
+		s.OrderId = orderId
+		s.SubOrderIds[id] = hashed.Hex()
 
-		orders[orderId] = order
+		seller[sellerAddress] = s
 	}
 
-	res.Key = &metaInvoiceKey
-	res.Orders = orders
+	key := metaInvoiceKey.Hex()
+	res.Key = &key
+	res.Seller = seller
 
 	return &res, nil
 
