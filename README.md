@@ -18,6 +18,98 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 - **Method**: POST
 - **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract's `createSingleInvoice` or `createMetaInvoice` functions.
+
+## 📦 Invoice Examples
+
+### 🧾 Single Invoice
+
+In a single-item order, the API accepts an array with one invoice object.
+
+#### **Request**
+
+```json
+[
+  {
+    "orderId": "88121%",
+    "Seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+    "InvoiceExpiryDuration": 864000,
+    "TimeBeforeCancelation": 864000,
+    "ReleaseWindow": 864000,
+    "Price": 190000000000
+  }
+]
+```
+
+#### **Response**
+
+```json
+{
+  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpbnZvaWNlS2V5IjoiMHg2YWI1OGRiYzA0OGNhNmI2ZmI0NmU0OTcyYjhkNmY3NTE1YjU3MjhjNmM3ZTRiNjFjNmFiYTRkZDNlMDEzODQ0In0.O7BojYAD3oo9HFuQvXmTBTbShz2NCVn5-fGD9iIA2M4",
+  "order_id": "88121%",
+  "hashed_order_id": "0x6ab58dbc048ca6b6fb46e4972b8d6f7515b5728c6c7e4b61c6aba4dd3e013844"
+}
+```
+
+---
+
+### 📦 Meta Invoice (Multiple Invoices)
+
+When multiple items from one or more sellers are submitted in a single transaction, a _meta-invoice_ is created. Each seller receives a unique `hashed_order_id`, and each individual invoice under that seller is identified by a `hashed_sub_order_id`.
+
+#### **Request**
+
+```json
+[
+  {
+    "orderId": "-1@#k1",
+    "Seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+    "InvoiceExpiryDuration": 864000,
+    "TimeBeforeCancelation": 864000,
+    "ReleaseWindow": 864000,
+    "Price": 610000000000
+  },
+  {
+    "orderId": "t-='1'",
+    "Seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+    "InvoiceExpiryDuration": 864000,
+    "TimeBeforeCancelation": 864000,
+    "ReleaseWindow": 864000,
+    "Price": 15000000000
+  },
+  {
+    "orderId": "t1'",
+    "Seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
+    "InvoiceExpiryDuration": 864000,
+    "TimeBeforeCancelation": 864000,
+    "ReleaseWindow": 864000,
+    "Price": 35000000000
+  }
+]
+```
+
+#### **Response**
+
+```json
+{
+  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpbnZvaWNlS2V5IjoiMHg4N2YzNzM2OGIxNTE0MjUzZWE3MDJhZGQ3OThiMjU5OGQ1ODQxNjJhYzAwNjJlZWYwYjQ5YTlkZjk0MjhkZDA2In0.TvuMSZ4_sh2-v36FurszprTAU4RvVO4ffCsgpGnaO3o",
+  "orders": {
+    "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082": {
+      "hashed_order_id": "0x09b04d922875a8a3188b87e5853c30cd2b38f003d4eaa5b3fb3e4dd679e3cbb1",
+      "hashed_sub_order_ids": {
+        "t1'": "0xce83a6685d3e54d85861fc842ea16f531a9f65542115ed1a55164f6c468394ab"
+      }
+    },
+    "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3": {
+      "hashed_order_id": "0x9ce028293da230f7fdd0497bd734cc70b8c77d4867ee173075213925d3d355ad",
+      "hashed_sub_order_ids": {
+        "-1@#k1": "0xb0ebc31f44ecffabd39b8be38e77992b4e681a3848641681c15a3730a30e383f",
+        "t-='1'": "0xfb007570f437909c3580d112b836e68f59ca0d748a93d7524552b34834c56aa6"
+      }
+    }
+  }
+}
+```
+
 - **Request Body**:
   ```json
   [
@@ -35,7 +127,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 #### Field Details
 
 | Field                   | Type    | Required | Description                                                                    |
-|-------------------------|---------|----------|--------------------------------------------------------------------------------|
+| ----------------------- | ------- | -------- | ------------------------------------------------------------------------------ |
 | `orderId`               | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001")                        |
 | `seller`                | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`)                           |
 | `invoiceExpiryDuration` | integer | ✅       | Invoice expiration time in seconds (e.g., `864000` for 10 days)                |
@@ -58,14 +150,13 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
     {
       "url": "https://contract-api-production.up.railway.app/<token>",
       "orderId": "inv001",
-      "key": "0x123..."
+      "hashed_order_id": "0x123..."
     }
     ```
   - For multiple invoices:
     ```json
     {
       "url": "https://contract-api-production.up.railway.app/<token>",
-      "key": "0x123...",
       "seller": {
         "0xabc123...": {
           "hashed_order_id": "0xdef456...",
@@ -77,8 +168,9 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
     }
     ```
   - `url`: Checkout URL with a generated token for the invoice(s).
-  - `key`: Invoice key derived from transaction logs.
-  - `orderId` (single invoice) or `seller` (multiple invoices): Contains order details and hashed sub-order IDs.
+  - `key`: idenfier of the order in the contract.
+  - `hashed_order_id`: identifier of the order on-chain
+  - `orderId` (single invoice) or `seller` (multiple invoices): Contains order details, including hashed sub-order IDs (identifiers of each sub-invoice in a single order).
 - **Error (400)**:
   ```json
   {
@@ -145,9 +237,9 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 #### Field Details
 
-| Field | Type   | Required | Description                                                   |
-|-------|--------|----------|---------------------------------------------------------------|
-| `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
+| Field | Type   | Required | Description                                                               |
+| ----- | ------ | -------- | ------------------------------------------------------------------------- |
+| `id`  | string | ✅       | Represents the hashed_order_id, which is derived during invoice creation. |
 
 **Notes**:
 
@@ -211,22 +303,21 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 #### Field Details
 
-| Field          | Type    | Required                                    | Description                                                             |
-|----------------|---------|---------------------------------------------|-------------------------------------------------------------------------|
-| `orderId`      | string  | ✅                                          | Invoice ID (hex string starting with `0x` or client-side identifier)    |
-| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)     |
-| `resolver`     | string  | ❌ Optional                                 | Ethereum address of the resolver (required for `ResolveDispute`)        |
-| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%) |
+| Field          | Type    | Required                                    | Description                                                               |
+| -------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------- |
+| `orderId`      | string  | ✅                                          | Represents the hashed_order_id, which is derived during invoice creation. |
+| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below)       |
+| `resolver`     | string  | ❌ Optional                                 | Ethereum address of the resolver (required for `ResolveDispute`)          |
+| `sellersShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%)   |
 
 #### MarketplaceAction Enum (`resolution`)
 
-| Value | Name           | Description                          | Contract Function                       |
-|-------|----------------|--------------------------------------|-----------------------------------------|
-| `0`   | Pending        | Default state, no action taken       | N/A                                     |
-| `1`   | Release        | Release funds to the seller          | `releasePayment`                        |
-| `2`   | ResolveDispute | Resolve dispute with a resolver      | `resolveDispute`                        |
-| `3`   | SettleDispute  | Resolve dispute by splitting funds   | `handleDispute` with `DISPUTESETTLED`   |
-| `4`   | DismissDispute | Dismiss an active dispute            | `handleDispute` with `DISPUTEDISMISSED` |
+| Value | Name           | Description                                                                                                                   | Contract Function                       |
+| ----- | -------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `0`   | Pending        | Default state, no action taken                                                                                                | N/A                                     |
+| `1`   | ResolveDispute | Both the buyer and seller agreed to dismiss the dispute, with the escrow allocation remaining unchanged (fully to the seller) | `resolveDispute`                        |
+| `2`   | SettleDispute  | The dispute was resolved by an arbitrator, with X% awarded to the seller and the remaining (100 − X)% to the buyer            | `handleDispute` with `DISPUTESETTLED`   |
+| `3`   | DismissDispute | The arbitrator ruled to dismiss the dispute, leaving the escrow allocation unchanged (all to the seller)                      | `handleDispute` with `DISPUTEDISMISSED` |
 
 **Response**:
 
@@ -293,13 +384,12 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 
 #### Field Details
 
-| Field | Type   | Required | Description                                                   |
-|-------|--------|----------|---------------------------------------------------------------|
-| `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
+| Field | Type   | Required | Description                                                                                                                                                                 |
+| ----- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`  | string | ✅       | Represents the hashed_order_id (for a single-item order) or one of the hashed_sub_order_ids (for a multiple-item order), both of which are derived during invoice creation. |
 
 **Notes**:
 
-- The `id` must be a valid 66-character hex string starting with `0x`.
 - The transaction hash is returned with an Ethereum Sepolia explorer URL prefix (`https://sepolia.etherscan.io/tx/`).
 
 **Response**:
@@ -356,9 +446,9 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 
 #### Field Details
 
-| Field | Type   | Required | Description                                                   |
-|-------|--------|----------|---------------------------------------------------------------|
-| `id`  | string | ✅       | Invoice ID as a 66-character hex string (e.g., `0xabc123...`) |
+| Field | Type   | Required | Description                                                                                                                                                                 |
+| ----- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`  | string | ✅       | Represents the hashed_order_id (for a single-item order) or one of the hashed_sub_order_ids (for a multiple-item order), both of which are derived during invoice creation. |
 
 **Notes**:
 

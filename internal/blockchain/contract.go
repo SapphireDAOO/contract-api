@@ -26,7 +26,7 @@ type MetaInvoiceResponse struct {
 	Seller map[string]struct {
 		OrderId     string            `json:"hashed_order_id"`
 		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
-	} `json:"seller"`
+	} `json:"orders"`
 }
 
 type SingleInvoiceResponse struct {
