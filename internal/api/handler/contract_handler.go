@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"encoding/json"
@@ -92,7 +92,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id common.Hash `json:"id"`
+		Id     common.Hash `json:"id"`
+		Amount big.Int     `json:"amount"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -100,7 +101,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Refund(input.Id)
+	txHash, err := h.Contract.Refund(input.Id, &input.Amount)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -115,7 +116,8 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id common.Hash `json:"id"`
+		Id          common.Hash `json:"id"`
+		SellerShare big.Int     `json:"seller_share"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -123,7 +125,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Release(input.Id)
+	txHash, err := h.Contract.Release(input.Id, &input.SellerShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -162,7 +164,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		id = *hashed
 	}
 
-	txHash, err := h.Contract.ReleaseEscrow(id, input.Resolver, input.Resolution, input.SellersShare)
+	txHash, err := h.Contract.HandleDispute(id, input.Resolver, input.Resolution, input.SellersShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return

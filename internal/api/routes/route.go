@@ -1,10 +1,11 @@
-package api
+package routes
 
 import (
 	"fmt"
 	"net/http"
 
 	middleware "github.com/orgs/SapphireDAOO/contract-api/internal"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 )
 
@@ -12,10 +13,6 @@ type Router struct {
 	mux *http.ServeMux
 }
 
-func (r *Router) GET(path string, handler http.Handler) {
-	pattern := fmt.Sprintf("GET %s", path)
-	r.mux.Handle(pattern, handler)
-}
 func (r *Router) POST(path string, handler http.Handler) {
 	pattern := fmt.Sprintf("POST %s", path)
 	r.mux.Handle(pattern, handler)
@@ -23,7 +20,7 @@ func (r *Router) POST(path string, handler http.Handler) {
 
 func Route(contract *blockchain.Contract, url string) *http.ServeMux {
 	router := Router{mux: http.NewServeMux()}
-	handler := NewContractHandler(contract, url)
+	handler := handler.NewContractHandler(contract, url)
 
 	router.POST("/create", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
 	router.POST("/release", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.Release)))

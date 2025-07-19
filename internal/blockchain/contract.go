@@ -47,7 +47,9 @@ func NewContract(client *Client) *Contract {
 	return &Contract{address: &address, instance: instance, paymentProcessor: contract, client: *client}
 }
 
-func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) (*SingleInvoiceResponse, error) {
+func (c *Contract) CreateInvoice(
+	param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
+) (*SingleInvoiceResponse, error) {
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {
@@ -84,7 +86,9 @@ func (c *Contract) CreateInvoice(param []paymentprocessor.IAdvancedPaymentProces
 	return &res, nil
 }
 
-func (c *Contract) CreateInvoices(param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) (*MetaInvoiceResponse, error) {
+func (c *Contract) CreateInvoices(
+	param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
+) (*MetaInvoiceResponse, error) {
 
 	var res MetaInvoiceResponse
 	if len(param) == 0 {
@@ -148,7 +152,9 @@ func (c *Contract) CreateInvoices(param []paymentprocessor.IAdvancedPaymentProce
 
 }
 
-func (c *Contract) ReleaseEscrow(orderId common.Hash, resolver *common.Address, action MarketplaceAction, sellersShare *big.Int) (*common.Hash, error) {
+func (c *Contract) HandleDispute(
+	orderId common.Hash, resolver *common.Address, action MarketplaceAction, sellersShare *big.Int,
+) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
 	if sellersShare == nil {
@@ -163,7 +169,7 @@ func (c *Contract) ReleaseEscrow(orderId common.Hash, resolver *common.Address, 
 
 	switch action {
 	case ResolveDispute:
-		data = c.paymentProcessor.PackResolveDispute(orderId, *resolver)
+		data = c.paymentProcessor.PackResolveDispute(orderId)
 
 	case SettleDispute:
 		data = c.paymentProcessor.PackHandleDispute(orderId, c.getDisputeResolution(SettleDispute), sellersShare)
@@ -186,14 +192,14 @@ func (c *Contract) ReleaseEscrow(orderId common.Hash, resolver *common.Address, 
 
 }
 
-func (c *Contract) Cancel(itemId common.Hash) (*common.Hash, error) {
+func (c *Contract) Cancel(orderId common.Hash) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	data := c.paymentProcessor.PackCancelInvoice(itemId)
+	data := c.paymentProcessor.PackCancelInvoice(orderId)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 
@@ -207,14 +213,14 @@ func (c *Contract) Cancel(itemId common.Hash) (*common.Hash, error) {
 
 }
 
-func (c *Contract) Refund(itemId [32]byte) (*common.Hash, error) {
+func (c *Contract) Refund(orderId [32]byte, amount *big.Int) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	data := c.paymentProcessor.PackClaimExpiredInvoiceRefunds(itemId)
+	data := c.paymentProcessor.PackRefund(orderId, amount)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 
@@ -227,14 +233,14 @@ func (c *Contract) Refund(itemId [32]byte) (*common.Hash, error) {
 	return &hash, nil
 }
 
-func (c *Contract) Release(itemId [32]byte) (*common.Hash, error) {
+func (c *Contract) Release(orderId [32]byte, sellerShare *big.Int) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	data := c.paymentProcessor.PackReleasePayment(itemId)
+	data := c.paymentProcessor.PackRelease(orderId, sellerShare)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 
@@ -249,12 +255,14 @@ func (c *Contract) Release(itemId [32]byte) (*common.Hash, error) {
 
 func (c *Contract) getDisputeResolution(action MarketplaceAction) uint8 {
 	if action == DismissDispute {
-		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
+		value, _ := bind.Call(
+			c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
 		return value
 	}
 
 	if action == SettleDispute {
-		value, _ := bind.Call(c.instance, nil, c.paymentProcessor.PackDISPUTESETTLED(), c.paymentProcessor.UnpackDISPUTESETTLED)
+		value, _ := bind.Call(
+			c.instance, nil, c.paymentProcessor.PackDISPUTESETTLED(), c.paymentProcessor.UnpackDISPUTESETTLED)
 		return value
 	}
 
