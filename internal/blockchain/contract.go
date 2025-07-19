@@ -23,17 +23,17 @@ type MetaInvoiceResponse struct {
 	Url    string  `json:"url"`
 	Key    *string `json:"-"`
 	Seller map[string]struct {
-		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
-	} `json:"orders"`
+		OrderId   string `json:"order_id"`
+		InvoiceId string `json:"invoice_id"`
+	} `json:"invoices"`
 }
 
 type SingleInvoiceResponse struct {
-	Url     string  `json:"url"`
-	OrderId string  `json:"order_id"`
-	Key     *string `json:"hashed_order_id"`
+	Url       string `json:"url"`
+	InvoiceId string `json:"invoice_id"`
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0xb9DD118C880759E62516fa2c88Eb76ba3fd42eae"
+const PAYMENT_PROCESSOR_ADDRESS string = "0x5e2fEBC812A4e7c6c28E6ba5c6C87DadcAddb066"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
@@ -75,14 +75,11 @@ func (c *Contract) CreateInvoice(
 		return nil, err
 	}
 
-	invoiceKey := receipt.Logs[0].Topics[1]
+	invoiceId := receipt.Logs[0].Topics[1]
 
 	var res SingleInvoiceResponse
 
-	key := invoiceKey.Hex()
-
-	res.Key = &key
-	res.OrderId = param[0].OrderId
+	res.InvoiceId = invoiceId.Hex()
 
 	return &res, nil
 }
@@ -121,23 +118,22 @@ func (c *Contract) CreateInvoices(
 	metaInvoiceKey := receipt.Logs[len(param)].Topics[1]
 
 	seller := make(map[string]struct {
-		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
+		OrderId   string `json:"order_id"`
+		InvoiceId string `json:"invoice_id"`
 	})
+
 	for i := range param {
 		sellerAddress := param[i].Seller.Hex()
-		id := param[i].OrderId
+		orderId := param[i].OrderId
 
-		hashed, err := utils.Keccak256(id)
+		invoiceId, err := utils.Keccak256(orderId)
 		if err != nil {
 			return nil, err
 		}
 
 		s := seller[sellerAddress]
-		if s.SubOrderIds == nil {
-			s.SubOrderIds = make(map[string]string)
-		}
-
-		s.SubOrderIds[id] = hashed.Hex()
+		s.OrderId = orderId
+		s.InvoiceId = invoiceId.Hex()
 
 		seller[sellerAddress] = s
 	}

@@ -44,7 +44,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		var res *blockchain.SingleInvoiceResponse
 		res, err = h.Contract.CreateInvoice(invoice)
 		if err == nil {
-			token, err = utils.GenerateToken(*res.Key)
+			token, err = utils.GenerateToken(res.InvoiceId)
 			response = res
 		}
 		res.Url = h.baseUrl + token
