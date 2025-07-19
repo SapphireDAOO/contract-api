@@ -3,9 +3,8 @@ package blockchain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/big"
-	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,7 +23,6 @@ type MetaInvoiceResponse struct {
 	Url    string  `json:"url"`
 	Key    *string `json:"-"`
 	Seller map[string]struct {
-		OrderId     string            `json:"hashed_order_id"`
 		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
 	} `json:"orders"`
 }
@@ -68,7 +66,10 @@ func (c *Contract) CreateInvoice(
 		return nil, err
 	}
 
-	receipt, err := bind.WaitMined(context.Background(), c.client.eth, tx.Hash())
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	receipt, err := bind.WaitMined(ctx, c.client.eth, tx.Hash())
 
 	if err != nil {
 		return nil, err
@@ -108,7 +109,10 @@ func (c *Contract) CreateInvoices(
 		return nil, err
 	}
 
-	receipt, err := bind.WaitMined(context.Background(), c.client.eth, tx.Hash())
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	receipt, err := bind.WaitMined(ctx, c.client.eth, tx.Hash())
 
 	if err != nil {
 		return nil, err
@@ -117,7 +121,6 @@ func (c *Contract) CreateInvoices(
 	metaInvoiceKey := receipt.Logs[len(param)].Topics[1]
 
 	seller := make(map[string]struct {
-		OrderId     string            `json:"hashed_order_id"`
 		SubOrderIds map[string]string `json:"hashed_sub_order_ids"`
 	})
 	for i := range param {
@@ -129,16 +132,11 @@ func (c *Contract) CreateInvoices(
 			return nil, err
 		}
 
-		orderId, err := computeOrderId(sellerAddress, metaInvoiceKey.Hex())
-		if err != nil {
-			return nil, err
-		}
-
 		s := seller[sellerAddress]
 		if s.SubOrderIds == nil {
 			s.SubOrderIds = make(map[string]string)
 		}
-		s.OrderId = orderId
+
 		s.SubOrderIds[id] = hashed.Hex()
 
 		seller[sellerAddress] = s
@@ -267,16 +265,4 @@ func (c *Contract) getDisputeResolution(action MarketplaceAction) uint8 {
 	}
 
 	return 0
-}
-
-func computeOrderId(seller, metaInvoiceId string) (string, error) {
-	data := fmt.Sprintf("%s%s", seller, strings.TrimPrefix(metaInvoiceId, "0x"))
-
-	hash, err := utils.Keccak256(data)
-
-	if err != nil {
-		return "", err
-	}
-
-	return hash.Hex(), err
 }
