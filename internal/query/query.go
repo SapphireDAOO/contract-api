@@ -65,9 +65,15 @@ const invoiceQuery = `
       seller {
         id
       }
-      metaInvoice {
-        invoiceId
-      }
+    }
+  }
+`
+
+const paymentTokenQuery = `
+  query(id: $string){
+    paymentToken(id: $id){
+      name
+      decimal
     }
   }
 `

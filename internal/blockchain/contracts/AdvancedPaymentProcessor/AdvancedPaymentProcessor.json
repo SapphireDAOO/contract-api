@@ -31,7 +31,6 @@
   { "inputs": [], "name": "InvalidSellersPayoutShare", "type": "error" },
   { "inputs": [], "name": "InvoiceAlreadyExists", "type": "error" },
   { "inputs": [], "name": "InvoiceDoesNotExist", "type": "error" },
-  { "inputs": [], "name": "InvoiceExpired", "type": "error" },
   { "inputs": [], "name": "MetaInvoiceAlreadyExists", "type": "error" },
   { "inputs": [], "name": "NewOwnerIsZeroAddress", "type": "error" },
   { "inputs": [], "name": "NoHandoverRequest", "type": "error" },
@@ -158,14 +157,9 @@
           { "internalType": "uint48", "name": "paidAt", "type": "uint48" },
           { "internalType": "uint48", "name": "createdAt", "type": "uint48" },
           {
-            "internalType": "uint32",
-            "name": "invoiceExpiryDuration",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "timeBeforeCancelation",
-            "type": "uint32"
+            "internalType": "uint256",
+            "name": "amountPaid",
+            "type": "uint256"
           },
           { "internalType": "uint256", "name": "price", "type": "uint256" },
           { "internalType": "uint256", "name": "balance", "type": "uint256" },
@@ -502,14 +496,9 @@
           { "internalType": "uint48", "name": "paidAt", "type": "uint48" },
           { "internalType": "uint48", "name": "createdAt", "type": "uint48" },
           {
-            "internalType": "uint32",
-            "name": "invoiceExpiryDuration",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "timeBeforeCancelation",
-            "type": "uint32"
+            "internalType": "uint256",
+            "name": "amountPaid",
+            "type": "uint256"
           },
           { "internalType": "uint256", "name": "price", "type": "uint256" },
           { "internalType": "uint256", "name": "balance", "type": "uint256" },

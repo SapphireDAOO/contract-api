@@ -4,21 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/query"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
-func GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-
-	if len(pathParts) != 2 || pathParts[0] != "invoices" || pathParts[1] == "" {
-		utils.Error(w, http.StatusBadRequest, errors.New("invalid URL path structure"), "Invalid or missing invoice ID")
-		return
-	}
-
-	id := pathParts[1]
+func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
 
 	if id == "" {
 		utils.Error(w, http.StatusBadRequest, errors.New("empty invoice id in path"), "Missing orderId parameter")

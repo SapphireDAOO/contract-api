@@ -24,52 +24,59 @@ func NewContractHandler(contract *blockchain.Contract, baseUrl string) *Contract
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	var invoice []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
+	var invoices []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 
-	if err := json.NewDecoder(r.Body).Decode(&invoice); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&invoices); err != nil {
 		utils.Error(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
-	if len(invoice) == 0 {
+	if len(invoices) == 0 {
 		utils.Error(w, http.StatusBadRequest, nil, "no invoice parameters provided")
 		return
 	}
 
-	var token string
-	var response any
-	var err error
+	w.Header().Set("Content-Type", "application/json")
 
-	if len(invoice) == 1 {
-		var res *blockchain.SingleInvoiceResponse
-		res, err = h.Contract.CreateInvoice(invoice)
-		if err == nil {
-			token, err = utils.GenerateToken(res.InvoiceId)
-			response = res
-		}
-		res.Url = h.baseUrl + token
-	} else {
-		var res *blockchain.MetaInvoiceResponse
-		res, err = h.Contract.CreateInvoices(invoice)
-		if err == nil {
-			token, err = utils.GenerateToken(*res.Key)
-			response = res
-		}
-		res.Url = h.baseUrl + token
-	}
+	if len(invoices) == 1 {
 
-	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, err, "error processing invoice")
+		res, err := h.Contract.CreateInvoice(invoices)
+		if err != nil {
+			utils.Error(w, http.StatusInternalServerError, err, "error creating invoice")
+			return
+		}
+		token, err := utils.GenerateToken(res.InvoiceId)
+		if err != nil {
+			utils.Error(w, http.StatusInternalServerError, err, "token generation failed")
+			return
+		}
+
+		res.Url = h.baseUrl + token
+		json.NewEncoder(w).Encode(res)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	res, err := h.Contract.CreateInvoices(invoices)
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, err, "error creating meta invoice")
+		return
+	}
+
+	token, err := utils.GenerateToken(*res.Key)
+
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, err, "token generation failed")
+		return
+	}
+
+	res.Url = h.baseUrl + token
+	json.NewEncoder(w).Encode(res)
+
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id common.Hash `json:"id"`
+		InvoiceId common.Hash `json:"id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -77,7 +84,7 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Cancel(input.Id)
+	txHash, err := h.Contract.Cancel(input.InvoiceId)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -85,8 +92,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "success",
-		"hash":   TX_URL + txHash.Hex(),
+		"status":          "success",
+		"transaction url": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -109,8 +116,8 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "success",
-		"hash":   TX_URL + txHash.Hex(),
+		"status":          "success",
+		"transaction url": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -133,8 +140,8 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "success",
-		"hash":   TX_URL + txHash.Hex(),
+		"status":          "success",
+		"transaction url": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -142,7 +149,6 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	var input struct {
 		OrderId      string                       `json:"orderId"`
 		Resolution   blockchain.MarketplaceAction `json:"resolution"`
-		Resolver     *common.Address              `json:"resolver"`
 		SellersShare *big.Int                     `json:"sellersShare"`
 	}
 
@@ -164,7 +170,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		id = *hashed
 	}
 
-	txHash, err := h.Contract.HandleDispute(id, input.Resolver, input.Resolution, input.SellersShare)
+	txHash, err := h.Contract.HandleDispute(id, input.Resolution, input.SellersShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -172,7 +178,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status": "success",
-		"hash":   TX_URL + txHash.Hex(),
+		"status":          "success",
+		"transaction url": TX_URL + txHash.Hex(),
 	})
 }

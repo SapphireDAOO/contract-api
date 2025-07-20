@@ -18,6 +18,11 @@ func (r *Router) POST(path string, handler http.Handler) {
 	r.mux.Handle(pattern, handler)
 }
 
+func (r *Router) GET(path string, handler http.Handler) {
+	pattern := fmt.Sprintf("GET %s", path)
+	r.mux.Handle(pattern, handler)
+}
+
 func Route(contract *blockchain.Contract, url string) *http.ServeMux {
 	router := Router{mux: http.NewServeMux()}
 	handler := handler.NewContractHandler(contract, url)
@@ -27,6 +32,7 @@ func Route(contract *blockchain.Contract, url string) *http.ServeMux {
 	router.POST("/handleDispute", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.HandleDispute)))
 	router.POST("/cancel", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.Cancel)))
 	router.POST("/refund", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.Refund)))
+	router.GET("/invoices/{id}", http.HandlerFunc(handler.GetInvoiceData))
 
 	return router.mux
 }

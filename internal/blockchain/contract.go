@@ -22,10 +22,10 @@ type Contract struct {
 type MetaInvoiceResponse struct {
 	Url    string  `json:"url"`
 	Key    *string `json:"-"`
-	Seller map[string]struct {
-		OrderId   string `json:"order_id"`
+	Orders map[string]struct {
+		Seller    string `json:"seller"`
 		InvoiceId string `json:"invoice_id"`
-	} `json:"invoices"`
+	} `json:"orders"`
 }
 
 type SingleInvoiceResponse struct {
@@ -33,7 +33,7 @@ type SingleInvoiceResponse struct {
 	InvoiceId string `json:"invoice_id"`
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x5e2fEBC812A4e7c6c28E6ba5c6C87DadcAddb066"
+const PAYMENT_PROCESSOR_ADDRESS string = "0x1A1b771B7e6cE617d22A148d08d0395Ca29f208a"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
@@ -117,8 +117,8 @@ func (c *Contract) CreateInvoices(
 
 	metaInvoiceKey := receipt.Logs[len(param)].Topics[1]
 
-	seller := make(map[string]struct {
-		OrderId   string `json:"order_id"`
+	orders := make(map[string]struct {
+		Seller    string `json:"seller"`
 		InvoiceId string `json:"invoice_id"`
 	})
 
@@ -131,23 +131,23 @@ func (c *Contract) CreateInvoices(
 			return nil, err
 		}
 
-		s := seller[sellerAddress]
-		s.OrderId = orderId
-		s.InvoiceId = invoiceId.Hex()
+		o := orders[orderId]
+		o.Seller = sellerAddress
+		o.InvoiceId = invoiceId.Hex()
 
-		seller[sellerAddress] = s
+		orders[orderId] = o
 	}
 
 	key := metaInvoiceKey.Hex()
 	res.Key = &key
-	res.Seller = seller
+	res.Orders = orders
 
 	return &res, nil
 
 }
 
 func (c *Contract) HandleDispute(
-	orderId common.Hash, resolver *common.Address, action MarketplaceAction, sellersShare *big.Int,
+	orderId common.Hash, action MarketplaceAction, sellersShare *big.Int,
 ) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
