@@ -148,7 +148,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
   ```json
   {
     "status": "success",
-    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
+    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
   
@@ -229,7 +229,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
   ```json
   {
     "status": "success",
-    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
+    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
 
@@ -298,7 +298,7 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
   ```json
   {
     "status": "success",
-    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
+    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
   
@@ -358,7 +358,7 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
   ```json
   {
     "status": "success",
-    "hash": "https://sepolia.etherscan.io/tx/0x123456..."
+    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
 
