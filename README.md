@@ -27,7 +27,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
   {
     "orderId": "inv001",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": "8680000000"
+    "price": 8680000000
   }
 ]
 ```
@@ -63,11 +63,11 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 #### Field Details
 
-| Field     | Type   | Required | Description                                                                     |
-| --------- | ------ | -------- | ------------------------------------------------------------------------------- |
-| `orderId` | string | ✅       | Client-side identifier for the invoice (e.g., "inv001").                        |
-| `seller`  | string | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                           |
-| `price`   | string | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00). |
+| Field     | Type    | Required | Description                                                                     |
+| --------- | ------- | -------- | ------------------------------------------------------------------------------- |
+| `orderId` | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001").                        |
+| `seller`  | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                           |
+| `price`   | integer | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00). |
 
 **Notes**:
 
@@ -121,7 +121,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
   {
     "orderId": "inv001",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": "8680000000"
+    "price": 8680000000
   }
 ]'
 ```
@@ -138,16 +138,16 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 ```json
 {
   "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "sellerShare": "9000000000"
+  "sellerShare": 90000
 }
 ```
 
 #### Field Details
 
-| Field         | Type   | Required | Description                                                                |
-| ------------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `id`          | string | ✅       | The order id or invoice id from invoice creation                           |
-| `sellerShare` | string | ✅       | Seller's share in USD with 8 decimal places (e.g., `9000000000` = $90.00). |
+| Field         | Type    | Required | Description                                                                |
+| ------------- | ------- | -------- | -------------------------------------------------------------------------- |
+| `id`          | string  | ✅       | The order id or invoice id from invoice creation                           |
+| `sellerShare` | integer | ✅       | Seller's share in USD with 8 decimal places (e.g., `9000000000` = $90.00). |
 
 **Response**:
 
@@ -214,7 +214,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 | -------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
 | `orderId`      | string  | ✅                                          | The order id or invoice id from invoice creation                         |
 | `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
-| `sellersShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
+| `sellersShare` | integer | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
 
 #### MarketplaceAction Enum (`resolution`)
 
@@ -357,16 +357,16 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 ```json
 {
   "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "amount": "5000000000"
+  "amount": 5000000000
 }
 ```
 
 #### Field Details
 
-| Field    | Type   | Required | Description                                                               |
-| -------- | ------ | -------- | ------------------------------------------------------------------------- |
-| `id`     | string | ✅       | The order id or invoice id from invoice creation                          |
-| `amount` | string | ✅       | Refund amount in USD with 8 decimal places (e.g., `5000000000` = $50.00). |
+| Field    | Type    | Required | Description                                                               |
+| -------- | ------- | -------- | ------------------------------------------------------------------------- |
+| `id`     | string  | ✅       | The order id or invoice id from invoice creation                          |
+| `amount` | integer | ✅       | Refund amount in USD with 8 decimal places (e.g., `5000000000` = $50.00). |
 
 **Response**:
 
@@ -405,7 +405,7 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
   "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "amount": "5000000000"
+  "amount": 5000000000
 }'
 ```
 
@@ -433,7 +433,7 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
     "amountPaid": "350000000",
     "paidAt": "1753052436",
     "balance": "350000000",
-    "releasedAt": null,
+    "releasedAt": "",
     "buyer": "0x0f447989b14a3f0bbf08808020ec1a6de0b8cbc4",
     "seller": "0x329c3e1bea46abc22f307ee30cbb522b82fe7082",
     "metaInvoice": "",

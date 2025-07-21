@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/big"
 	"net/http"
 	"strings"
@@ -99,8 +101,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id     common.Hash `json:"id"`
-		Amount big.Int     `json:"amount"`
+		Id     string  `json:"id"`
+		Amount big.Int `json:"amount"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -108,7 +110,19 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Refund(input.Id, &input.Amount)
+	if input.Amount.Cmp(big.NewInt(0)) == 0 {
+		utils.Error(w, http.StatusBadRequest, errors.New("amount can not be zero"), "invalid request body")
+		return
+	}
+
+	id, err := handleId(input.Id)
+
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
+		return
+	}
+
+	txHash, err := h.Contract.Refund(*id, &input.Amount)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -123,8 +137,8 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id          common.Hash `json:"id"`
-		SellerShare big.Int     `json:"sellerShare"`
+		Id          string  `json:"id"`
+		SellerShare big.Int `json:"sellerShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -132,8 +146,16 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Release(input.Id, &input.SellerShare)
+	id, err := handleId(input.Id)
+
 	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
+		return
+	}
+
+	txHash, err := h.Contract.Release(*id, &input.SellerShare)
+	if err != nil {
+		fmt.Println(err)
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
 	}
@@ -147,7 +169,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId     string                       `json:"orderId"`
+		Id          string                       `json:"id"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
 		SellerShare *big.Int                     `json:"sellerShare"`
 	}
@@ -157,20 +179,14 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var id common.Hash
+	id, err := handleId(input.Id)
 
-	if len(input.OrderId) == 66 && strings.HasPrefix(input.OrderId, "0x") {
-		id = common.HexToHash(input.OrderId)
-	} else {
-		hashed, err := utils.Keccak256(input.OrderId)
-		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
-			return
-		}
-		id = *hashed
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
+		return
 	}
 
-	txHash, err := h.Contract.HandleDispute(id, input.Resolution, input.SellerShare)
+	txHash, err := h.Contract.HandleDispute(*id, input.Resolution, input.SellerShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -181,4 +197,19 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		"status":          "success",
 		"transaction url": TX_URL + txHash.Hex(),
 	})
+}
+
+func handleId(id string) (*common.Hash, error) {
+	if len(id) == 66 && strings.HasPrefix(id, "0x") {
+		hashed := common.HexToHash(id)
+		return &hashed, nil
+	} else {
+		hashed, err := utils.Keccak256(id)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return hashed, nil
+	}
 }
