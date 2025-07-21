@@ -52,10 +52,12 @@ query ($address: String!, $first: Int = 10, $skip: Int = 0) {
 const invoiceQuery = `
   query($id: String!){
     smartInvoice(id: $id){
+      createdAt
+      amountPaid
+      releasedAt
       invoiceId
       state
       escrow
-      paymentToken
       amountPaid
       price
       paidAt
@@ -65,15 +67,10 @@ const invoiceQuery = `
       seller {
         id
       }
-    }
-  }
-`
-
-const paymentTokenQuery = `
-  query(id: $string){
-    paymentToken(id: $id){
-      name
-      decimal
+      paymentToken {
+        name
+        decimal
+      }
     }
   }
 `

@@ -27,9 +27,6 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
   {
     "orderId": "inv001",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "invoiceExpiryDuration": 864000,
-    "timeBeforeCancelation": 864000,
-    "releaseWindow": 864000,
     "price": "8680000000"
   }
 ]
@@ -42,6 +39,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
     ```json
     {
       "url": "https://contract-api-production.up.railway.app/<token>",
+      "orderId": "order-1",
       "invoiceId": "0x6ab58dbc048ca6b6fb46e4972b8d6f7515b5728c6c7e4b61c6aba4dd3e013844"
     }
     ```
@@ -49,13 +47,13 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
     ```json
     {
       "url": "https://contract-api-production.up.railway.app/<token>",
-      "seller": {
-        "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3": {
-          "orderId": "-1@#k1",
+      "orders": {
+        "order-id-1": {
+          "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
           "invoiceId": "0xb0ebc31f44ecffabd39b8be38e77992b4e681a3848641681c15a3730a30e383f"
         },
-        "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082": {
-          "orderId": "t1'",
+        "order-id-1": {
+          "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
           "invoiceId": "0xce83a6685d3e54d85861fc842ea16f531a9f65542115ed1a55164f6c468394ab"
         }
       }
@@ -131,7 +129,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 ```json
 {
   "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "seller_share": "9000000000"
+  "sellerShare": "9000000000"
 }
 ```
 
@@ -139,8 +137,8 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 | Field          | Type   | Required | Description                                                                |
 | -------------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `id`           | string | ✅       | The order id or invoice id from invoice creation            |
-| `seller_share` | string | ✅       | Seller's share in USD with 8 decimal places (e.g., `9000000000` = $90.00). |
+| `id`           | string | ✅       | The order id or invoice id from invoice creation                           |
+| `sellerShare` | string | ✅       | Seller's share in USD with 8 decimal places (e.g., `9000000000` = $90.00). |
 
 **Response**:
 
@@ -174,7 +172,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
   "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "seller_share": "9000000000"
+  "sellerShare": "9000000000"
 }'
 ```
 
@@ -200,7 +198,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 | Field          | Type    | Required                                    | Description                                                              |
 | -------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
-| `orderId`      | string  | ✅                                          | The order id or invoice id from invoice creation          |
+| `orderId`      | string  | ✅                                          | The order id or invoice id from invoice creation                         |
 | `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
 | `sellersShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
 
@@ -214,6 +212,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 | `3`   | DismissDispute | Arbitrator dismisses the dispute, leaving escrow allocation unchanged (fully to seller)                | `handleDispute` with `DISPUTE_DISDISMISSED` |
 
 **Notes**:
+
 - The contract validates that the invoice is in the `DISPUTED` state and that `sellersShare` does not exceed `BASIS_POINTS` (10,000).
 - For `SettleDispute`, funds are distributed via `_distributeFunds`, with platform fees applied. Emits `DisputeSettled` with payout details.
 - For `DismissDispute`, emits `DisputeDismissed` without fund distribution.
@@ -397,25 +396,17 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 - **Success (200)**:
   ```json
   {
-    "buyer": {
-      "id": "0xdef456..."
-    },
-    "seller": {
-      "id": "0xabc123..."
-    },
-    "invoiceExpiryDuration": 864000,
-    "timeBeforeCancelation": 864000,
-    "releaseWindow": 864000,
-    "price": "8680000000",
-    "state": 1,
-    "escrow": "0xghi789...",
-    "balance": "8680000000",
-    "amountPaid": "8680000000",
-    "paymentToken": "0x0000000000000000000000000000000000000000",
-    "createdAt": 1697059200,
-    "paidAt": 1697062800,
-    "invoiceId": 1,
-    "metaInvoiceId": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    "invoiceId": "0x008d38d35c74aafbf1e0437e73a53a62e439a6479c566360215c587132ad5ee0",
+    "createdAt": "1753051512",
+    "price": "35000000000",
+    "state": "PAID",
+    "amountPaid": "350000000",
+    "paidAt": "1753052436",
+    "releasedAt": null,
+    "buyer": "0x0f447989b14a3f0bbf08808020ec1a6de0b8cbc4",
+    "seller": "0x329c3e1bea46abc22f307ee30cbb522b82fe7082",
+    "metaInvoice": "",
+    "paymentToken": "Mock Usdc"
   }
   ```
 - **Error (400)**:

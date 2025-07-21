@@ -124,7 +124,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Id          common.Hash `json:"id"`
-		SellerShare big.Int     `json:"seller_share"`
+		SellerShare big.Int     `json:"sellerShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -147,9 +147,9 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId      string                       `json:"orderId"`
-		Resolution   blockchain.MarketplaceAction `json:"resolution"`
-		SellersShare *big.Int                     `json:"sellersShare"`
+		OrderId     string                       `json:"orderId"`
+		Resolution  blockchain.MarketplaceAction `json:"resolution"`
+		SellerShare *big.Int                     `json:"sellerShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -170,7 +170,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		id = *hashed
 	}
 
-	txHash, err := h.Contract.HandleDispute(id, input.Resolution, input.SellersShare)
+	txHash, err := h.Contract.HandleDispute(id, input.Resolution, input.SellerShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return

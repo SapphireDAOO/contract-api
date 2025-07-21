@@ -18,16 +18,23 @@ type User struct {
 }
 
 type SmartInvoice struct {
-	AmountPaid  *string      `json:"amountPaid"`
-	CreatedAt   string       `json:"createdAt"`
-	InvoiceId   string       `json:"invoiceId"`
-	PaidAt      *string      `json:"paidAt"`
-	Price       string       `json:"price"`
-	State       string       `json:"state"`
-	ReleasedAt  *string      `json:"releasedAt"`
-	Buyer       Buyer        `json:"buyer,omitzero"`
-	Seller      Seller       `json:"seller,omitzero"`
-	MetaInvoice *MetaInvoice `json:"metaInvoice"`
+	InvoiceId    *string       `json:"invoiceId"`
+	CreatedAt    *string       `json:"createdAt"`
+	Price        *string       `json:"price"`
+	State        *string       `json:"state"`
+	AmountPaid   *string       `json:"amountPaid"`
+	PaidAt       *string       `json:"paidAt"`
+	PaymentToken *PaymentToken `json:"paymentToken,omitzero"`
+	ReleasedAt   *string       `json:"releasedAt"`
+	Buyer        *Buyer        `json:"buyer,omitzero"`
+	Seller       *Seller       `json:"seller,omitzero"`
+	MetaInvoice  *MetaInvoice  `json:"metaInvoice"`
+}
+
+type PaymentToken struct {
+	ID      string `json:"id,omitempty"`
+	Name    string `json:"name"`
+	Decimal string `json:"decimal"`
 }
 
 type Buyer struct {
@@ -45,21 +52,41 @@ type MetaInvoice struct {
 func (s SmartInvoice) MarshalJSON() ([]byte, error) {
 	type Alias SmartInvoice
 
-	var metaID string
+	var (
+		metaId       string
+		paymentToken string
+		buyerId      string
+		sellerId     string
+	)
 
 	if s.MetaInvoice != nil {
-		metaID = s.MetaInvoice.InvoiceID
+		metaId = s.MetaInvoice.InvoiceID
 	}
+
+	if s.PaymentToken != nil {
+		paymentToken = s.PaymentToken.Name
+	}
+
+	if s.Seller != nil {
+		sellerId = s.Seller.ID
+	}
+
+	if s.Buyer != nil {
+		buyerId = s.Buyer.ID
+	}
+
 	return json.Marshal(&struct {
 		*Alias
-		Buyer       string `json:"buyer"`
-		Seller      string `json:"seller"`
-		MetaInvoice string `json:"metaInvoice"`
+		Buyer        string `json:"buyer"`
+		Seller       string `json:"seller"`
+		MetaInvoice  string `json:"metaInvoice"`
+		PaymentToken string `json:"paymentToken"`
 	}{
-		Alias:       (*Alias)(&s),
-		Buyer:       s.Buyer.ID,
-		Seller:      s.Seller.ID,
-		MetaInvoice: metaID,
+		Alias:        (*Alias)(&s),
+		Buyer:        buyerId,
+		Seller:       sellerId,
+		PaymentToken: paymentToken,
+		MetaInvoice:  metaId,
 	})
 
 }

@@ -24,13 +24,14 @@ type MetaInvoiceResponse struct {
 	Key    *string `json:"-"`
 	Orders map[string]struct {
 		Seller    string `json:"seller"`
-		InvoiceId string `json:"invoice_id"`
+		InvoiceId string `json:"invoiceId"`
 	} `json:"orders"`
 }
 
 type SingleInvoiceResponse struct {
 	Url       string `json:"url"`
-	InvoiceId string `json:"invoice_id"`
+	OrderId   string `json:"orderId"`
+	InvoiceId string `json:"invoiceId"`
 }
 
 const PAYMENT_PROCESSOR_ADDRESS string = "0x1A1b771B7e6cE617d22A148d08d0395Ca29f208a"
@@ -80,6 +81,7 @@ func (c *Contract) CreateInvoice(
 	var res SingleInvoiceResponse
 
 	res.InvoiceId = invoiceId.Hex()
+	res.OrderId = param[0].OrderId
 
 	return &res, nil
 }
@@ -119,7 +121,7 @@ func (c *Contract) CreateInvoices(
 
 	orders := make(map[string]struct {
 		Seller    string `json:"seller"`
-		InvoiceId string `json:"invoice_id"`
+		InvoiceId string `json:"invoiceId"`
 	})
 
 	for i := range param {

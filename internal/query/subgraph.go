@@ -59,6 +59,8 @@ func GetInvoiceData(id string) (*SmartInvoice, error) {
 		return nil, err
 	}
 
+	fmt.Println(string(body))
+
 	var resp struct {
 		Data struct {
 			SmartInvoice SmartInvoice `json:"smartInvoice"`
