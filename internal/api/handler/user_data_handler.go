@@ -24,16 +24,6 @@ func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request)
 
 	data, err = query.GetInvoiceData(id)
 
-	if data.Buyer.ID == "" {
-		orderId, err := utils.Keccak256(id)
-
-		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
-			return
-		}
-		data, err = query.GetInvoiceData(orderId.Hex())
-	}
-
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "failed to fetch invoice data")
 		return

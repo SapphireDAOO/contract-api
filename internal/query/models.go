@@ -18,32 +18,33 @@ type User struct {
 }
 
 type SmartInvoice struct {
-	InvoiceId    *string       `json:"invoiceId"`
-	CreatedAt    *string       `json:"createdAt"`
-	Price        *string       `json:"price"`
-	State        *string       `json:"state"`
-	AmountPaid   *string       `json:"amountPaid"`
-	PaidAt       *string       `json:"paidAt"`
-	Balance      *string       `json:"balance"`
-	PaymentToken *PaymentToken `json:"paymentToken,omitzero"`
-	ReleasedAt   *string       `json:"releasedAt"`
-	Buyer        *Buyer        `json:"buyer,omitzero"`
-	Seller       *Seller       `json:"seller,omitzero"`
+	InvoiceId    string        `json:"invoiceId"`
+	CreatedAt    string        `json:"createdAt"`
+	Price        string        `json:"price"`
+	State        string        `json:"state"`
+	AmountPaid   string        `json:"amountPaid"`
+	PaidAt       string        `json:"paidAt"`
+	Balance      string        `json:"balance"`
+	PaymentToken *PaymentToken `json:"paymentToken,omitempty"`
+	ReleasedAt   string        `json:"releasedAt"`
+	Buyer        *Buyer        `json:"buyer,omitempty"`
+	Seller       *Seller       `json:"seller"`
 	MetaInvoice  *MetaInvoice  `json:"metaInvoice"`
+	Escrow       string        `json:"escrow"`
 }
 
 type PaymentToken struct {
-	ID      string `json:"id,omitempty"`
+	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Decimal string `json:"decimal"`
 }
 
 type Buyer struct {
-	ID string `json:"id,omitempty"`
+	ID string `json:"buyer"`
 }
 
 type Seller struct {
-	ID string `json:"id,omitempty"`
+	ID string `json:"seller"`
 }
 
 type MetaInvoice struct {
@@ -66,14 +67,20 @@ func (s SmartInvoice) MarshalJSON() ([]byte, error) {
 
 	if s.PaymentToken != nil {
 		paymentToken = s.PaymentToken.Name
+	} else {
+		paymentToken = ""
 	}
 
 	if s.Seller != nil {
 		sellerId = s.Seller.ID
+	} else {
+		sellerId = ""
 	}
 
 	if s.Buyer != nil {
 		buyerId = s.Buyer.ID
+	} else {
+		buyerId = ""
 	}
 
 	return json.Marshal(&struct {
@@ -89,5 +96,4 @@ func (s SmartInvoice) MarshalJSON() ([]byte, error) {
 		PaymentToken: paymentToken,
 		MetaInvoice:  metaId,
 	})
-
 }

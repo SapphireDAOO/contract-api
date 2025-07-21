@@ -59,17 +59,17 @@ func GetInvoiceData(id string) (*SmartInvoice, error) {
 		return nil, err
 	}
 
-	var resp struct {
+	var response struct {
 		Data struct {
 			SmartInvoice SmartInvoice `json:"smartInvoice"`
 		}
 	}
 
-	if err := json.Unmarshal(body, &resp); err != nil {
+	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, err
 	}
 
-	return &resp.Data.SmartInvoice, err
+	return &response.Data.SmartInvoice, err
 }
 
 func handleRequest(payload map[string]any) ([]byte, error) {
