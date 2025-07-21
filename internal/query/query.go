@@ -61,6 +61,7 @@ const invoiceQuery = `
       amountPaid
       price
       paidAt
+      balance
       buyer {
         id
       }

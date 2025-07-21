@@ -35,30 +35,31 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 #### **Response**
 
 **Success (200)**:
-  - For a single invoice:
-    ```json
-    {
-      "url": "https://contract-api-production.up.railway.app/<token>",
-      "orderId": "order-1",
-      "invoiceId": "0x6ab58dbc048ca6b6fb46e4972b8d6f7515b5728c6c7e4b61c6aba4dd3e013844"
-    }
-    ```
-  - For multiple invoices:
-    ```json
-    {
-      "url": "https://contract-api-production.up.railway.app/<token>",
-      "orders": {
-        "order-id-1": {
-          "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
-          "invoiceId": "0xb0ebc31f44ecffabd39b8be38e77992b4e681a3848641681c15a3730a30e383f"
-        },
-        "order-id-2": {
-          "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
-          "invoiceId": "0xce83a6685d3e54d85861fc842ea16f531a9f65542115ed1a55164f6c468394ab"
-        }
+
+- For a single invoice:
+  ```json
+  {
+    "url": "https://contract-api-production.up.railway.app/<token>",
+    "orderId": "order-1",
+    "invoiceId": "0x6ab58dbc048ca6b6fb46e4972b8d6f7515b5728c6c7e4b61c6aba4dd3e013844"
+  }
+  ```
+- For multiple invoices:
+  ```json
+  {
+    "url": "https://contract-api-production.up.railway.app/<token>",
+    "orders": {
+      "order-id-1": {
+        "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
+        "invoiceId": "0xb0ebc31f44ecffabd39b8be38e77992b4e681a3848641681c15a3730a30e383f"
+      },
+      "order-id-2": {
+        "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+        "invoiceId": "0xce83a6685d3e54d85861fc842ea16f531a9f65542115ed1a55164f6c468394ab"
       }
     }
-    ```
+  }
+  ```
 
 #### Field Details
 
@@ -78,31 +79,37 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 **Error Responses**:
 
 **Error (400)**:
-  ```json
-  {
-    "error": "invalid request body",
-    "reason": "<decoding error message>"
-  }
-  ```
-  - Returned for malformed JSON or incorrect field types.
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
+
+- Returned for malformed JSON or incorrect field types.
 
 **Error (400)**:
-  ```json
-  {
-    "error": "no invoice parameters provided",
-    "reason": "invoice array is empty"
-  }
-  ```
-  - Returned if the invoice array is empty.
+
+```json
+{
+  "error": "no invoice parameters provided",
+  "reason": "invoice array is empty"
+}
+```
+
+- Returned if the invoice array is empty.
 
 **Error (500)**:
-  ```json
-  {
-    "error": "error processing invoice",
-    "reason": "<blockchain error message>"
-  }
-  ```
-  - Returned if the blockchain transaction fails (e.g., `InvoiceAlreadyExists`, `PriceCannotBeZero`, or `NotAuthorized` errors).
+
+```json
+{
+  "error": "error processing invoice",
+  "reason": "<blockchain error message>"
+}
+```
+
+- Returned if the blockchain transaction fails (e.g., `InvoiceAlreadyExists`, `PriceCannotBeZero`, or `NotAuthorized` errors).
 
 **Example**:
 
@@ -137,36 +144,39 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 #### Field Details
 
-| Field          | Type   | Required | Description                                                                |
-| -------------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `id`           | string | ✅       | The order id or invoice id from invoice creation                           |
+| Field         | Type   | Required | Description                                                                |
+| ------------- | ------ | -------- | -------------------------------------------------------------------------- |
+| `id`          | string | ✅       | The order id or invoice id from invoice creation                           |
 | `sellerShare` | string | ✅       | Seller's share in USD with 8 decimal places (e.g., `9000000000` = $90.00). |
 
 **Response**:
 
 **Success (200)**:
-  ```json
-  {
-    "status": "success",
-    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
-  }
-  ```
-  
+
+```json
+{
+  "status": "success",
+  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+}
+```
+
 **Error (400)**:
-  ```json
-  {
-    "error": "invalid request body",
-    "reason": "<decoding error message>"
-  }
-  ```
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "Error sending transaction",
-    "reason": "<blockchain error message, e.g., InvalidInvoiceState or NotAuthorized>"
-  }
-  ```
+
+```json
+{
+  "error": "Error sending transaction",
+  "reason": "<blockchain error message, e.g., InvalidInvoiceState or NotAuthorized>"
+}
+```
 
 **Example**:
 
@@ -226,36 +236,40 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 **Response**:
 
 **Success (200)**:
-  ```json
-  {
-    "status": "success",
-    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
-  }
-  ```
+
+```json
+{
+  "status": "success",
+  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+}
+```
 
 **Error (400)**:
-  ```json
-  {
-    "error": "invalid request body",
-    "reason": "<decoding error message>"
-  }
-  ```
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "failed to generate order ID hash",
-    "reason": "<hashing error message>"
-  }
-  ```
+
+```json
+{
+  "error": "failed to generate order ID hash",
+  "reason": "<hashing error message>"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "Error sending transaction",
-    "reason": "<blockchain error message, e.g., InvalidInvoiceState or InvalidDisputeResolution>"
-  }
-  ```
+
+```json
+{
+  "error": "Error sending transaction",
+  "reason": "<blockchain error message, e.g., InvalidInvoiceState or InvalidDisputeResolution>"
+}
+```
 
 **Example**:
 
@@ -301,22 +315,24 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
     "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
-  
+
 **Error (400)**:
-  ```json
-  {
-    "error": "invalid request body",
-    "reason": "<decoding error message>"
-  }
-  ```
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "Error sending transaction",
-    "reason": "<blockchain error message, e.g., InvalidInvoiceState or Unauthorized>"
-  }
-  ```
+
+```json
+{
+  "error": "Error sending transaction",
+  "reason": "<blockchain error message, e.g., InvalidInvoiceState or Unauthorized>"
+}
+```
 
 **Example**:
 
@@ -355,28 +371,31 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 **Response**:
 
 **Success (200)**:
-  ```json
-  {
-    "status": "success",
-    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
-  }
-  ```
+
+```json
+{
+  "status": "success",
+  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+}
+```
 
 **Error (400)**:
-  ```json
-  {
-    "error": "invalid request body",
-    "reason": "<decoding error message>"
-  }
-  ```
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "Error sending transaction",
-    "reason": "<blockchain error message, e.g., InvalidInvoiceState or InsufficientBalance>"
-  }
-  ```
+
+```json
+{
+  "error": "Error sending transaction",
+  "reason": "<blockchain error message, e.g., InvalidInvoiceState or InsufficientBalance>"
+}
+```
 
 **Example**:
 
@@ -413,6 +432,7 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
     "state": "PAID",
     "amountPaid": "350000000",
     "paidAt": "1753052436",
+    "balance": "350000000",
     "releasedAt": null,
     "buyer": "0x0f447989b14a3f0bbf08808020ec1a6de0b8cbc4",
     "seller": "0x329c3e1bea46abc22f307ee30cbb522b82fe7082",
@@ -422,36 +442,40 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
   ```
 
 **Error (400)**:
-  ```json
-  {
-    "error": "invalid URL path structure",
-    "reason": "Invalid or missing invoice ID"
-  }
-  ```
+
+```json
+{
+  "error": "invalid URL path structure",
+  "reason": "Invalid or missing invoice ID"
+}
+```
 
 **Error (400)**:
-  ```json
-  {
-    "error": "empty invoice id in path",
-    "reason": "Missing orderId parameter"
-  }
-  ```
+
+```json
+{
+  "error": "empty invoice id in path",
+  "reason": "Missing orderId parameter"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "failed to generate order ID hash",
-    "reason": "<hashing error message>"
-  }
-  ```
+
+```json
+{
+  "error": "failed to generate order ID hash",
+  "reason": "<hashing error message>"
+}
+```
 
 **Error (500)**:
-  ```json
-  {
-    "error": "failed to fetch invoice data",
-    "reason": "<query error message, e.g., InvoiceDoesNotExist>"
-  }
-  ```
+
+```json
+{
+  "error": "failed to fetch invoice data",
+  "reason": "<query error message, e.g., InvoiceDoesNotExist>"
+}
+```
 
 **Example**:
 

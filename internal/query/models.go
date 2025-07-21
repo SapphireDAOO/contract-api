@@ -24,6 +24,7 @@ type SmartInvoice struct {
 	State        *string       `json:"state"`
 	AmountPaid   *string       `json:"amountPaid"`
 	PaidAt       *string       `json:"paidAt"`
+	Balance      *string       `json:"balance"`
 	PaymentToken *PaymentToken `json:"paymentToken,omitzero"`
 	ReleasedAt   *string       `json:"releasedAt"`
 	Buyer        *Buyer        `json:"buyer,omitzero"`
