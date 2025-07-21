@@ -34,7 +34,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 #### **Response**
 
-- **Success (200)**:
+**Success (200)**:
   - For a single invoice:
     ```json
     {
@@ -52,7 +52,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
           "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
           "invoiceId": "0xb0ebc31f44ecffabd39b8be38e77992b4e681a3848641681c15a3730a30e383f"
         },
-        "order-id-1": {
+        "order-id-2": {
           "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
           "invoiceId": "0xce83a6685d3e54d85861fc842ea16f531a9f65542115ed1a55164f6c468394ab"
         }
@@ -77,7 +77,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 **Error Responses**:
 
-- **Error (400)**:
+**Error (400)**:
   ```json
   {
     "error": "invalid request body",
@@ -85,7 +85,8 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
   }
   ```
   - Returned for malformed JSON or incorrect field types.
-- **Error (400)**:
+
+**Error (400)**:
   ```json
   {
     "error": "no invoice parameters provided",
@@ -93,7 +94,8 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
   }
   ```
   - Returned if the invoice array is empty.
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "error processing invoice",
@@ -142,21 +144,23 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 **Response**:
 
-- **Success (200)**:
+**Success (200)**:
   ```json
   {
     "status": "success",
     "hash": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
-- **Error (400)**:
+  
+**Error (400)**:
   ```json
   {
     "error": "invalid request body",
     "reason": "<decoding error message>"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "Error sending transaction",
@@ -221,28 +225,31 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 **Response**:
 
-- **Success (200)**:
+**Success (200)**:
   ```json
   {
     "status": "success",
     "hash": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
-- **Error (400)**:
+
+**Error (400)**:
   ```json
   {
     "error": "invalid request body",
     "reason": "<decoding error message>"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "failed to generate order ID hash",
     "reason": "<hashing error message>"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "Error sending transaction",
@@ -294,14 +301,16 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
     "hash": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
-- **Error (400)**:
+  
+**Error (400)**:
   ```json
   {
     "error": "invalid request body",
     "reason": "<decoding error message>"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "Error sending transaction",
@@ -345,21 +354,23 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 
 **Response**:
 
-- **Success (200)**:
+**Success (200)**:
   ```json
   {
     "status": "success",
     "hash": "https://sepolia.etherscan.io/tx/0x123456..."
   }
   ```
-- **Error (400)**:
+
+**Error (400)**:
   ```json
   {
     "error": "invalid request body",
     "reason": "<decoding error message>"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "Error sending transaction",
@@ -409,28 +420,32 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
     "paymentToken": "Mock Usdc"
   }
   ```
-- **Error (400)**:
+
+**Error (400)**:
   ```json
   {
     "error": "invalid URL path structure",
     "reason": "Invalid or missing invoice ID"
   }
   ```
-- **Error (400)**:
+
+**Error (400)**:
   ```json
   {
     "error": "empty invoice id in path",
     "reason": "Missing orderId parameter"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "failed to generate order ID hash",
     "reason": "<hashing error message>"
   }
   ```
-- **Error (500)**:
+
+**Error (500)**:
   ```json
   {
     "error": "failed to fetch invoice data",
