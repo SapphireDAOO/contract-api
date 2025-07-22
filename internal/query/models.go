@@ -1,6 +1,8 @@
 package query
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Response struct {
 	Data Data `json:"data"`
@@ -25,9 +27,9 @@ type SmartInvoice struct {
 	AmountPaid   string        `json:"amountPaid"`
 	PaidAt       string        `json:"paidAt"`
 	Balance      string        `json:"balance"`
-	PaymentToken *PaymentToken `json:"paymentToken,omitempty"`
+	PaymentToken *PaymentToken `json:"paymentToken"`
 	ReleasedAt   string        `json:"releasedAt"`
-	Buyer        *Buyer        `json:"buyer,omitempty"`
+	Buyer        *Buyer        `json:"buyer"`
 	Seller       *Seller       `json:"seller"`
 	MetaInvoice  *MetaInvoice  `json:"metaInvoice"`
 	Escrow       string        `json:"escrow"`
@@ -40,11 +42,11 @@ type PaymentToken struct {
 }
 
 type Buyer struct {
-	ID string `json:"buyer"`
+	ID string `json:"id"`
 }
 
 type Seller struct {
-	ID string `json:"seller"`
+	ID string `json:"id"`
 }
 
 type MetaInvoice struct {
@@ -67,20 +69,14 @@ func (s SmartInvoice) MarshalJSON() ([]byte, error) {
 
 	if s.PaymentToken != nil {
 		paymentToken = s.PaymentToken.Name
-	} else {
-		paymentToken = ""
 	}
 
 	if s.Seller != nil {
 		sellerId = s.Seller.ID
-	} else {
-		sellerId = ""
 	}
 
 	if s.Buyer != nil {
 		buyerId = s.Buyer.ID
-	} else {
-		buyerId = ""
 	}
 
 	return json.Marshal(&struct {
