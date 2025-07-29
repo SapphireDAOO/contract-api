@@ -3,11 +3,14 @@ package blockchain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	paymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/AdvancedPaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
@@ -38,9 +41,7 @@ const PAYMENT_PROCESSOR_ADDRESS string = "0x1A1b771B7e6cE617d22A148d08d0395Ca29f
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
-
 	contract := paymentprocessor.NewPaymentprocessor()
-
 	instance := contract.Instance(client.eth, address)
 
 	return &Contract{address: &address, instance: instance, paymentProcessor: contract, client: *client}
@@ -49,75 +50,40 @@ func NewContract(client *Client) *Contract {
 func (c *Contract) CreateInvoice(
 	param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
 ) (*SingleInvoiceResponse, error) {
-	auth, err := auth(c.client.chainId)
-
-	if err != nil {
-		return nil, err
-	}
-
 	if len(param) != 1 {
 		return nil, errors.New("CreateInvoice expects exactly one parameter")
 	}
 
-	data := c.paymentProcessor.PackCreateSingleInvoice(param[0])
-
-	tx, err := bind.Transact(c.instance, auth, data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
-	receipt, err := bind.WaitMined(ctx, c.client.eth, tx.Hash())
+	data := c.paymentProcessor.PackCreateSingleInvoice(param[0])
+
+	response, err := c.simulateAndBroadcast(ctx, data)
 
 	if err != nil {
 		return nil, err
 	}
 
-	invoiceId := receipt.Logs[0].Topics[1]
-
-	var res SingleInvoiceResponse
-
-	res.InvoiceId = invoiceId.Hex()
-	res.OrderId = param[0].OrderId
-
-	return &res, nil
+	if response.result == nil {
+		return &SingleInvoiceResponse{
+			OrderId:   param[0].OrderId,
+			InvoiceId: response.receipt.Logs[0].Topics[1].Hex(),
+		}, nil
+	} else {
+		return &SingleInvoiceResponse{
+			OrderId:   param[0].OrderId,
+			InvoiceId: *response.result,
+		}, nil
+	}
 }
 
 func (c *Contract) CreateInvoices(
 	param []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
 ) (*MetaInvoiceResponse, error) {
-
-	var res MetaInvoiceResponse
-	if len(param) == 0 {
-		return nil, errors.New("parameter cannot be empty")
+	if len(param) < 2 {
+		return nil, errors.New("parameter has to be greater than one")
 	}
-
-	auth, err := auth(c.client.chainId)
-
-	if err != nil {
-		return nil, err
-	}
-
-	data := c.paymentProcessor.PackCreateMetaInvoice(param)
-	tx, err := bind.Transact(c.instance, auth, data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	receipt, err := bind.WaitMined(ctx, c.client.eth, tx.Hash())
-
-	if err != nil {
-		return nil, err
-	}
-
-	metaInvoiceKey := receipt.Logs[len(param)].Topics[1]
 
 	orders := make(map[string]struct {
 		Seller    string `json:"seller"`
@@ -140,11 +106,29 @@ func (c *Contract) CreateInvoices(
 		orders[orderId] = o
 	}
 
-	key := metaInvoiceKey.Hex()
-	res.Key = &key
-	res.Orders = orders
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	return &res, nil
+	data := c.paymentProcessor.PackCreateMetaInvoice(param)
+
+	response, err := c.simulateAndBroadcast(ctx, data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.result == nil {
+		key := response.receipt.Logs[len(param)].Topics[1].Hex()
+		return &MetaInvoiceResponse{
+			Key:    &key,
+			Orders: orders,
+		}, nil
+	} else {
+		return &MetaInvoiceResponse{
+			Key:    response.result,
+			Orders: orders,
+		}, nil
+	}
 
 }
 
@@ -249,18 +233,65 @@ func (c *Contract) Release(orderId [32]byte, sellerShare *big.Int) (*common.Hash
 	return &hash, nil
 }
 
-func (c *Contract) getDisputeResolution(action MarketplaceAction) uint8 {
-	if action == DismissDispute {
-		value, _ := bind.Call(
-			c.instance, nil, c.paymentProcessor.PackDISPUTEDISMISSED(), c.paymentProcessor.UnpackDISPUTEDISMISSED)
-		return value
+func waitForReceipt(ctx context.Context, client *ethclient.Client, hash common.Hash) (chan *types.Receipt, chan error) {
+	receiptChan := make(chan *types.Receipt, 1)
+	errorChan := make(chan error, 1)
+
+	go func() {
+		receipt, err := bind.WaitMined(ctx, client, hash)
+		if err != nil {
+			errorChan <- err
+			return
+		}
+		receiptChan <- receipt
+	}()
+	return receiptChan, errorChan
+}
+
+func anotherWaitForReceipt(ctx context.Context, orderId string, result []byte,
+	errorChan <-chan error, receiptChan <-chan *types.Receipt) (any, error) {
+	select {
+	case <-ctx.Done():
+		fmt.Println("Timeout occured while sending transaction to be mined", ctx.Err())
+		return &SingleInvoiceResponse{
+			OrderId:   orderId,
+			InvoiceId: "0x" + common.Bytes2Hex(result),
+		}, nil
+
+	case err := <-errorChan:
+		return nil, err
+
+	case receipt := <-receiptChan:
+		if len(receipt.Logs) == 0 {
+			return nil, errors.New("no logs in receipt")
+		}
+		return &SingleInvoiceResponse{
+			OrderId:   orderId,
+			InvoiceId: receipt.Logs[0].Topics[1].Hex(),
+		}, nil
 	}
 
-	if action == SettleDispute {
-		value, _ := bind.Call(
-			c.instance, nil, c.paymentProcessor.PackDISPUTESETTLED(), c.paymentProcessor.UnpackDISPUTESETTLED)
-		return value
-	}
+	// select {
+	// case <-ctx.Done():
+	// 	fmt.Println("Timeout occured while sending transaction to be mined", ctx.Err())
+	// 	key := "0x" + common.Bytes2Hex(result)
+	// 	return &MetaInvoiceResponse{
+	// 		Key:    &key,
+	// 		Orders: orders,
+	// 	}, nil
 
-	return 0
+	// case err = <-errorChan:
+	// 	return nil, err
+
+	// case receipt := <-receiptChan:
+	// 	if len(result) == 0 {
+	// 		return nil, errors.New("no logs in receipt")
+	// 	}
+	// 	key := receipt.Logs[len(param)].Topics[1].Hex()
+	// 	return &MetaInvoiceResponse{
+	// 		Key:    &key,
+	// 		Orders: orders,
+	// 	}, nil
+	// }
+
 }

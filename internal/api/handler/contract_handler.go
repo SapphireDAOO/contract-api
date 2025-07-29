@@ -73,7 +73,6 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 	res.Url = h.baseUrl + token
 	json.NewEncoder(w).Encode(res)
-
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
