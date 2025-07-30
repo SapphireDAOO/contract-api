@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
@@ -41,7 +40,6 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 
 	if len(invoices) == 1 {
-
 		res, err := h.Contract.CreateInvoice(invoices)
 		if err != nil {
 			utils.Error(w, http.StatusInternalServerError, err, "error creating invoice")
@@ -77,7 +75,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId common.Hash `json:"id"`
+		InvoiceId common.Hash `json:"invoiceId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -100,8 +98,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id     string  `json:"id"`
-		Amount big.Int `json:"amount"`
+		InvoiceId [32]byte `json:"invoiceId"`
+		Amount    big.Int  `json:"amount"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -114,14 +112,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := handleId(input.Id)
-
-	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
-		return
-	}
-
-	txHash, err := h.Contract.Refund(*id, &input.Amount)
+	txHash, err := h.Contract.Refund(input.InvoiceId, &input.Amount)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -136,8 +127,8 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id          string  `json:"id"`
-		SellerShare big.Int `json:"sellerShare"`
+		InvoiceId   [32]byte `json:"invoiceId"`
+		SellerShare big.Int  `json:"sellerShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -145,14 +136,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := handleId(input.Id)
-
-	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
-		return
-	}
-
-	txHash, err := h.Contract.Release(*id, &input.SellerShare)
+	txHash, err := h.Contract.Release(input.InvoiceId, &input.SellerShare)
 	if err != nil {
 		fmt.Println(err)
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
@@ -168,7 +152,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Id          string                       `json:"id"`
+		InvoiceId   [32]byte                     `json:"invoiceId"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
 		SellerShare *big.Int                     `json:"sellerShare"`
 	}
@@ -178,14 +162,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	id, err := handleId(input.Id)
-
-	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, err, "failed to generate order ID hash")
-		return
-	}
-
-	txHash, err := h.Contract.HandleDispute(*id, input.Resolution, input.SellerShare)
+	txHash, err := h.Contract.HandleDispute(input.InvoiceId, input.Resolution, input.SellerShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -196,19 +173,4 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		"status":          "success",
 		"transaction url": TX_URL + txHash.Hex(),
 	})
-}
-
-func handleId(id string) (*common.Hash, error) {
-	if len(id) == 66 && strings.HasPrefix(id, "0x") {
-		hashed := common.HexToHash(id)
-		return &hashed, nil
-	} else {
-		hashed, err := utils.Keccak256(id)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return hashed, nil
-	}
 }

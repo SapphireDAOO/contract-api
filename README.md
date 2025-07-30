@@ -32,6 +32,14 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 ]
 ```
 
+#### Field Details
+
+| Field     | Type    | Required | Description                                                                     |
+| --------- | ------- | -------- | ------------------------------------------------------------------------------- |
+| `orderId` | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001").                        |
+| `seller`  | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                           |
+| `price`   | integer | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00). |
+
 #### **Response**
 
 **Success (200)**:
@@ -60,14 +68,6 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
     }
   }
   ```
-
-#### Field Details
-
-| Field     | Type    | Required | Description                                                                     |
-| --------- | ------- | -------- | ------------------------------------------------------------------------------- |
-| `orderId` | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001").                        |
-| `seller`  | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                           |
-| `price`   | integer | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00). |
 
 **Notes**:
 
@@ -137,17 +137,17 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 
 ```json
 {
-  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "sellerShare": 90000
 }
 ```
 
 #### Field Details
 
-| Field         | Type    | Required | Description                                                                |
-| ------------- | ------- | -------- | -------------------------------------------------------------------------- |
-| `id`          | string  | ✅       | The order id or invoice id from invoice creation                           |
-| `sellerShare` | integer | ✅       | Seller's share in USD with 8 decimal places (e.g., `9000000000` = $90.00). |
+| Field         | Type    | Required | Description                                                              |
+| ------------- | ------- | -------- | ------------------------------------------------------------------------ |
+| `invoiceId`   | string  | ✅       | The invoice ID retrieved when the invoice is created                     |
+| `sellerShare` | integer | ✅       | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
 
 **Response**:
 
@@ -185,7 +185,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "sellerShare": "9000000000"
 }'
 ```
@@ -201,7 +201,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 ```json
 {
-  "orderId": "inv001",
+  "invoiceId": "0x008d38d35c74aafbf1e0437e73a53a62e439a6479c566360215c587132ad5ee0",
   "resolution": 2,
   "resolver": "0x789abc...",
   "sellersShare": "9000"
@@ -212,7 +212,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 | Field          | Type    | Required                                    | Description                                                              |
 | -------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
-| `orderId`      | string  | ✅                                          | The order id or invoice id from invoice creation                         |
+| `invoiceId`    | string  | ✅                                          | The invoice ID retrieved when the invoice is created                     |
 | `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
 | `sellersShare` | integer | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
 
@@ -257,15 +257,6 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 
 ```json
 {
-  "error": "failed to generate order ID hash",
-  "reason": "<hashing error message>"
-}
-```
-
-**Error (500)**:
-
-```json
-{
   "error": "Error sending transaction",
   "reason": "<blockchain error message, e.g., InvalidInvoiceState or InvalidDisputeResolution>"
 }
@@ -278,7 +269,7 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "orderId": "inv001",
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "resolution": 2,
   "resolver": "0x789abc...",
   "sellersShare": "9000"
@@ -290,21 +281,21 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 ### Endpoint: `/cancel`
 
 - **Method**: POST
-- **Description**: Cancels a specific invoice using the `AdvancedPaymentProcessor` contract's `cancelInvoice` function, setting the invoice state to `CANCELED`.
+- **Description**: Cancels a specific invoice using the `AdvancedPaymentProcessor` contract's `cancelInvoice` function, setting the invoice state to `CANCELED`. This can only be done before payment.
 
 #### **Request Body**
 
 ```json
 {
-  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
 }
 ```
 
 #### Field Details
 
-| Field | Type   | Required | Description                                      |
-| ----- | ------ | -------- | ------------------------------------------------ |
-| `id`  | string | ✅       | The order id or invoice id from invoice creation |
+| Field       | Type   | Required | Description                                          |
+| ----------- | ------ | -------- | ---------------------------------------------------- |
+| `invoiceId` | string | ✅       | The invoice ID retrieved when the invoice is created |
 
 **Response**:
 
@@ -341,7 +332,7 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
 }'
 ```
 
@@ -356,17 +347,17 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 
 ```json
 {
-  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "amount": 5000000000
 }
 ```
 
 #### Field Details
 
-| Field    | Type    | Required | Description                                                               |
-| -------- | ------- | -------- | ------------------------------------------------------------------------- |
-| `id`     | string  | ✅       | The order id or invoice id from invoice creation                          |
-| `amount` | integer | ✅       | Refund amount in USD with 8 decimal places (e.g., `5000000000` = $50.00). |
+| Field       | Type    | Required | Description                                                               |
+| ----------- | ------- | -------- | ------------------------------------------------------------------------- |
+| `invoiceId` | string  | ✅       | The invoice ID retrieved when the invoice is created                      |
+| `amount`    | integer | ✅       | Refund amount in USD with 8 decimal places (e.g., `5000000000` = $50.00). |
 
 **Response**:
 
@@ -404,22 +395,22 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "id": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "amount": 5000000000
 }'
 ```
 
 ---
 
-### Endpoint: `/invoices/{id}`
+### Endpoint: `/invoices/{invoiceId}`
 
 - **Method**: GET
-- **Description**: Retrieves invoice data from the `AdvancedPaymentProcessor` contract's `getInvoice` function using the client-side `orderId` or hashed order ID.
+- **Description**: Retrieves invoice data from the `AdvancedPaymentProcessor` contract's `getInvoice` function using the invoice ID.
 
 #### **Request**
 
-- **URL Path**: `/invoices/{id}`
-  - `id`: Client-side `orderId` (e.g., "inv001") or hashed order ID (`keccak256(orderId)`, e.g., `0xabc123...`).
+- **URL Path**: `/invoices/{invoiceId}`
+  - `invoiceId`: Invoice ID retrieved when the invoice created
 
 **Response**:
 
@@ -455,16 +446,7 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 ```json
 {
   "error": "empty invoice id in path",
-  "reason": "Missing orderId parameter"
-}
-```
-
-**Error (500)**:
-
-```json
-{
-  "error": "failed to generate order ID hash",
-  "reason": "<hashing error message>"
+  "reason": "Missing invoiceId parameter"
 }
 ```
 
