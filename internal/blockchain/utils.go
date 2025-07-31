@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
@@ -42,8 +41,6 @@ func (c *Contract) simulateAndBroadcast(ctx context.Context, data []byte) (*Resp
 		return nil, err
 	}
 
-	// broadcast
-
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {
@@ -65,7 +62,6 @@ func (c *Contract) simulateAndBroadcast(ctx context.Context, data []byte) (*Resp
 
 	select {
 	case <-ctx.Done():
-		fmt.Println("Timeout occured while sending transaction to be mined", ctx.Err())
 		result := "0x" + common.Bytes2Hex(result)
 		return &Response{result: &result}, nil
 
@@ -79,8 +75,16 @@ func (c *Contract) simulateAndBroadcast(ctx context.Context, data []byte) (*Resp
 }
 
 func (c *Contract) simulateTransaction(ctx context.Context, data []byte) ([]byte, error) {
+	senderData := c.paymentProcessor.PackGetMarketplace()
+	senderAddress, err := bind.Call(c.instance, &bind.CallOpts{Pending: true},
+		senderData, c.paymentProcessor.UnpackGetMarketplace)
+
+	if err != nil {
+		return nil, err
+	}
+
 	msg := ethereum.CallMsg{
-		From: common.HexToAddress("0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4"),
+		From: senderAddress,
 		To:   c.address,
 		Data: data,
 	}

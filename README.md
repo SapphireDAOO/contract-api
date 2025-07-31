@@ -1,6 +1,6 @@
 # Sapphire Contract API – REST Endpoints
 
-This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x1A1b771B7e6cE617d22A148d08d0395Ca29f208a`. It facilitates invoice creation, payment processing, escrow management, dispute resolution, cancellation, and refund operations for secure and decentralized transactions.
+This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x80D9b6eA9dE65A4cDB5cE106D7690F56B2695102`. It facilitates invoice creation, payment processing, escrow management, dispute resolution, cancellation, and refund operations for secure and decentralized transactions.
 
 **Base URL**: `https://contract-api-production.up.railway.app/`
 
@@ -354,10 +354,10 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 
 #### Field Details
 
-| Field       | Type    | Required | Description                                                               |
-| ----------- | ------- | -------- | ------------------------------------------------------------------------- |
-| `invoiceId` | string  | ✅       | The invoice ID retrieved when the invoice is created                      |
-| `amount`    | integer | ✅       | Refund amount in USD with 8 decimal places (e.g., `5000000000` = $50.00). |
+| Field       | Type    | Required | Description                                                           |
+| ----------- | ------- | -------- | --------------------------------------------------------------------- |
+| `invoiceId` | string  | ✅       | The invoice ID retrieved when the invoice is created                  |
+| `amount`    | integer | ✅       | Refund share in **basis points** (e.g., `10000` = 100%, `5000` = 50%) |
 
 **Response**:
 
@@ -396,7 +396,7 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
   "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "amount": 5000000000
+  "amount": 5000
 }'
 ```
 

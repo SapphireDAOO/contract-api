@@ -98,8 +98,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId [32]byte `json:"invoiceId"`
-		Amount    big.Int  `json:"amount"`
+		InvoiceId   [32]byte `json:"invoiceId"`
+		RefundShare big.Int  `json:"refundShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -107,12 +107,12 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Amount.Cmp(big.NewInt(0)) == 0 {
-		utils.Error(w, http.StatusBadRequest, errors.New("amount can not be zero"), "invalid request body")
+	if input.RefundShare.Cmp(big.NewInt(0)) == 0 {
+		utils.Error(w, http.StatusBadRequest, errors.New("share can not be zero"), "invalid request body")
 		return
 	}
 
-	txHash, err := h.Contract.Refund(input.InvoiceId, &input.Amount)
+	txHash, err := h.Contract.Refund(input.InvoiceId, &input.RefundShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
