@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func AccessControlMiddleWare(next http.HandlerFunc) http.Handler {
+func AccessControlMiddleWare(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := os.Getenv("KEY")
 		providedKey := r.Header.Get("X-API-KEY")

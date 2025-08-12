@@ -8,6 +8,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 - [POST `/create`](#endpoint-create)
 - [POST `/release`](#endpoint-release)
+- [POST `/createDipsute`](#endpoint-createdispute)
 - [POST `/handleDispute`](#endpoint-handledispute)
 - [POST `/cancel`](#endpoint-cancel)
 - [POST `/refund`](#endpoint-refund)
@@ -187,6 +188,67 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 -d '{
   "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
   "sellerShare": "9000000000"
+}'
+```
+
+---
+
+### Endpoint: `/createDispute`
+
+- **Method**: POST
+- **Description**: Creates dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `createDispute` function.
+
+#### **Request Body**
+
+```json
+{
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+}
+```
+
+#### Field Details
+
+| Field       | Type   | Required | Description                                          |
+| ----------- | ------ | -------- | ---------------------------------------------------- |
+| `invoiceId` | string | ✅       | The invoice ID retrieved when the invoice is created |
+
+**Response**:
+
+**Success (200)**:
+
+```json
+{
+  "status": "success",
+  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+}
+```
+
+**Error (400)**:
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
+
+**Error (500)**:
+
+```json
+{
+  "error": "Error sending transaction",
+  "reason": "<blockchain error message, e.g., InvalidInvoiceState or NotAuthorized>"
+}
+```
+
+**Example**:
+
+```bash
+curl -X POST https://contract-api-production.up.railway.app/createDispute \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
 }'
 ```
 

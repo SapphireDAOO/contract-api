@@ -34,7 +34,7 @@ type SingleInvoiceResponse struct {
 	InvoiceId string `json:"invoiceId"`
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x80D9b6eA9dE65A4cDB5cE106D7690F56B2695102"
+const PAYMENT_PROCESSOR_ADDRESS string = "0x8f73c398ECcd94874752c1dFa48F20A092C8Cf86."
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
@@ -67,12 +67,12 @@ func (c *Contract) CreateInvoice(
 			OrderId:   param[0].OrderId,
 			InvoiceId: response.receipt.Logs[0].Topics[1].Hex(),
 		}, nil
-	} else {
-		return &SingleInvoiceResponse{
-			OrderId:   param[0].OrderId,
-			InvoiceId: *response.result,
-		}, nil
 	}
+	return &SingleInvoiceResponse{
+		OrderId:   param[0].OrderId,
+		InvoiceId: *response.result,
+	}, nil
+
 }
 
 func (c *Contract) CreateInvoices(
@@ -120,13 +120,26 @@ func (c *Contract) CreateInvoices(
 			Key:    &key,
 			Orders: orders,
 		}, nil
-	} else {
-		return &MetaInvoiceResponse{
-			Key:    response.result,
-			Orders: orders,
-		}, nil
+	}
+	return &MetaInvoiceResponse{
+		Key:    response.result,
+		Orders: orders,
+	}, nil
+}
+
+func (c *Contract) CreateDispute(orderId common.Hash) (*common.Hash, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	data := c.paymentProcessor.PackCreateDispute(orderId)
+
+	response, err := c.simulateAndBroadcast(ctx, data)
+
+	if err != nil {
+		return nil, err
 	}
 
+	return &response.receipt.TxHash, nil
 }
 
 func (c *Contract) HandleDispute(
@@ -190,7 +203,7 @@ func (c *Contract) Cancel(orderId common.Hash) (*common.Hash, error) {
 
 }
 
-func (c *Contract) Refund(orderId [32]byte, refundShare *big.Int) (*common.Hash, error) {
+func (c *Contract) Refund(orderId common.Hash, refundShare *big.Int) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {
@@ -210,7 +223,7 @@ func (c *Contract) Refund(orderId [32]byte, refundShare *big.Int) (*common.Hash,
 	return &hash, nil
 }
 
-func (c *Contract) Release(orderId [32]byte, sellerShare *big.Int) (*common.Hash, error) {
+func (c *Contract) Release(orderId common.Hash, sellerShare *big.Int) (*common.Hash, error) {
 	auth, err := auth(c.client.chainId)
 
 	if err != nil {

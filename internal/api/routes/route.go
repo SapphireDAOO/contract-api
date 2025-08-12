@@ -13,12 +13,12 @@ type Router struct {
 	mux *http.ServeMux
 }
 
-func (r *Router) POST(path string, handler http.Handler) {
+func (r *Router) POST(path string, handler http.HandlerFunc) {
 	pattern := fmt.Sprintf("POST %s", path)
-	r.mux.Handle(pattern, handler)
+	r.mux.HandleFunc(pattern, handler)
 }
 
-func (r *Router) GET(path string, handler http.Handler) {
+func (r *Router) GET(path string, handler http.HandlerFunc) {
 	pattern := fmt.Sprintf("GET %s", path)
 	r.mux.Handle(pattern, handler)
 }
@@ -27,12 +27,13 @@ func Route(contract *blockchain.Contract, url string) *http.ServeMux {
 	router := Router{mux: http.NewServeMux()}
 	handler := handler.NewContractHandler(contract, url)
 
-	router.POST("/create", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.CreateInvoice)))
-	router.POST("/release", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.Release)))
-	router.POST("/handleDispute", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.HandleDispute)))
-	router.POST("/cancel", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.Cancel)))
-	router.POST("/refund", middleware.AccessControlMiddleWare(http.HandlerFunc(handler.Refund)))
-	router.GET("/invoices/{id}", http.HandlerFunc(handler.GetInvoiceData))
+	router.POST("/create", middleware.AccessControlMiddleWare(handler.CreateInvoice))
+	router.POST("/release", middleware.AccessControlMiddleWare(handler.Release))
+	router.POST("/createDispute", middleware.AccessControlMiddleWare(handler.CreateDispute))
+	router.POST("/handleDispute", middleware.AccessControlMiddleWare(handler.HandleDispute))
+	router.POST("/cancel", middleware.AccessControlMiddleWare(handler.Cancel))
+	router.POST("/refund", middleware.AccessControlMiddleWare(handler.Refund))
+	router.GET("/invoices/{id}", handler.GetInvoiceData)
 
 	return router.mux
 }

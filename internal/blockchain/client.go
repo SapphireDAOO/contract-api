@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -23,7 +24,10 @@ func NewClient() *Client {
 		log.Fatalf("Failed to connect to blockchain: %v", err)
 	}
 
-	chainId, err := conn.ChainID(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	chainId, err := conn.ChainID(ctx)
 
 	if err != nil {
 		log.Fatalf("failed to retrieve chain ID: %v", err)

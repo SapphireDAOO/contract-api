@@ -125,6 +125,31 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		InvoiceId [32]byte `json:"invoiceId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		utils.Error(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
+	txHash, err := h.Contract.CreateDispute(input.InvoiceId)
+
+	if err != nil {
+		fmt.Println(err)
+		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":          "success",
+		"transaction url": TX_URL + txHash.Hex(),
+	})
+}
+
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		InvoiceId   [32]byte `json:"invoiceId"`
