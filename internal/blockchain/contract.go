@@ -34,7 +34,7 @@ type SingleInvoiceResponse struct {
 	InvoiceId string `json:"invoiceId"`
 }
 
-const PAYMENT_PROCESSOR_ADDRESS string = "0x8f73c398ECcd94874752c1dFa48F20A092C8Cf86."
+const PAYMENT_PROCESSOR_ADDRESS string = "0x8f73c398ECcd94874752c1dFa48F20A092C8Cf86"
 
 func NewContract(client *Client) *Contract {
 	address := common.HexToAddress(PAYMENT_PROCESSOR_ADDRESS)
