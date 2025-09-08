@@ -8,24 +8,15 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
-const RELEASE_TOPIC_HASH = ""
+const RELEASE_TOPIC_HASH = "0xc8ef479acdbffd729d96117b951d1c3ee85d98ef42699aec806bc4f0b522461d"
 
 func (c *PaymentProcessor) ListenToReleaseEvent() {
-	contractAddress := common.HexToAddress(utils.PAYMENT_PROCESSOR_ADDRESS)
-	if contractAddress == (common.Address{}) {
-		log.Fatalf("ADVANCED_PROCESSOR_CONTRACT_ADDRESS not set in environment")
-	}
-
-	contract := advancedprocessor.NewAdvancedprocessor()
-
 	paymentReleasedTopic := common.HexToHash(RELEASE_TOPIC_HASH)
 
 	query := ethereum.FilterQuery{
-		Addresses: []common.Address{contractAddress},
+		Addresses: []common.Address{*c.address},
 		Topics:    [][]common.Hash{{paymentReleasedTopic}},
 	}
 
@@ -50,7 +41,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 				continue
 			}
 		case vLog := <-logs:
-			event, err := contract.UnpackPaymentReleasedEvent(&vLog)
+			event, err := c.contract.UnpackPaymentReleasedEvent(&vLog)
 			if err != nil {
 				log.Printf("Failed to parse PaymentReleased event: %v", err)
 				continue
