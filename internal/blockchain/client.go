@@ -2,7 +2,8 @@ package blockchain
 
 import (
 	"context"
-	"log"
+	"errors"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
@@ -11,27 +12,41 @@ import (
 )
 
 type Client struct {
-	eth     *ethclient.Client
-	chainId *big.Int
+	HTTP    *ethclient.Client
+	WS      *ethclient.Client
+	ChainId *big.Int
 }
 
-func NewClient() *Client {
-	rpcURL := os.Getenv("TEST_NET_RPC_URL")
+func NewClient() (*Client, error) {
+	httpURL := os.Getenv("TEST_NET_RPC_URL")
+	wssURL := os.Getenv("TEST_NET_WSS")
 
-	conn, err := ethclient.Dial(rpcURL)
+	if httpURL == "" || wssURL == "" {
+		return nil, errors.New("TEST_NET_RPC_URL and TEST_NET_WSS are not set")
+	}
 
+	httpClient, err := ethclient.Dial(httpURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to blockchain: %v", err)
+		return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
+	}
+
+	wsClient, err := ethclient.Dial(wssURL)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to connect to WSS: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	chainId, err := conn.ChainID(ctx)
+	chainId, err := httpClient.ChainID(ctx)
 
 	if err != nil {
-		log.Fatalf("failed to retrieve chain ID: %v", err)
+		return nil, fmt.Errorf("failed to retrieve chain ID: %v", err)
 	}
 
-	return &Client{eth: conn, chainId: chainId}
+	return &Client{
+		HTTP:    httpClient,
+		WS:      wsClient,
+		ChainId: chainId,
+	}, nil
 }

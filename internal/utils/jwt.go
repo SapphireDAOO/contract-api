@@ -6,9 +6,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateToken(invoiceKey string) (string, error) {
+func GenerateToken(orderId string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"invoiceKey": invoiceKey,
+		"orderId": orderId,
 	})
 
 	return token.SignedString([]byte(os.Getenv("SECRET_KEY")))

@@ -7,8 +7,11 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/routes"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
+	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
+	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 )
 
 const (
@@ -40,15 +43,31 @@ func run() error {
 
 	addr := ":" + port
 
-	contract := blockchain.NewContract(blockchain.NewClient())
+	client, err := blockchain.NewClient()
+	if err != nil {
+		return err
+	}
 
-	mux := routes.Route(contract, url)
+	pp := paymentprocesor.NewPaymentprocessor(client)
+	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
+
+	go pp.ListenToReleaseEvent()
+
+	contract := handler.NewContractHandler(
+		&handler.ContractHandler{
+			PaymentProcessor:        pp,
+			PaymentProcessorStorage: pps,
+			BaseUrl:                 url,
+		},
+	)
+
+	mux := routes.Route(contract)
 
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	}
 
 	log.Printf("Server running at port %s", addr)

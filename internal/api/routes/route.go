@@ -6,7 +6,6 @@ import (
 
 	middleware "github.com/orgs/SapphireDAOO/contract-api/internal"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 )
 
 type Router struct {
@@ -23,17 +22,17 @@ func (r *Router) GET(path string, handler http.HandlerFunc) {
 	r.mux.Handle(pattern, handler)
 }
 
-func Route(contract *blockchain.Contract, url string) *http.ServeMux {
+func Route(h *handler.ContractHandler) *http.ServeMux {
 	router := Router{mux: http.NewServeMux()}
-	handler := handler.NewContractHandler(contract, url)
+	contractHandler := handler.NewContractHandler(h)
 
-	router.POST("/create", middleware.AccessControlMiddleWare(handler.CreateInvoice))
-	router.POST("/release", middleware.AccessControlMiddleWare(handler.Release))
-	router.POST("/createDispute", middleware.AccessControlMiddleWare(handler.CreateDispute))
-	router.POST("/handleDispute", middleware.AccessControlMiddleWare(handler.HandleDispute))
-	router.POST("/cancel", middleware.AccessControlMiddleWare(handler.Cancel))
-	router.POST("/refund", middleware.AccessControlMiddleWare(handler.Refund))
-	router.GET("/invoices/{id}", handler.GetInvoiceData)
+	router.POST("/create", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
+	router.POST("/release", middleware.AccessControlMiddleWare(contractHandler.Release))
+	router.POST("/createDispute", middleware.AccessControlMiddleWare(contractHandler.CreateDispute))
+	router.POST("/handleDispute", middleware.AccessControlMiddleWare(contractHandler.HandleDispute))
+	router.POST("/cancel", middleware.AccessControlMiddleWare(contractHandler.Cancel))
+	router.POST("/refund", middleware.AccessControlMiddleWare(contractHandler.Refund))
+	router.GET("/invoices/{id}", contractHandler.GetInvoiceData)
 
 	return router.mux
 }

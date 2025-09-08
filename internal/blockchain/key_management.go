@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func auth(chainId *big.Int) (*bind.TransactOpts, error) {
+func Auth(chainId *big.Int) (*bind.TransactOpts, error) {
 
 	k, _ := hex.DecodeString(os.Getenv("PASS"))
 

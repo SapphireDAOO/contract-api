@@ -7,25 +7,31 @@ import (
 	"math/big"
 	"net/http"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
-	paymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/AdvancedPaymentProcessor"
+	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
+	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
+	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
 const TX_URL string = "https://sepolia.etherscan.io/tx/"
 
 type ContractHandler struct {
-	Contract *blockchain.Contract
-	baseUrl  string
+	PaymentProcessor        *paymentprocesor.PaymentProcessor
+	PaymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
+	BaseUrl                 string
 }
 
-func NewContractHandler(contract *blockchain.Contract, baseUrl string) *ContractHandler {
-	return &ContractHandler{Contract: contract, baseUrl: baseUrl}
+func NewContractHandler(c *ContractHandler) *ContractHandler {
+	return &ContractHandler{
+		PaymentProcessor:        c.PaymentProcessor,
+		PaymentProcessorStorage: c.PaymentProcessorStorage,
+		BaseUrl:                 c.BaseUrl,
+	}
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	var invoices []paymentprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
+	var invoices []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 
 	if err := json.NewDecoder(r.Body).Decode(&invoices); err != nil {
 		utils.Error(w, http.StatusBadRequest, err, "invalid request body")
@@ -39,8 +45,14 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 
+	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
+		return
+	}
+
 	if len(invoices) == 1 {
-		res, err := h.Contract.CreateInvoice(invoices)
+		res, err := h.PaymentProcessor.CreateInvoice(invoices, *marketplaceAddress)
 		if err != nil {
 			utils.Error(w, http.StatusInternalServerError, err, "error creating invoice")
 			return
@@ -51,12 +63,12 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		res.Url = h.baseUrl + token
+		res.Url = h.BaseUrl + token
 		json.NewEncoder(w).Encode(res)
 		return
 	}
 
-	res, err := h.Contract.CreateInvoices(invoices)
+	res, err := h.PaymentProcessor.CreateInvoices(invoices, *marketplaceAddress)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "error creating meta invoice")
 		return
@@ -69,13 +81,13 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res.Url = h.baseUrl + token
+	res.Url = h.BaseUrl + token
 	json.NewEncoder(w).Encode(res)
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId common.Hash `json:"invoiceId"`
+		InvoiceId *big.Int `json:"invoiceId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -83,7 +95,7 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Cancel(input.InvoiceId)
+	txHash, err := h.PaymentProcessor.Cancel(input.InvoiceId)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -98,7 +110,7 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId   [32]byte `json:"invoiceId"`
+		InvoiceId   *big.Int `json:"invoiceId"`
 		RefundShare big.Int  `json:"refundShare"`
 	}
 
@@ -112,7 +124,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Refund(input.InvoiceId, &input.RefundShare)
+	txHash, err := h.PaymentProcessor.Refund(input.InvoiceId, &input.RefundShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -127,7 +139,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId [32]byte `json:"invoiceId"`
+		InvoiceId *big.Int `json:"invoiceId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -135,7 +147,13 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.Contract.CreateDispute(input.InvoiceId)
+	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
+		return
+	}
+
+	txHash, err := h.PaymentProcessor.CreateDispute(input.InvoiceId, *marketplaceAddress)
 
 	if err != nil {
 		fmt.Println(err)
@@ -152,8 +170,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId   [32]byte `json:"invoiceId"`
-		SellerShare big.Int  `json:"sellerShare"`
+		InvoiceId *big.Int `json:"invoiceId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -161,7 +178,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.Contract.Release(input.InvoiceId, &input.SellerShare)
+	txHash, err := h.PaymentProcessor.Release(input.InvoiceId)
 	if err != nil {
 		fmt.Println(err)
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
@@ -177,7 +194,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId   [32]byte                     `json:"invoiceId"`
+		InvoiceId   *big.Int                     `json:"invoiceId"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
 		SellerShare *big.Int                     `json:"sellerShare"`
 	}
@@ -187,7 +204,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.Contract.HandleDispute(input.InvoiceId, input.Resolution, input.SellerShare)
+	txHash, err := h.PaymentProcessor.HandleDispute(input.InvoiceId, input.Resolution, input.SellerShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
