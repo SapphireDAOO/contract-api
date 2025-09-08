@@ -3,7 +3,6 @@ package paymentprocesor
 import (
 	"context"
 	"errors"
-	"log"
 	"math/big"
 	"time"
 
@@ -32,7 +31,6 @@ func (c *PaymentProcessor) CreateInvoice(
 	param []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
 	marketplaceAddress common.Address,
 ) (*SingleInvoiceResponse, error) {
-	log.Println("the address is", c.address)
 	if len(param) != 1 {
 		return nil, errors.New("CreateInvoice expects exactly one parameter")
 	}
@@ -86,7 +84,6 @@ func (c *PaymentProcessor) CreateInvoices(
 	}
 
 	if c.address == nil {
-		log.Println("PaymentProcessor address is nil")
 		return nil, errors.New("payment processor contract address is not initialized")
 	}
 
