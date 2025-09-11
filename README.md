@@ -1,6 +1,6 @@
 # Sapphire Contract API – REST Endpoints
 
-This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x80D9b6eA9dE65A4cDB5cE106D7690F56B2695102`. It facilitates invoice creation, payment processing, escrow management, dispute resolution, cancellation, and refund operations for secure and decentralized transactions.
+This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x90F3F9816a637A8f30576Deecd6B09D825EB94C2`. It supports invoice creation, cancellation, refunding, dispute creation, dispute resolution, and fund release for secure, decentralized transactions in a marketplace.
 
 **Base URL**: `https://contract-api-production.up.railway.app/`
 
@@ -8,38 +8,39 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 - [POST `/create`](#endpoint-create)
 - [POST `/release`](#endpoint-release)
-- [POST `/createDipsute`](#endpoint-createdispute)
+- [POST `/createDispute`](#endpoint-createdispute)
 - [POST `/handleDispute`](#endpoint-handledispute)
 - [POST `/cancel`](#endpoint-cancel)
 - [POST `/refund`](#endpoint-refund)
-- [GET `/invoices/{id}`](#endpoint-getinvoicedata)
 
 ---
 
 ### Endpoint: `/create`
 
 - **Method**: POST
-- **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract's `createSingleInvoice` or `createMetaInvoice` functions. Invoices are stored in the contract's `invoice` mapping for single invoices or `metaInvoice` mapping for multiple invoices, with unique IDs.
+- **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract's `createSingleInvoice` (for one invoice) or `createMetaInvoice` (for multiple invoices) functions. Invoices are stored in the contract's `invoice` or `metaInvoice` mappings with unique IDs.
 
 #### **Request Body**
 
 ```json
 [
   {
-    "orderId": "inv001",
+    "orderId": "550e8400-e29b-41d4-a716-446655440000",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": 8680000000
+    "price": "8680000000",
+    "escrowHoldPeriod": "604800"
   }
 ]
 ```
 
 #### Field Details
 
-| Field     | Type    | Required | Description                                                                     |
-| --------- | ------- | -------- | ------------------------------------------------------------------------------- |
-| `orderId` | string  | ✅       | Client-side identifier for the invoice (e.g., "inv001").                        |
-| `seller`  | string  | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                           |
-| `price`   | integer | ✅       | Invoice price in **USD** with **8 decimal places** (e.g., `100000000` = $1.00). |
+| Field              | Type   | Required | Description                                                                  |
+| ------------------ | ------ | -------- | ---------------------------------------------------------------------------- |
+| `orderId`          | string | ✅       | Unique client-side identifier for the invoice (e.g., a UUID or any string).  |
+| `seller`           | string | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                        |
+| `price`            | string | ✅       | Invoice price in USD with 8 decimal places (e.g., `"100000000"` = $1.00).    |
+| `escrowHoldPeriod` | string | ✅       | Duration in seconds for holding funds in escrow (e.g., `"604800"` = 7 days). |
 
 #### **Response**
 
@@ -49,22 +50,22 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
   ```json
   {
     "url": "https://contract-api-production.up.railway.app/<token>",
-    "orderId": "order-1",
-    "invoiceId": "0x6ab58dbc048ca6b6fb46e4972b8d6f7515b5728c6c7e4b61c6aba4dd3e013844"
+    "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
   }
   ```
 - For multiple invoices:
   ```json
   {
     "url": "https://contract-api-production.up.railway.app/<token>",
+    "metaInvoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
     "orders": {
-      "order-id-1": {
+      "550e8400-e29b-41d4-a716-446655440000": {
         "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
-        "invoiceId": "0xb0ebc31f44ecffabd39b8be38e77992b4e681a3848641681c15a3730a30e383f"
+        "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
       },
-      "order-id-2": {
+      "6ba7b810-9dad-11d1-80b4-00c04fd430c8": {
         "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
-        "invoiceId": "0xce83a6685d3e54d85861fc842ea16f531a9f65542115ed1a55164f6c468394ab"
+        "orderId": "59808737901387817475691215581034097896123425895641016234844280890"
       }
     }
   }
@@ -72,10 +73,11 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 **Notes**:
 
-- The `price` is specified in USD with 8 decimal places and converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
-- A single invoice triggers `createSingleInvoice`, emitting an `InvoiceCreated` event. Multiple invoices trigger `createMetaInvoice`, emitting a `MetaInvoiceCreated` event and storing sub-invoices in the `metaInvoice` mapping.
-- The contract enforces that `price` cannot be zero and checks for existing invoices to prevent duplicates.
-- Only the `marketplace` address, set during contract initialization, can call this function.
+- The `price` is converted to token amounts using Chainlink price feeds via the contract’s `getTokenValueFromUsd` function.
+- A single invoice triggers `createSingleInvoice`, emitting an `InvoiceCreated` event. Multiple invoices trigger `createMetaInvoice`, emitting a `MetaInvoiceCreated` event.
+- Only the `marketplace` address (retrieved via `PaymentProcessorStorage.GetMarketplaceAddress`) can call these functions.
+- The `orderId` in the request (client-provided `requestId`) is hashed to a `uint216` using `utils.OrderIDToUint216` for on-chain storage, resulting in a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`).
+- The response uses `requestId` for the client-provided ID and `orderId` for the generated on-chain ID.
 
 **Error Responses**:
 
@@ -101,16 +103,38 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 
 - Returned if the invoice array is empty.
 
+**Error (400)**:
+
+```json
+{
+  "error": "<validation error>",
+  "reason": "<specific validation error, e.g., missing required field>"
+}
+```
+
+- Returned if invoice parameters fail validation (e.g., invalid seller address, missing `escrowHoldPeriod`).
+
 **Error (500)**:
 
 ```json
 {
-  "error": "error processing invoice",
+  "error": "error fetching marketplace address",
   "reason": "<blockchain error message>"
 }
 ```
 
-- Returned if the blockchain transaction fails (e.g., `InvoiceAlreadyExists`, `PriceCannotBeZero`, or `NotAuthorized` errors).
+- Returned if fetching the marketplace address fails.
+
+**Error (500)**:
+
+```json
+{
+  "error": "error creating invoice",
+  "reason": "<blockchain error message, e.g., The price cannot be zero>"
+}
+```
+
+- Returned if the blockchain transaction fails (e.g., `InvoiceAlreadyExists`, `PriceCannotBeZero`, `NotAuthorized`).
 
 **Example**:
 
@@ -120,9 +144,10 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '[
   {
-    "orderId": "inv001",
+    "orderId": "550e8400-e29b-41d4-a716-446655440000",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": 8680000000
+    "price": "8680000000",
+    "escrowHoldPeriod": "604800"
   }
 ]'
 ```
@@ -132,23 +157,21 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 ### Endpoint: `/release`
 
 - **Method**: POST
-- **Description**: Releases escrow funds for a specific invoice using the `AdvancedPaymentProcessor` contract's `release` function, distributing funds between the seller and buyer based on the specified `sellerShare`.
+- **Description**: Releases escrow funds for a specific invoice using the `AdvancedPaymentProcessor` contract’s `release` function, distributing funds to the seller and platform.
 
 #### **Request Body**
 
 ```json
 {
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "sellerShare": 90000
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
 }
 ```
 
 #### Field Details
 
-| Field         | Type    | Required | Description                                                              |
-| ------------- | ------- | -------- | ------------------------------------------------------------------------ |
-| `invoiceId`   | string  | ✅       | The invoice ID retrieved when the invoice is created                     |
-| `sellerShare` | integer | ✅       | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
+| Field     | Type   | Required | Description                                     |
+| --------- | ------ | -------- | ----------------------------------------------- |
+| `orderId` | string | ✅       | On-chain order ID (e.g., `598087379013878...`). |
 
 **Response**:
 
@@ -170,14 +193,18 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 }
 ```
 
+- Returned for malformed JSON or incorrect field types.
+
 **Error (500)**:
 
 ```json
 {
   "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., InvalidInvoiceState or NotAuthorized>"
+  "reason": "<blockchain error message, e.g., The invoice is not in a valid state for this action>"
 }
 ```
+
+- Returned if the blockchain transaction fails (e.g., `InvalidInvoiceState`, `NotAuthorized`).
 
 **Example**:
 
@@ -186,8 +213,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "sellerShare": "9000000000"
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
 }'
 ```
 
@@ -196,21 +222,21 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 ### Endpoint: `/createDispute`
 
 - **Method**: POST
-- **Description**: Creates dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `createDispute` function.
+- **Description**: Initiates a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract’s `createDispute` function, setting the invoice state to `DISPUTED`.
 
 #### **Request Body**
 
 ```json
 {
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
 }
 ```
 
 #### Field Details
 
-| Field       | Type   | Required | Description                                          |
-| ----------- | ------ | -------- | ---------------------------------------------------- |
-| `invoiceId` | string | ✅       | The invoice ID retrieved when the invoice is created |
+| Field     | Type   | Required | Description                                     |
+| --------- | ------ | -------- | ----------------------------------------------- |
+| `orderId` | string | ✅       | On-chain order ID (e.g., `598087379013878...`). |
 
 **Response**:
 
@@ -232,14 +258,29 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 }
 ```
 
+- Returned for malformed JSON or incorrect field types.
+
+**Error (500)**:
+
+```json
+{
+  "error": "error fetching marketplace address",
+  "reason": "<blockchain error message>"
+}
+```
+
+- Returned if fetching the marketplace address fails.
+
 **Error (500)**:
 
 ```json
 {
   "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., InvalidInvoiceState or NotAuthorized>"
+  "reason": "<blockchain error message, e.g., The invoice is not in a valid state for this action>"
 }
 ```
+
+- Returned if the blockchain transaction fails (e.g., `InvalidInvoiceState`, `NotAuthorized`).
 
 **Example**:
 
@@ -248,7 +289,7 @@ curl -X POST https://contract-api-production.up.railway.app/createDispute \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
 }'
 ```
 
@@ -257,43 +298,40 @@ curl -X POST https://contract-api-production.up.railway.app/createDispute \
 ### Endpoint: `/handleDispute`
 
 - **Method**: POST
-- **Description**: Resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract's `resolveDispute` or `handleDispute` functions, updating the invoice state and distributing funds if applicable.
+- **Description**: Resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract’s `resolveDispute` or `handleDispute` functions, updating the invoice state and distributing funds if applicable.
 
 #### **Request Body**
 
 ```json
 {
-  "invoiceId": "0x008d38d35c74aafbf1e0437e73a53a62e439a6479c566360215c587132ad5ee0",
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
   "resolution": 2,
-  "resolver": "0x789abc...",
-  "sellersShare": "9000"
+  "sellerShare": "9000"
 }
 ```
 
 #### Field Details
 
-| Field          | Type    | Required                                    | Description                                                              |
-| -------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
-| `invoiceId`    | string  | ✅                                          | The invoice ID retrieved when the invoice is created                     |
-| `resolution`   | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
-| `sellersShare` | integer | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in **basis points** (e.g., `10000` = 100%, `9000` = 90%). |
+| Field         | Type    | Required                                    | Description                                                              |
+| ------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
+| `orderId`     | string  | ✅                                          | On-chain order ID (e.g., `598087379013878...`).                          |
+| `resolution`  | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
+| `sellerShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller’s share in basis points (e.g., `"10000"` = 100%, `"9000"` = 90%). |
 
 #### MarketplaceAction Enum (`resolution`)
 
-| Value | Name           | Description                                                                                            | Contract Function                           |
-| ----- | -------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| `0`   | Pending        | Default state, no action taken                                                                         | N/A                                         |
-| `1`   | ResolveDispute | Both buyer and seller agree to dismiss the dispute, with escrow allocation unchanged (fully to seller) | `resolveDispute`                            |
-| `2`   | SettleDispute  | Dispute resolved by an arbitrator, with `sellersShare` to the seller and the rest to the buyer         | `handleDispute` with `DISPUTE_SETTLED`      |
-| `3`   | DismissDispute | Arbitrator dismisses the dispute, leaving escrow allocation unchanged (fully to seller)                | `handleDispute` with `DISPUTE_DISDISMISSED` |
+| Value | Name           | Description                                                                                            | Contract Function                        |
+| ----- | -------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| `1`   | ResolveDispute | Both buyer and seller agree to dismiss the dispute, with escrow allocation unchanged (fully to seller) | `resolveDispute`                         |
+| `2`   | SettleDispute  | Dispute resolved by an arbitrator, with `sellerShare` to the seller and the rest to the buyer          | `handleDispute` with `DISPUTE_SETTLED`   |
+| `3`   | DismissDispute | Arbitrator dismisses the dispute, leaving escrow allocation unchanged (fully to seller)                | `handleDispute` with `DISPUTE_DISMISSED` |
 
 **Notes**:
 
-- The contract validates that the invoice is in the `DISPUTED` state and that `sellersShare` does not exceed `BASIS_POINTS` (10,000).
-- For `SettleDispute`, funds are distributed via `_distributeFunds`, with platform fees applied. Emits `DisputeSettled` with payout details.
+- The contract validates that the invoice is in the `DISPUTED` state and that `sellerShare` does not exceed 10,000 basis points.
+- For `SettleDispute`, funds are distributed with platform fees applied, emitting `DisputeSettled`.
 - For `DismissDispute`, emits `DisputeDismissed` without fund distribution.
 - For `ResolveDispute`, emits `DisputeResolved` and sets the state to `DISPUTE_RESOLVED`.
-- Only the `marketplace` address can call this function.
 
 **Response**:
 
@@ -315,14 +353,18 @@ curl -X POST https://contract-api-production.up.railway.app/createDispute \
 }
 ```
 
+- Returned for malformed JSON or incorrect field types.
+
 **Error (500)**:
 
 ```json
 {
   "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., InvalidInvoiceState or InvalidDisputeResolution>"
+  "reason": "<blockchain error message, e.g., The provided dispute resolution is invalid>"
 }
 ```
+
+- Returned if the blockchain transaction fails (e.g., `InvalidDisputeResolution`, `InvalidInvoiceState`).
 
 **Example**:
 
@@ -331,10 +373,9 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
   "resolution": 2,
-  "resolver": "0x789abc...",
-  "sellersShare": "9000"
+  "sellerShare": "9000"
 }'
 ```
 
@@ -343,83 +384,21 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 ### Endpoint: `/cancel`
 
 - **Method**: POST
-- **Description**: Cancels a specific invoice using the `AdvancedPaymentProcessor` contract's `cancelInvoice` function, setting the invoice state to `CANCELED`. This can only be done before payment.
+- **Description**: Cancels a specific invoice using the `AdvancedPaymentProcessor` contract’s `cancelInvoice` function, setting the invoice state to `CANCELED`. Can only be called before payment.
 
 #### **Request Body**
 
 ```json
 {
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
 }
 ```
 
 #### Field Details
 
-| Field       | Type   | Required | Description                                          |
-| ----------- | ------ | -------- | ---------------------------------------------------- |
-| `invoiceId` | string | ✅       | The invoice ID retrieved when the invoice is created |
-
-**Response**:
-
-- **Success (200)**:
-  ```json
-  {
-    "status": "success",
-    "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
-  }
-  ```
-
-**Error (400)**:
-
-```json
-{
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
-}
-```
-
-**Error (500)**:
-
-```json
-{
-  "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., InvalidInvoiceState or Unauthorized>"
-}
-```
-
-**Example**:
-
-```bash
-curl -X POST https://contract-api-production.up.railway.app/cancel \
--H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1"
-}'
-```
-
----
-
-### Endpoint: `/refund`
-
-- **Method**: POST
-- **Description**: Issues a refund for a specific invoice using the `AdvancedPaymentProcessor` contract's `refund` function, withdrawing funds from the escrow to the buyer.
-
-#### **Request Body**
-
-```json
-{
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "amount": 5000000000
-}
-```
-
-#### Field Details
-
-| Field       | Type    | Required | Description                                                           |
-| ----------- | ------- | -------- | --------------------------------------------------------------------- |
-| `invoiceId` | string  | ✅       | The invoice ID retrieved when the invoice is created                  |
-| `amount`    | integer | ✅       | Refund share in **basis points** (e.g., `10000` = 100%, `5000` = 50%) |
+| Field     | Type   | Required | Description                                     |
+| --------- | ------ | -------- | ----------------------------------------------- |
+| `orderId` | string | ✅       | On-chain order ID (e.g., `598087379013878...`). |
 
 **Response**:
 
@@ -441,14 +420,96 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 }
 ```
 
+- Returned for malformed JSON or incorrect field types.
+
 **Error (500)**:
 
 ```json
 {
   "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., InvalidInvoiceState or InsufficientBalance>"
+  "reason": "<blockchain error message, e.g., The invoice is not in a valid state for this action>"
 }
 ```
+
+- Returned if the blockchain transaction fails (e.g., `InvalidInvoiceState`, `NotAuthorized`).
+
+**Example**:
+
+```bash
+curl -X POST https://contract-api-production.up.railway.app/cancel \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
+}'
+```
+
+---
+
+### Endpoint: `/refund`
+
+- **Method**: POST
+- **Description**: Issues a refund for a specific invoice using the `AdvancedPaymentProcessor` contract’s `refund` function, withdrawing funds from escrow to the buyer.
+
+#### **Request Body**
+
+```json
+{
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "refundShare": "5000"
+}
+```
+
+#### Field Details
+
+| Field         | Type   | Required | Description                                                            |
+| ------------- | ------ | -------- | ---------------------------------------------------------------------- |
+| `orderId`     | string | ✅       | On-chain order ID (e.g., `598087379013878...`).                        |
+| `refundShare` | string | ✅       | Refund share in basis points (e.g., `"10000"` = 100%, `"5000"` = 50%). |
+
+**Response**:
+
+**Success (200)**:
+
+```json
+{
+  "status": "success",
+  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+}
+```
+
+**Error (400)**:
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "<decoding error message>"
+}
+```
+
+- Returned for malformed JSON or incorrect field types.
+
+**Error (400)**:
+
+```json
+{
+  "error": "invalid request body",
+  "reason": "share can not be zero"
+}
+```
+
+- Returned if `refundShare` is zero.
+
+**Error (500)**:
+
+```json
+{
+  "error": "Error sending transaction",
+  "reason": "<blockchain error message, e.g., The account balance is insufficient to perform this action>"
+}
+```
+
+- Returned if the blockchain transaction fails (e.g., `InsufficientBalance`, `InvalidInvoiceState`).
 
 **Example**:
 
@@ -457,89 +518,34 @@ curl -X POST https://contract-api-production.up.railway.app/refund \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "invoiceId": "0xabc123abc123abc123abc123abc123abc123abc123abc123abc123abc123abc1",
-  "amount": 5000
+  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "refundShare": "5000"
 }'
-```
-
----
-
-### Endpoint: `/invoices/{invoiceId}`
-
-- **Method**: GET
-- **Description**: Retrieves invoice data from the `AdvancedPaymentProcessor` contract's `getInvoice` function using the invoice ID.
-
-#### **Request**
-
-- **URL Path**: `/invoices/{invoiceId}`
-  - `invoiceId`: Invoice ID retrieved when the invoice created
-
-**Response**:
-
-- **Success (200)**:
-  ```json
-  {
-    "invoiceId": "0x008d38d35c74aafbf1e0437e73a53a62e439a6479c566360215c587132ad5ee0",
-    "createdAt": "1753051512",
-    "price": "35000000000",
-    "state": "PAID",
-    "amountPaid": "350000000",
-    "paidAt": "1753052436",
-    "balance": "350000000",
-    "releasedAt": "",
-    "buyer": "0x0f447989b14a3f0bbf08808020ec1a6de0b8cbc4",
-    "seller": "0x329c3e1bea46abc22f307ee30cbb522b82fe7082",
-    "metaInvoice": "",
-    "paymentToken": "Mock Usdc"
-  }
-  ```
-
-**Error (400)**:
-
-```json
-{
-  "error": "invalid URL path structure",
-  "reason": "Invalid or missing invoice ID"
-}
-```
-
-**Error (400)**:
-
-```json
-{
-  "error": "empty invoice id in path",
-  "reason": "Missing invoiceId parameter"
-}
-```
-
-**Error (500)**:
-
-```json
-{
-  "error": "failed to fetch invoice data",
-  "reason": "<query error message, e.g., InvoiceDoesNotExist>"
-}
-```
-
-**Example**:
-
-```bash
-curl -X GET https://contract-api-production.up.railway.app/invoices/inv001 \
--H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
 ---
 
 ## Notes
 
-- All endpoints are routed through an `http.ServeMux` multiplexer defined in the `Route` function of the Go backend.
-- Endpoints are protected by `AccessControlMiddleWare`, requiring an `X-API-KEY` header for authentication/authorization.
-- The `AdvancedPaymentProcessor` contract uses Solady libraries (`SafeTransferLib`, `SafeCastLib`, `FixedPointMathLib`) for secure token transfers, type casting, and fixed-point arithmetic.
-- Invoice states are tracked with the following constants: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
-- The contract uses Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting both native (ETH) and ERC20 tokens.
-- Escrow contracts are created via the `EscrowFactory` parent contract, with funds managed securely using `IEscrow.withdraw`.
-- Platform fees are applied during fund distribution, transferred to the fee receiver address stored in the `IPaymentProcessorStorage` contract.
-- The `marketplace` address, set via `setMarketplace`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `release`, `handleDispute`, `refund`, `resolveDispute`).
-- All blockchain interactions occur on the Ethereum Sepolia testnet, with transaction hashes linked to `https://sepolia.etherscan.io/tx/`.
-- The `IAdvancedPaymentProcessorInvoiceCreationParam` struct in the Go backend ensures type safety for `orderId` (string), `seller` (Ethereum address), `invoiceExpiryDuration`, `timeBeforeCancelation`, and `releaseWindow` (uint32), and `price` (big.Int).
+- All endpoints require an `X-API-KEY` header for authentication, enforced by `AccessControlMiddleWare`.
+- The `AdvancedPaymentProcessor` contract is deployed on the Ethereum Sepolia testnet and uses Solady libraries (`SafeTransferLib`, `SafeCastLib`, `FixedPointMathLib`) for secure token transfers, type casting, and fixed-point arithmetic.
+- Invoice states are: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
+- The contract uses Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting ETH and ERC20 tokens.
+- The `marketplace` address, retrieved via `PaymentProcessorStorage.GetMarketplaceAddress`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
+- Transaction hashes are linked to `https://sepolia.etherscan.io/tx/`.
+- The `IAdvancedPaymentProcessorInvoiceCreationParam` struct in Go ensures type safety for `orderId` (string), `seller` (Ethereum address), `price` (big.Int), and `escrowHoldPeriod` (big.Int).
+- The `orderId` in the request (client-provided `requestId`) is hashed to a `uint216` using `utils.OrderIDToUint216` for on-chain storage, resulting in a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`).
+- Blockchain errors are mapped to human-readable messages via `utils.RevertErrorDescriptions`, including:
+  - `The buyer and seller addresses cannot be the same.`
+  - `The account balance is insufficient to perform this action.`
+  - `The provided dispute resolution is invalid.`
+  - `The invoice is not in a valid state for this action.`
+  - `The native token payment is invalid for this invoice.`
+  - `The specified payment token is not supported or invalid.`
+  - `The seller's payout share is invalid.`
+  - `An invoice with this identifier already exists.`
+  - `The specified invoice does not exist.`
+  - `A meta-invoice with this identifier already exists.`
+  - `The caller is not authorized to perform this action.`
+  - `The price cannot be zero.`
+  - `The price specified is too low.`

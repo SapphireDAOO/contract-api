@@ -92,7 +92,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId *big.Int `json:"invoiceId"`
+		OrderId *big.Int `json:"OrderId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -100,7 +100,7 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Cancel(input.InvoiceId)
+	txHash, err := h.PaymentProcessor.Cancel(input.OrderId)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -115,7 +115,7 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId   *big.Int `json:"invoiceId"`
+		OrderId     *big.Int `json:"invoiceId"`
 		RefundShare big.Int  `json:"refundShare"`
 	}
 
@@ -129,7 +129,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Refund(input.InvoiceId, &input.RefundShare)
+	txHash, err := h.PaymentProcessor.Refund(input.OrderId, &input.RefundShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
@@ -144,7 +144,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId *big.Int `json:"invoiceId"`
+		OrderId *big.Int `json:"invoiceId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -158,7 +158,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.CreateDispute(input.InvoiceId, *marketplaceAddress)
+	txHash, err := h.PaymentProcessor.CreateDispute(input.OrderId, *marketplaceAddress)
 
 	if err != nil {
 		fmt.Println(err)
@@ -175,7 +175,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId *big.Int `json:"invoiceId"`
+		OrderId *big.Int `json:"invoiceId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -183,7 +183,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Release(input.InvoiceId)
+	txHash, err := h.PaymentProcessor.Release(input.OrderId)
 	if err != nil {
 		fmt.Println(err)
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
@@ -199,7 +199,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		InvoiceId   *big.Int                     `json:"invoiceId"`
+		OrderId     *big.Int                     `json:"orderId"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
 		SellerShare *big.Int                     `json:"sellerShare"`
 	}
@@ -209,7 +209,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.HandleDispute(input.InvoiceId, input.Resolution, input.SellerShare)
+	txHash, err := h.PaymentProcessor.HandleDispute(input.OrderId, input.Resolution, input.SellerShare)
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "Error sending transaction")
 		return
