@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-const RELEASE_TOPIC_HASH = "0xc8ef479acdbffd729d96117b951d1c3ee85d98ef42699aec806bc4f0b522461d"
+const RELEASE_TOPIC_HASH = "0x8ea2131e86229753e4a36a9ffc579af1b38fdada1aefe3e09a44cf2eab25befe"
 
 func (c *PaymentProcessor) ListenToReleaseEvent() {
 	paymentReleasedTopic := common.HexToHash(RELEASE_TOPIC_HASH)

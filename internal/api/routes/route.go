@@ -32,7 +32,7 @@ func Route(h *handler.ContractHandler) *http.ServeMux {
 	router.POST("/handleDispute", middleware.AccessControlMiddleWare(contractHandler.HandleDispute))
 	router.POST("/cancel", middleware.AccessControlMiddleWare(contractHandler.Cancel))
 	router.POST("/refund", middleware.AccessControlMiddleWare(contractHandler.Refund))
-	router.GET("/invoices/{id}", contractHandler.GetInvoiceData)
+	router.GET("/invoices/{orderId}", contractHandler.GetInvoiceData)
 
 	return router.mux
 }

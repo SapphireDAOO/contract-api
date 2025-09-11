@@ -8,18 +8,17 @@ import (
 )
 
 type MetaInvoiceResponse struct {
-	Url    string  `json:"url"`
-	Key    *string `json:"-"`
-	Orders map[string]struct {
-		Seller    string `json:"seller"`
-		InvoiceId string `json:"invoiceId"`
+	Url           string  `json:"url"`
+	MetaInvoiceId *string `json:"metaInvoiceId"`
+	Orders        map[string]struct {
+		Seller  string `json:"seller"`
+		OrderId string `json:"orderId"`
 	} `json:"orders"`
 }
 
 type SingleInvoiceResponse struct {
-	Url       string `json:"url"`
-	OrderId   string `json:"orderId"`
-	InvoiceId string `json:"invoiceId"`
+	Url     string `json:"url"`
+	OrderId string `json:"orderId"`
 }
 
 type PaymentProcessor struct {

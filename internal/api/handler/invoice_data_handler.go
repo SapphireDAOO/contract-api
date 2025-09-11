@@ -10,9 +10,8 @@ import (
 )
 
 func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	invoiceId := r.PathValue("invoiceId")
-
-	if invoiceId == "" {
+	orderId := r.PathValue("orderId")
+	if orderId == "" {
 		utils.Error(w, http.StatusBadRequest, errors.New("empty invoice id in path"), "Missing invoiceId parameter")
 		return
 	}
@@ -22,7 +21,7 @@ func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request)
 		err  error
 	)
 
-	data, err = query.GetInvoiceData(invoiceId)
+	data, err = query.GetInvoiceData(orderId)
 
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "failed to fetch invoice data")

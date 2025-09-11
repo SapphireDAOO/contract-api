@@ -31,6 +31,7 @@ func (c *PaymentProcessor) CreateInvoice(
 	param []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
 	marketplaceAddress common.Address,
 ) (*SingleInvoiceResponse, error) {
+
 	if len(param) != 1 {
 		return nil, errors.New("CreateInvoice expects exactly one parameter")
 	}
@@ -48,13 +49,11 @@ func (c *PaymentProcessor) CreateInvoice(
 
 	if response.Result == nil {
 		return &SingleInvoiceResponse{
-			OrderId:   param[0].OrderId,
-			InvoiceId: response.Receipt.Logs[0].Topics[1].String(),
+			OrderId: response.Receipt.Logs[0].Topics[1].String(),
 		}, nil
 	}
 	return &SingleInvoiceResponse{
-		OrderId:   param[0].OrderId,
-		InvoiceId: *response.Result,
+		OrderId: *response.Result,
 	}, nil
 
 }
@@ -68,46 +67,47 @@ func (c *PaymentProcessor) CreateInvoices(
 	}
 
 	orders := make(map[string]struct {
-		Seller    string `json:"seller"`
-		InvoiceId string `json:"invoiceId"`
+		Seller  string `json:"seller"`
+		OrderId string `json:"orderId"`
 	})
 
 	for i := range param {
-		sellerAddress := param[i].Seller.Hex()
-		orderId := param[i].OrderId
+		id := param[i].OrderId
 
-		o := orders[orderId]
-		o.Seller = sellerAddress
-		o.InvoiceId = orderId
+		o := orders[id]
+		o.Seller = param[i].Seller.Hex()
 
-		orders[orderId] = o
+		o.OrderId = utils.OrderIDToUint216(id)
+
+		orders[id] = o
 	}
 
 	if c.address == nil {
 		return nil, errors.New("payment processor contract address is not initialized")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	data := c.contract.PackCreateMetaInvoice(param)
 
-	response, err := contracts.SimulateAndBroadcast(ctx, c.instance, c.client, marketplaceAddress, *c.address, data)
+	response, err := contracts.SimulateAndBroadcast(ctx,
+		c.instance, c.client, marketplaceAddress, *c.address, data)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if response.Result == nil {
-		key := response.Receipt.Logs[len(param)].Topics[1].String()
+		result := new(big.Int).SetBytes(response.Receipt.Logs[len(param)].Topics[1].Bytes()).String()
 		return &MetaInvoiceResponse{
-			Key:    &key,
-			Orders: orders,
+			MetaInvoiceId: &result,
+			Orders:        orders,
 		}, nil
 	}
 	return &MetaInvoiceResponse{
-		Key:    response.Result,
-		Orders: orders,
+		MetaInvoiceId: response.Result,
+		Orders:        orders,
 	}, nil
 }
 

@@ -38,6 +38,11 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if err := utils.ValidateInvoices(invoices); err != nil {
+		utils.Error(w, http.StatusBadRequest, err, err.Error())
+		return
+	}
+
 	if len(invoices) == 0 {
 		utils.Error(w, http.StatusBadRequest, nil, "no invoice parameters provided")
 		return
@@ -57,7 +62,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 			utils.Error(w, http.StatusInternalServerError, err, "error creating invoice")
 			return
 		}
-		token, err := utils.GenerateToken(res.InvoiceId)
+		token, err := utils.GenerateToken(res.OrderId)
 		if err != nil {
 			utils.Error(w, http.StatusInternalServerError, err, "token generation failed")
 			return
@@ -74,7 +79,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	token, err := utils.GenerateToken(*res.Key)
+	token, err := utils.GenerateToken(*res.MetaInvoiceId)
 
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, err, "token generation failed")

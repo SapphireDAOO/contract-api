@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
@@ -55,7 +56,7 @@ func SimulateAndBroadcast(ctx context.Context, instance *bind.BoundContract,
 
 	select {
 	case <-ctx.Done():
-		result := "0x" + common.Bytes2Hex(result)
+		result := new(big.Int).SetBytes(result).String()
 		return &Response{Result: &result}, nil
 
 	case res := <-resultChan:
