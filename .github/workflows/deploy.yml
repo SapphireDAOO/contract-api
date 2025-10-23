@@ -1,0 +1,42 @@
+name: Deploy Payment Processor API
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.4"
+
+      - name: Build
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+          go build -ldflags="-s -w" -o myapp .
+
+      - name: Deploy via SCP
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          source: "myapp"
+          target: ${{ secrets.TARGET_DIR }}/
+          overwrite: true
+
+      - name: Restart service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            cd ${{ secrets.TARGET_DIR }}
+            chmod +x myapp
+            sudo systemctl restart myapp.service
