@@ -30,10 +30,10 @@ func NewClient() (*Client, error) {
 		return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
 	}
 
-	wsClient, err := ethclient.Dial(wssURL)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to WSS: %v", err)
-	}
+	// wsClient, err := ethclient.Dial(wssURL)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Failed to connect to WSS: %v", err)
+	// }
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -45,8 +45,8 @@ func NewClient() (*Client, error) {
 	}
 
 	return &Client{
-		HTTP:    httpClient,
-		WS:      wsClient,
+		HTTP: httpClient,
+		// WS:      wsClient,
 		ChainId: chainId,
 	}, nil
 }

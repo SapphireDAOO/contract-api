@@ -26,6 +26,9 @@ func Route(h *handler.ContractHandler) *http.ServeMux {
 	router := Router{mux: http.NewServeMux()}
 	contractHandler := handler.NewContractHandler(h)
 
+	router.GET("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world"))
+	}))
 	router.POST("/create", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
 	router.POST("/release", middleware.AccessControlMiddleWare(contractHandler.Release))
 	router.POST("/createDispute", middleware.AccessControlMiddleWare(contractHandler.CreateDispute))
