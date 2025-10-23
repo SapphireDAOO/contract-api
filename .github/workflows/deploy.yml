@@ -20,6 +20,15 @@ jobs:
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
           go build -ldflags="-s -w" -o myapp ./server
 
+          - name: Stop service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            sudo systemctl stop myapp.service
+
       - name: Deploy via SCP
         uses: appleboy/scp-action@v1.0.0
         with:
