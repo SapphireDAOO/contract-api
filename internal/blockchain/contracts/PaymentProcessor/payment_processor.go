@@ -49,7 +49,8 @@ func (c *PaymentProcessor) CreateInvoice(
 
 	if response.Result == nil {
 		return &SingleInvoiceResponse{
-			OrderId: response.Receipt.Logs[0].Topics[1].String(),
+			OrderId: new(big.Int).
+				SetBytes(response.Receipt.Logs[0].Topics[1].Bytes()).String(),
 		}, nil
 	}
 	return &SingleInvoiceResponse{
