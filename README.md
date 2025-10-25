@@ -2,7 +2,7 @@
 
 This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x90F3F9816a637A8f30576Deecd6B09D825EB94C2`. It supports invoice creation, cancellation, refunding, dispute creation, dispute resolution, and fund release for secure, decentralized transactions in a marketplace.
 
-**Base URL**: `https://contract-api-production.up.railway.app/`
+**Base URL**: `https://pp-api.serveftp.com/`
 
 ## Endpoints
 
@@ -49,14 +49,14 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 - For a single invoice:
   ```json
   {
-    "url": "https://contract-api-production.up.railway.app/<token>",
+    "url": "https://pp-api.serveftp.com/<token>",
     "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
   }
   ```
 - For multiple invoices:
   ```json
   {
-    "url": "https://contract-api-production.up.railway.app/<token>",
+    "url": "https://pp-api.serveftp.com/<token>",
     "metaInvoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
     "orders": {
       "550e8400-e29b-41d4-a716-446655440000": {
@@ -139,7 +139,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/create \
+curl -X POST https://pp-api.serveftp.com/create \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '[
@@ -209,7 +209,7 @@ curl -X POST https://contract-api-production.up.railway.app/create \
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/release \
+curl -X POST https://pp-api.serveftp.com/release \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
@@ -285,7 +285,7 @@ curl -X POST https://contract-api-production.up.railway.app/release \
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/createDispute \
+curl -X POST https://pp-api.serveftp.com/createDispute \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
@@ -369,7 +369,7 @@ curl -X POST https://contract-api-production.up.railway.app/createDispute \
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/handleDispute \
+curl -X POST https://pp-api.serveftp.com/handleDispute \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
@@ -436,7 +436,7 @@ curl -X POST https://contract-api-production.up.railway.app/handleDispute \
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/cancel \
+curl -X POST https://pp-api.serveftp.com/cancel \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
@@ -514,7 +514,7 @@ curl -X POST https://contract-api-production.up.railway.app/cancel \
 **Example**:
 
 ```bash
-curl -X POST https://contract-api-production.up.railway.app/refund \
+curl -X POST https://pp-api.serveftp.com/refund \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
