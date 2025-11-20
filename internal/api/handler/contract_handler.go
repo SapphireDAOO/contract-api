@@ -62,7 +62,8 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 			utils.Error(w, http.StatusInternalServerError, err, "error creating invoice")
 			return
 		}
-		token, err := utils.GenerateToken(res.OrderId)
+		id := invoices[0].OrderId
+		token, err := utils.GenerateToken(res.Orders[id].OrderId)
 		if err != nil {
 			utils.Error(w, http.StatusInternalServerError, err, "token generation failed")
 			return

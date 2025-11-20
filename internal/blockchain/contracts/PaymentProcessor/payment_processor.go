@@ -30,31 +30,41 @@ func NewPaymentprocessor(client *blockchain.Client) *PaymentProcessor {
 func (c *PaymentProcessor) CreateInvoice(
 	param []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
 	marketplaceAddress common.Address,
-) (*SingleInvoiceResponse, error) {
+) (*InvoiceResponse, error) {
 
 	if len(param) != 1 {
 		return nil, errors.New("CreateInvoice expects exactly one parameter")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	data := c.contract.PackCreateSingleInvoice(param[0])
 
-	response, err := contracts.SimulateAndBroadcast(ctx, c.instance, c.client, marketplaceAddress, *c.address, data)
+	_, err := contracts.
+		SimulateAndBroadcast(ctx, c.instance, c.client, marketplaceAddress, *c.address, data)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if response.Result == nil {
-		return &SingleInvoiceResponse{
-			OrderId: new(big.Int).
-				SetBytes(response.Receipt.Logs[0].Topics[1].Bytes()).String(),
-		}, nil
-	}
-	return &SingleInvoiceResponse{
-		OrderId: *response.Result,
+	orders := make(map[string]struct {
+		Seller  string `json:"seller"`
+		OrderId string `json:"orderId"`
+	})
+
+	id := param[0].OrderId
+	o := orders[id]
+
+	o.Seller = param[0].Seller.Hex()
+	o.OrderId = utils.OrderIDToUint216(id)
+
+	orders[id] = o
+
+	empty := ""
+	return &InvoiceResponse{
+		MetaInvoiceId: &empty,
+		Orders:        orders,
 	}, nil
 
 }
@@ -62,7 +72,7 @@ func (c *PaymentProcessor) CreateInvoice(
 func (c *PaymentProcessor) CreateInvoices(
 	param []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
 	marketplaceAddress common.Address,
-) (*MetaInvoiceResponse, error) {
+) (*InvoiceResponse, error) {
 	if len(param) < 2 {
 		return nil, errors.New("parameter has to be greater than one")
 	}
@@ -101,12 +111,12 @@ func (c *PaymentProcessor) CreateInvoices(
 
 	if response.Result == nil {
 		result := new(big.Int).SetBytes(response.Receipt.Logs[len(param)].Topics[1].Bytes()).String()
-		return &MetaInvoiceResponse{
+		return &InvoiceResponse{
 			MetaInvoiceId: &result,
 			Orders:        orders,
 		}, nil
 	}
-	return &MetaInvoiceResponse{
+	return &InvoiceResponse{
 		MetaInvoiceId: response.Result,
 		Orders:        orders,
 	}, nil

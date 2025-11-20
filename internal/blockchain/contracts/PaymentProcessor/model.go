@@ -7,7 +7,7 @@ import (
 	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
 )
 
-type MetaInvoiceResponse struct {
+type InvoiceResponse struct {
 	Url           string  `json:"url"`
 	MetaInvoiceId *string `json:"metaInvoiceId"`
 	Orders        map[string]struct {
@@ -16,10 +16,10 @@ type MetaInvoiceResponse struct {
 	} `json:"orders"`
 }
 
-type SingleInvoiceResponse struct {
-	Url     string `json:"url"`
-	OrderId string `json:"orderId"`
-}
+// type SingleInvoiceResponse struct {
+// 	Url     string `json:"url"`
+// 	OrderId string `json:"orderId"`
+// }
 
 type PaymentProcessor struct {
 	address  *common.Address
