@@ -10,7 +10,6 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
-	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
@@ -31,12 +30,15 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	var invoices []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 
-	if err := json.NewDecoder(r.Body).Decode(&invoices); err != nil {
+	var param []utils.CreateInvoiceParam
+
+	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
 		utils.Error(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
+
+	invoices := utils.ConvertParam(param)
 
 	if err := utils.ValidateInvoices(invoices); err != nil {
 		utils.Error(w, http.StatusBadRequest, err, err.Error())
