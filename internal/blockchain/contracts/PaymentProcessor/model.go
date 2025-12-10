@@ -9,7 +9,7 @@ import (
 
 type InvoiceResponse struct {
 	Url           string  `json:"url"`
-	MetaInvoiceId *string `json:"metaInvoiceId"`
+	MetaInvoiceId *string `json:"-"`
 	Orders        map[string]struct {
 		Seller  string `json:"seller"`
 		OrderId string `json:"orderId"`

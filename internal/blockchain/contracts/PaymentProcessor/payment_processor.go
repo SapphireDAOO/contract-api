@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
@@ -44,10 +45,6 @@ func (c *PaymentProcessor) CreateInvoice(
 	_, err := contracts.
 		SimulateAndBroadcast(ctx, c.instance, c.client, marketplaceAddress, *c.address, data)
 
-	if err != nil {
-		return nil, err
-	}
-
 	orders := make(map[string]struct {
 		Seller  string `json:"seller"`
 		OrderId string `json:"orderId"`
@@ -61,10 +58,17 @@ func (c *PaymentProcessor) CreateInvoice(
 
 	orders[id] = o
 
-	empty := ""
+	if err != nil {
+		if strings.Contains(utils.Reason(err), "An invoice with this identifier already exists.") {
+			return &InvoiceResponse{
+				Orders: orders,
+			}, nil
+		}
+		return nil, err
+	}
+
 	return &InvoiceResponse{
-		MetaInvoiceId: &empty,
-		Orders:        orders,
+		Orders: orders,
 	}, nil
 
 }

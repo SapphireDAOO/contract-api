@@ -30,7 +30,6 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-
 	var param []utils.CreateInvoiceParam
 
 	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {

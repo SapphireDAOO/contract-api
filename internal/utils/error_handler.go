@@ -26,12 +26,12 @@ var RevertErrorDescriptions = map[string]string{
 }
 
 func Error(w http.ResponseWriter, statusCode int, err error, msg string) {
-	reason := reason(err)
+	reason := Reason(err)
 	errorMessage := fmt.Sprintf(`{"error": "%s", "reason": "%s"}`, msg, strings.ReplaceAll(reason, `"`, `'`))
 	http.Error(w, errorMessage, statusCode)
 }
 
-func reason(err error) string {
+func Reason(err error) string {
 	if data, ok := ethclient.RevertErrorData(err); ok {
 		selector := data[:4]
 		if reason, ok := RevertErrorDescriptions["0x"+hex.EncodeToString(selector)]; ok {
