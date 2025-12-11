@@ -25,8 +25,35 @@ var RevertErrorDescriptions = map[string]string{
 	"0xdb8db569": "The price specified is too low.",
 }
 
-func Error(w http.ResponseWriter, statusCode int, err error, msg string) {
+var RevertErrorStatusCodes = map[string]int{
+	"The buyer and seller addresses cannot be the same.":          http.StatusBadRequest,
+	"The account balance is insufficient to perform this action.": http.StatusBadRequest,
+	"The provided dispute resolution is invalid.":                 http.StatusBadRequest,
+	"The invoice is not in a valid state for this action.":        http.StatusConflict,
+	"The native token payment is invalid for this invoice.":       http.StatusBadRequest,
+	"The specified payment token is not supported or invalid.":    http.StatusBadRequest,
+	"The seller's payout share is invalid.":                       http.StatusBadRequest,
+	"An invoice with this identifier already exists.":             http.StatusConflict,
+	"The specified invoice does not exist.":                       http.StatusNotFound,
+	"A meta-invoice with this identifier already exists.":         http.StatusConflict,
+	"The caller is not authorized to perform this action.":        http.StatusForbidden,
+	"The price cannot be zero.":                                   http.StatusBadRequest,
+	"The price specified is too low.":                             http.StatusBadRequest,
+}
+
+func WriteHTTPErrorWithStatus(w http.ResponseWriter, statusCode int, err error, msg string) {
 	reason := Reason(err)
+
+	errorMessage := fmt.Sprintf(`{"error": "%s", "reason": "%s"}`, msg, strings.ReplaceAll(reason, `"`, `'`))
+	http.Error(w, errorMessage, statusCode)
+}
+
+func WriteMappedRevertError(w http.ResponseWriter, err error, msg string) {
+	reason := Reason(err)
+	statusCode := RevertErrorStatusCodes[reason]
+	if statusCode == 0 {
+		statusCode = http.StatusInternalServerError
+	}
 	errorMessage := fmt.Sprintf(`{"error": "%s", "reason": "%s"}`, msg, strings.ReplaceAll(reason, `"`, `'`))
 	http.Error(w, errorMessage, statusCode)
 }
