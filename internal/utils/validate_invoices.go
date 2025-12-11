@@ -26,7 +26,7 @@ func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPayme
 	for _, v := range param {
 		var result advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 		precision := CurrencyPrecision[v.Currency]
-		multiple := precision - 4
+		multiple := precision - 2
 		multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(multiple)), nil)
 		price := new(big.Int).Mul(big.NewInt(int64(v.Price)), multiplier)
 
