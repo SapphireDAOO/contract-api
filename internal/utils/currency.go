@@ -1,5 +1,5 @@
 package utils
 
-var CurrencyPrecision = map[string]int64{
-	"USD": 1e8,
+var CurrencyPrecision = map[string]int{
+	"USD": 8,
 }

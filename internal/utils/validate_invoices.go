@@ -13,10 +13,12 @@ import (
 type CreateInvoiceParam struct {
 	OrderId          string
 	Seller           string
-	Price            float64
+	Price            int
 	EscrowHoldPeriod int64
 	Currency         string
 }
+
+//
 
 func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam {
 	var results []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
@@ -24,12 +26,14 @@ func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPayme
 	for _, v := range param {
 		var result advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 		precision := CurrencyPrecision[v.Currency]
-		price := int64(v.Price * float64(precision))
+		multiple := precision - 4
+		multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(multiple)), nil)
+		price := new(big.Int).Mul(big.NewInt(int64(v.Price)), multiplier)
 
 		result = advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam{
 			OrderId:          v.OrderId,
 			Seller:           common.HexToAddress(v.Seller),
-			Price:            big.NewInt(price),
+			Price:            price,
 			EscrowHoldPeriod: big.NewInt(v.EscrowHoldPeriod),
 		}
 		results = append(results, result)
