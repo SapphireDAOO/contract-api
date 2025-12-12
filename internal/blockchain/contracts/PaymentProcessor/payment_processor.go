@@ -3,12 +3,14 @@ package paymentprocesor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts"
 	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
@@ -178,6 +180,15 @@ func (c *PaymentProcessor) HandleDispute(
 		return nil, err
 	}
 
+	receipt, err := bind.WaitMined(context.Background(), c.client.HTTP, tx.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
+	}
+
 	hash := tx.Hash()
 	return &hash, nil
 
@@ -196,6 +207,15 @@ func (c *PaymentProcessor) Cancel(orderId *big.Int) (*common.Hash, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	receipt, err := bind.WaitMined(context.Background(), c.client.HTTP, tx.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
 	}
 
 	hash := tx.Hash()
@@ -219,6 +239,15 @@ func (c *PaymentProcessor) Refund(orderId *big.Int, refundShare *big.Int) (*comm
 		return nil, err
 	}
 
+	receipt, err := bind.WaitMined(context.Background(), c.client.HTTP, tx.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
+	}
+
 	hash := tx.Hash()
 
 	return &hash, nil
@@ -237,6 +266,15 @@ func (c *PaymentProcessor) Release(orderId *big.Int) (*common.Hash, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	receipt, err := bind.WaitMined(context.Background(), c.client.HTTP, tx.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	if receipt.Status == types.ReceiptStatusFailed {
+		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
 	}
 
 	hash := tx.Hash()

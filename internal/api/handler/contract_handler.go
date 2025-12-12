@@ -93,7 +93,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId *big.Int `json:"OrderId"`
+		OrderId string `json:"orderId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -101,7 +101,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Cancel(input.OrderId)
+	n, _ := new(big.Int).SetString(input.OrderId, 10)
+	txHash, err := h.PaymentProcessor.Cancel(n)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -116,12 +117,18 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId     *big.Int `json:"invoiceId"`
-		RefundShare big.Int  `json:"refundShare"`
+		OrderId     string  `json:"orderId"`
+		RefundShare big.Int `json:"refundShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
+	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	if input.OrderId == "" {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "orderId is required")
 		return
 	}
 
@@ -130,7 +137,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Refund(input.OrderId, &input.RefundShare)
+	txHash, err := h.PaymentProcessor.Refund(orderId, &input.RefundShare)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -145,7 +152,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId *big.Int `json:"invoiceId"`
+		OrderId string `json:"orderId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -159,7 +166,8 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.CreateDispute(input.OrderId, *marketplaceAddress)
+	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	txHash, err := h.PaymentProcessor.CreateDispute(orderId, *marketplaceAddress)
 
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
@@ -175,7 +183,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId *big.Int `json:"invoiceId"`
+		OrderId string `json:"orderId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -183,7 +191,8 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Release(input.OrderId)
+	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	txHash, err := h.PaymentProcessor.Release(orderId)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -198,7 +207,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId     *big.Int                     `json:"orderId"`
+		OrderId     string                       `json:"orderId"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
 		SellerShare *big.Int                     `json:"sellerShare"`
 	}
@@ -208,7 +217,8 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.HandleDispute(input.OrderId, input.Resolution, input.SellerShare)
+	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	txHash, err := h.PaymentProcessor.HandleDispute(orderId, input.Resolution, input.SellerShare)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
