@@ -180,7 +180,7 @@ curl -X POST https://pp-api.serveftp.com/create \
 ```json
 {
   "status": "success",
-  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
 }
 ```
 
@@ -245,7 +245,7 @@ curl -X POST https://pp-api.serveftp.com/release \
 ```json
 {
   "status": "success",
-  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
 }
 ```
 
@@ -340,7 +340,7 @@ curl -X POST https://pp-api.serveftp.com/createDispute \
 ```json
 {
   "status": "success",
-  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
 }
 ```
 
@@ -407,7 +407,7 @@ curl -X POST https://pp-api.serveftp.com/handleDispute \
 ```json
 {
   "status": "success",
-  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
 }
 ```
 
@@ -474,7 +474,7 @@ curl -X POST https://pp-api.serveftp.com/cancel \
 ```json
 {
   "status": "success",
-  "transaction url": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
 }
 ```
 

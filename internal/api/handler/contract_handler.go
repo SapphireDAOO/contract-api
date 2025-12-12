@@ -110,8 +110,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":          "success",
-		"transaction url": TX_URL + txHash.Hex(),
+		"status":         "success",
+		"transactionUrl": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -145,8 +145,8 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":          "success",
-		"transaction url": TX_URL + txHash.Hex(),
+		"status":         "success",
+		"transactionUrl": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -176,8 +176,8 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":          "success",
-		"transaction url": TX_URL + txHash.Hex(),
+		"status":         "success",
+		"transactionUrl": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -200,8 +200,8 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":          "success",
-		"transaction url": TX_URL + txHash.Hex(),
+		"status":         "success",
+		"transactionUrl": TX_URL + txHash.Hex(),
 	})
 }
 
@@ -226,7 +226,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":          "success",
-		"transaction url": TX_URL + txHash.Hex(),
+		"status":         "success",
+		"transactionUrl": TX_URL + txHash.Hex(),
 	})
 }
