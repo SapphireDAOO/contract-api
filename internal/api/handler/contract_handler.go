@@ -161,7 +161,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
-	if err != nil {
+	if err != nil && marketplaceAddress != nil {
 		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
 		return
 	}
@@ -209,7 +209,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	var input struct {
 		OrderId     string                       `json:"orderId"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
-		SellerShare *big.Int                     `json:"sellerShare"`
+		SellerShare string                       `json:"sellerShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -218,7 +218,8 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
-	txHash, err := h.PaymentProcessor.HandleDispute(orderId, input.Resolution, input.SellerShare)
+	sellerShare, _ := new(big.Int).SetString(input.SellerShare, 10)
+	txHash, err := h.PaymentProcessor.HandleDispute(orderId, input.Resolution, sellerShare)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
