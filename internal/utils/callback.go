@@ -15,7 +15,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/query"
 )
 
-const refundCallbackAction = "refund"
+const refundCallbackAction = "refundSent"
 const releaseCallbackAction = "escrowReleased"
 
 type refundCallbackPayload struct {
