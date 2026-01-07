@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 	"net/http"
+	"time"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
@@ -137,16 +138,21 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	transactionTimestamp := time.Now().UTC().UnixMilli()
 	txHash, err := h.PaymentProcessor.Refund(orderId, &input.RefundShare)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
+	transactionURL := TX_URL + txHash.Hex()
+	refundShare := new(big.Int).Set(&input.RefundShare)
+	go utils.SendRefundCallback(input.OrderId, refundShare, transactionURL, transactionTimestamp)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
-		"transactionUrl": TX_URL + txHash.Hex(),
+		"transactionUrl": transactionURL,
 	})
 }
 
@@ -162,7 +168,8 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 
 	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
 	if err != nil && marketplaceAddress != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
+		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil,
+			"error fetching marketplace address: "+err.Error())
 		return
 	}
 
@@ -192,16 +199,20 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	transactionTimestamp := time.Now().UTC().UnixMilli()
 	txHash, err := h.PaymentProcessor.Release(orderId)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
+	transactionURL := TX_URL + txHash.Hex()
+	go utils.SendReleaseCallback(input.OrderId, transactionURL, transactionTimestamp)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
-		"transactionUrl": TX_URL + txHash.Hex(),
+		"transactionUrl": transactionURL,
 	})
 }
 

@@ -18,8 +18,6 @@ type CreateInvoiceParam struct {
 	Currency         string
 }
 
-//
-
 func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam {
 	var results []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 
