@@ -51,7 +51,7 @@ func run() error {
 	pp := paymentprocesor.NewPaymentprocessor(client)
 	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
 
-	// go pp.ListenToReleaseEvent()
+	go pp.ListenToReleaseEvent()
 
 	contract := handler.NewContractHandler(
 		&handler.ContractHandler{
