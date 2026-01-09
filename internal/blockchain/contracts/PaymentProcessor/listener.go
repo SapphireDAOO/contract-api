@@ -8,11 +8,75 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
 const RELEASE_TOPIC_HASH = "0x8ea2131e86229753e4a36a9ffc579af1b38fdada1aefe3e09a44cf2eab25befe"
 const txURL = "https://sepolia.etherscan.io/tx/"
+
+func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
+	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
+		log.Printf("payment listener disabled: client or contract address not initialized")
+		return
+	}
+
+	invoicePaidTopic := crypto.Keccak256Hash([]byte("InvoicePaid(uint216,address,address,uint256)"))
+
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{*c.address},
+		Topics:    [][]common.Hash{{invoicePaidTopic}},
+	}
+
+	logs := make(chan types.Log)
+	sub, err := c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatalf("Failed to subscribe to InvoicePaid logs: %v", err)
+	}
+
+	defer sub.Unsubscribe()
+
+	log.Println("Listening for InvoicePaid events...")
+
+	for {
+		select {
+		case err := <-sub.Err():
+			log.Printf("InvoicePaid subscription error: %v", err)
+
+			time.Sleep(5 * time.Second)
+			sub, err = c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
+			if err != nil {
+				log.Printf("Failed to resubscribe to InvoicePaid logs: %v", err)
+				continue
+			}
+
+		case vLog := <-logs:
+			event, err := c.contract.UnpackInvoicePaidEvent(&vLog)
+			if err != nil {
+				log.Printf("Failed to parse InvoicePaid event: %v", err)
+				continue
+			}
+
+			log.Printf("InvoicePaid Event:\n")
+			log.Printf("  OrderId: %s\n", event.OrderId.String())
+			log.Printf("  Amount: %s\n", event.Amount.String())
+
+			transactionTimestamp := time.Now().UTC().UnixMilli()
+			if c.client.HTTP != nil {
+				header, err := c.client.HTTP.HeaderByHash(context.Background(), vLog.BlockHash)
+				if err != nil {
+					log.Printf("Failed to fetch block header for InvoicePaid event: %v", err)
+				} else {
+					transactionTimestamp = int64(header.Time) * 1000
+				}
+			}
+
+			transactionURL := txURL + vLog.TxHash.Hex()
+			go utils.SendPaymentReceivedCallback(event.OrderId.String(), transactionURL, transactionTimestamp)
+		}
+	}
+
+}
 
 func (c *PaymentProcessor) ListenToReleaseEvent() {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
