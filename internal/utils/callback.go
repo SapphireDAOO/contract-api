@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -17,6 +18,8 @@ import (
 
 const refundCallbackAction = "refundSent"
 const releaseCallbackAction = "escrowReleased"
+const callbackRetryAttempts = 5
+const callbackRetryBaseDelay = time.Second
 
 type refundCallbackPayload struct {
 	Currency             string `json:"currency"`
@@ -31,6 +34,12 @@ type releaseCallbackPayload struct {
 	Address              string `json:"address"`
 	TransactionTimestamp int64  `json:"transactionTimestamp"`
 	TransactionUrl       string `json:"transactionUrl"`
+}
+
+type callbackResponse struct {
+	Status  int             `json:"status"`
+	Error   string          `json:"error"`
+	Message json.RawMessage `json:"message"`
 }
 
 func Cb(payload []byte, orderId, action string) (*http.Response, error) {
@@ -64,6 +73,111 @@ func Cb(payload []byte, orderId, action string) (*http.Response, error) {
 	}
 
 	return res, nil
+}
+
+func callbackRetryDelay(attempt int) time.Duration {
+	if attempt < 1 {
+		return callbackRetryBaseDelay
+	}
+	delay := callbackRetryBaseDelay * time.Duration(1<<uint(attempt-1))
+	if delay > 30*time.Second {
+		return 30 * time.Second
+	}
+	return delay
+}
+
+func callbackStatusHint(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "invalid request data"
+	case http.StatusForbidden:
+		return "API key rejected"
+	case http.StatusGone:
+		return "order not found"
+	case http.StatusInternalServerError:
+		return "marketplace internal error"
+	default:
+		return ""
+	}
+}
+
+func parseCallbackResponse(body []byte) (string, string) {
+	if len(body) == 0 {
+		return "", ""
+	}
+	var response callbackResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return "", strings.TrimSpace(string(body))
+	}
+	message := ""
+	if len(response.Message) > 0 {
+		var msgText string
+		if err := json.Unmarshal(response.Message, &msgText); err == nil {
+			message = msgText
+		} else {
+			message = strings.TrimSpace(string(response.Message))
+		}
+	}
+	return response.Error, message
+}
+
+func sendCallbackWithRetry(payload []byte, orderId, action string) {
+	for attempt := 1; attempt <= callbackRetryAttempts; attempt++ {
+		res, err := Cb(payload, orderId, action)
+		if err != nil {
+			if attempt < callbackRetryAttempts {
+				log.Printf("callback attempt %d/%d failed for orderId %s action %s: %v",
+					attempt, callbackRetryAttempts, orderId, action, err)
+				time.Sleep(callbackRetryDelay(attempt))
+				continue
+			}
+			log.Printf("callback failed after %d attempts for orderId %s action %s: %v",
+				attempt, orderId, action, err)
+			return
+		}
+
+		status := res.StatusCode
+		if status == http.StatusOK {
+			_, _ = io.Copy(io.Discard, res.Body)
+			res.Body.Close()
+			return
+		}
+
+		body, readErr := io.ReadAll(res.Body)
+		res.Body.Close()
+		if readErr != nil {
+			log.Printf("callback response read failed for orderId %s action %s: %v", orderId, action, readErr)
+			if status >= http.StatusInternalServerError && attempt < callbackRetryAttempts {
+				time.Sleep(callbackRetryDelay(attempt))
+				continue
+			}
+			return
+		}
+
+		errCode, message := parseCallbackResponse(body)
+		details := fmt.Sprintf("status %d", status)
+		if hint := callbackStatusHint(status); hint != "" {
+			details += ", hint: " + hint
+		}
+		if errCode != "" {
+			details += ", error: " + errCode
+		}
+		if message != "" {
+			details += ", message: " + message
+		}
+
+		if status >= http.StatusInternalServerError {
+			log.Printf("callback server error for orderId %s action %s (%s)", orderId, action, details)
+			if attempt < callbackRetryAttempts {
+				time.Sleep(callbackRetryDelay(attempt))
+				continue
+			}
+			return
+		}
+
+		log.Printf("callback rejected for orderId %s action %s (%s)", orderId, action, details)
+		return
+	}
 }
 
 func formatTokenAmount(amount *big.Int, decimals int) string {
@@ -151,14 +265,7 @@ func SendRefundCallback(orderId string, refundShare *big.Int, transactionURL str
 		return
 	}
 
-	res, err := Cb(payload, orderId, refundCallbackAction)
-	if err != nil {
-		log.Printf("refund callback error for orderId %s: %v", orderId, err)
-		return
-	}
-	if res != nil && res.Body != nil {
-		res.Body.Close()
-	}
+	sendCallbackWithRetry(payload, orderId, refundCallbackAction)
 }
 
 func buildReleaseCallbackPayload(orderId string, transactionURL string, transactionTimestamp int64) ([]byte, error) {
@@ -214,12 +321,5 @@ func SendReleaseCallback(orderId string, transactionURL string, transactionTimes
 		return
 	}
 
-	res, err := Cb(payload, orderId, releaseCallbackAction)
-	if err != nil {
-		log.Printf("release callback error for orderId %s: %v", orderId, err)
-		return
-	}
-	if res != nil && res.Body != nil {
-		res.Body.Close()
-	}
+	sendCallbackWithRetry(payload, orderId, releaseCallbackAction)
 }
