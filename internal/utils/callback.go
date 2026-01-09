@@ -188,24 +188,18 @@ func formatTokenAmount(amount *big.Int, decimals int) string {
 		return amount.String()
 	}
 	amountText := amount.Text(10)
-	negative := strings.HasPrefix(amountText, "-")
-	if negative {
-		amountText = strings.TrimPrefix(amountText, "-")
-	}
+
 	if len(amountText) <= decimals {
 		amountText = strings.Repeat("0", decimals-len(amountText)+1) + amountText
 	}
+
 	intPart := amountText[:len(amountText)-decimals]
 	fracPart := strings.TrimRight(amountText[len(amountText)-decimals:], "0")
+
 	if fracPart == "" {
-		if negative {
-			return "-" + intPart
-		}
 		return intPart
 	}
-	if negative {
-		return "-" + intPart + "." + fracPart
-	}
+
 	return intPart + "." + fracPart
 }
 
