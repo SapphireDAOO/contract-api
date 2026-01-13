@@ -63,7 +63,7 @@ func Cb(payload []byte, orderId, action string) (*http.Response, error) {
 		return nil, fmt.Errorf("API_KEY env var not set")
 	}
 
-	url := fmt.Sprintf(baseUrl, orderId, "/", action)
+	url := fmt.Sprintf("%s/%s/%s", baseUrl, orderId, action)
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,
