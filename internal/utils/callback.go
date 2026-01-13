@@ -63,7 +63,10 @@ func Cb(payload []byte, orderId, action string) (*http.Response, error) {
 		return nil, fmt.Errorf("API_KEY env var not set")
 	}
 
-	url := fmt.Sprintf("%s/%s/%s", baseUrl, orderId, action)
+	url, err := buildCallbackURL(baseUrl, orderId, action)
+	if err != nil {
+		return nil, err
+	}
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,
@@ -83,6 +86,22 @@ func Cb(payload []byte, orderId, action string) (*http.Response, error) {
 	}
 
 	return res, nil
+}
+
+func buildCallbackURL(baseURL, orderId, action string) (string, error) {
+	if strings.TrimSpace(orderId) == "" {
+		return "", fmt.Errorf("orderId is required for callback URL")
+	}
+	if strings.TrimSpace(action) == "" {
+		return "", fmt.Errorf("action is required for callback URL")
+	}
+
+	if strings.Contains(baseURL, "%s") || strings.Contains(baseURL, "%[") {
+		return fmt.Sprintf(baseURL, orderId, action), nil
+	}
+
+	trimmed := strings.TrimRight(baseURL, "/")
+	return trimmed + "/" + orderId + "/" + action, nil
 }
 
 func callbackRetryDelay(attempt int) time.Duration {
@@ -129,6 +148,26 @@ func parseCallbackResponse(body []byte) (string, string) {
 		}
 	}
 	return response.Error, message
+}
+
+func tokenCurrencyAndDecimals(token *query.PaymentToken) (string, int) {
+	if token == nil {
+		return "", 0
+	}
+
+	currency := strings.TrimSpace(token.Name)
+	if currency == "" {
+		currency = strings.TrimSpace(token.ID)
+	}
+
+	decimals := 0
+	if token.Decimal != "" {
+		if parsed, err := strconv.Atoi(token.Decimal); err == nil {
+			decimals = parsed
+		}
+	}
+
+	return currency, decimals
 }
 
 func parseTimestampMillis(value string) int64 {
@@ -234,22 +273,7 @@ func buildRefundCallbackPayload(orderId string, refundShare *big.Int, transactio
 		return nil, err
 	}
 
-	var (
-		currency string
-		decimals int
-	)
-
-	if invoice.PaymentToken != nil {
-		currency = invoice.PaymentToken.Name
-		if invoice.PaymentToken.Decimal != "" {
-			if parsed, err := strconv.Atoi(invoice.PaymentToken.Decimal); err == nil {
-				decimals = parsed
-			}
-		}
-		if currency == "" {
-			currency = invoice.PaymentToken.ID
-		}
-	}
+	currency, decimals := tokenCurrencyAndDecimals(invoice.PaymentToken)
 
 	amountPaid := new(big.Int)
 	if invoice.AmountPaid != "" {
@@ -286,44 +310,32 @@ func SendRefundCallback(orderId string, refundShare *big.Int, transactionURL str
 	sendCallbackWithRetry(payload, orderId, refundCallbackAction)
 }
 
-func buildReleaseCallbackPayload(orderId string, transactionURL string, transactionTimestamp int64) ([]byte, error) {
+func buildReleaseCallbackPayload(orderId string, releaseAmount *big.Int, transactionURL string,
+	transactionTimestamp int64) ([]byte, error) {
 	invoice, err := query.GetInvoiceData(orderId)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		currency string
-		decimals int
-		address  string
-	)
-
-	if invoice.PaymentToken != nil {
-		currency = invoice.PaymentToken.Name
-		if invoice.PaymentToken.Decimal != "" {
-			if parsed, err := strconv.Atoi(invoice.PaymentToken.Decimal); err == nil {
-				decimals = parsed
-			}
-		}
-		if currency == "" {
-			currency = invoice.PaymentToken.ID
-		}
-	}
+	address := ""
+	currency, decimals := tokenCurrencyAndDecimals(invoice.PaymentToken)
 
 	if invoice.Seller != nil {
 		address = invoice.Seller.ID
 	}
 
-	amountPaid := new(big.Int)
-	if invoice.AmountPaid != "" {
-		if _, ok := amountPaid.SetString(invoice.AmountPaid, 10); !ok {
-			amountPaid.SetInt64(0)
+	amountToSend := new(big.Int)
+	if releaseAmount != nil {
+		amountToSend.Set(releaseAmount)
+	} else if invoice.AmountPaid != "" {
+		if _, ok := amountToSend.SetString(invoice.AmountPaid, 10); !ok {
+			amountToSend.SetInt64(0)
 		}
 	}
 
 	payload := releaseCallbackPayload{
 		Currency:             currency,
-		Amount:               formatTokenAmount(amountPaid, decimals),
+		Amount:               formatTokenAmount(amountToSend, decimals),
 		Address:              address,
 		TransactionTimestamp: transactionTimestamp,
 		TransactionUrl:       transactionURL,
@@ -332,8 +344,9 @@ func buildReleaseCallbackPayload(orderId string, transactionURL string, transact
 	return json.Marshal(payload)
 }
 
-func SendReleaseCallback(orderId string, transactionURL string, transactionTimestamp int64) {
-	payload, err := buildReleaseCallbackPayload(orderId, transactionURL, transactionTimestamp)
+func SendReleaseCallback(orderId string, releaseAmount *big.Int, transactionURL string,
+	transactionTimestamp int64) {
+	payload, err := buildReleaseCallbackPayload(orderId, releaseAmount, transactionURL, transactionTimestamp)
 	if err != nil {
 		log.Printf("release callback payload error for orderId %s: %v", orderId, err)
 		return
@@ -349,22 +362,7 @@ func buildPaymentReceivedCallbackPayload(orderId string, transactionURL string,
 		return nil, err
 	}
 
-	var (
-		currency string
-		decimals int
-	)
-
-	if invoice.PaymentToken != nil {
-		currency = invoice.PaymentToken.Name
-		if invoice.PaymentToken.Decimal != "" {
-			if parsed, err := strconv.Atoi(invoice.PaymentToken.Decimal); err == nil {
-				decimals = parsed
-			}
-		}
-		if currency == "" {
-			currency = invoice.PaymentToken.ID
-		}
-	}
+	currency, decimals := tokenCurrencyAndDecimals(invoice.PaymentToken)
 
 	amountPaid := new(big.Int)
 	if invoice.AmountPaid != "" {

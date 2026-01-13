@@ -207,7 +207,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	}
 
 	transactionURL := TX_URL + txHash.Hex()
-	go utils.SendReleaseCallback(input.OrderId, transactionURL, transactionTimestamp)
+	go utils.SendReleaseCallback(input.OrderId, nil, transactionURL, transactionTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

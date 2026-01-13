@@ -69,6 +69,7 @@ const invoiceQuery = `
         id
       }
       paymentToken {
+        id
         name
         decimal
       }
