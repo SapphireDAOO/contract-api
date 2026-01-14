@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-func tokenSymbol() string
-
 func parseTimestampMillis(value string) int64 {
 	if value == "" {
 		return 0
