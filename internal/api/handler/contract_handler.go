@@ -10,6 +10,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
@@ -147,7 +148,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 	transactionURL := TX_URL + txHash.Hex()
 	refundShare := new(big.Int).Set(&input.RefundShare)
-	go utils.SendRefundCallback(input.OrderId, refundShare, transactionURL, transactionTimestamp)
+	go callback.SendRefundCallback(input.OrderId, "", nil, refundShare, transactionURL, transactionTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -207,7 +208,8 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	}
 
 	transactionURL := TX_URL + txHash.Hex()
-	go utils.SendReleaseCallback(input.OrderId, nil, transactionURL, transactionTimestamp)
+	go callback.
+		SendReleaseCallback(input.OrderId, nil, transactionURL, transactionTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

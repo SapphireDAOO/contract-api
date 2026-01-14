@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
 )
 
 const RELEASE_TOPIC_HASH = "0x8ea2131e86229753e4a36a9ffc579af1b38fdada1aefe3e09a44cf2eab25befe"
@@ -72,7 +72,9 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 			}
 
 			transactionURL := txURL + vLog.TxHash.Hex()
-			go utils.SendPaymentReceivedCallback(event.OrderId.String(), transactionURL, transactionTimestamp)
+			go callback.
+				SendPaymentReceivedCallback(event.OrderId.String(), transactionURL, event.PaymentToken.Hex(),
+					event.Amount, transactionTimestamp)
 		}
 	}
 
@@ -133,7 +135,9 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 			}
 
 			transactionURL := txURL + vLog.TxHash.Hex()
-			go utils.SendReleaseCallback(event.OrderId.String(), event.SellerAmount, transactionURL, transactionTimestamp)
+			go callback.
+				SendReleaseCallback(event.OrderId.String(),
+					event.SellerAmount, transactionURL, transactionTimestamp)
 		}
 	}
 }
