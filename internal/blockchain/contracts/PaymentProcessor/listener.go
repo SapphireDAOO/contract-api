@@ -15,6 +15,17 @@ import (
 const RELEASE_TOPIC_HASH = "0x8ea2131e86229753e4a36a9ffc579af1b38fdada1aefe3e09a44cf2eab25befe"
 const txURL = "https://sepolia.etherscan.io/tx/"
 
+func (c *PaymentProcessor) subscribeLogs(query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
+	for {
+		sub, err := c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
+		if err == nil {
+			return sub
+		}
+		log.Printf("Failed to subscribe to %s logs: %v", label, err)
+		time.Sleep(5 * time.Second)
+	}
+}
+
 func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
 		log.Printf("payment listener disabled: client or contract address not initialized")
@@ -29,12 +40,7 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 	}
 
 	logs := make(chan types.Log)
-	sub, err := c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
-	if err != nil {
-		log.Fatalf("Failed to subscribe to InvoicePaid logs: %v", err)
-	}
-
-	defer sub.Unsubscribe()
+	sub := c.subscribeLogs(query, logs, "InvoicePaid")
 
 	log.Println("Listening for InvoicePaid events...")
 
@@ -43,12 +49,8 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 		case err := <-sub.Err():
 			log.Printf("InvoicePaid subscription error: %v", err)
 
-			time.Sleep(5 * time.Second)
-			sub, err = c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
-			if err != nil {
-				log.Printf("Failed to resubscribe to InvoicePaid logs: %v", err)
-				continue
-			}
+			sub.Unsubscribe()
+			sub = c.subscribeLogs(query, logs, "InvoicePaid")
 
 		case vLog := <-logs:
 			event, err := c.contract.UnpackInvoicePaidEvent(&vLog)
@@ -94,11 +96,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 	}
 
 	logs := make(chan types.Log)
-	sub, err := c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
-	if err != nil {
-		log.Fatalf("Failed to subscribe to logs: %v", err)
-	}
-	defer sub.Unsubscribe()
+	sub := c.subscribeLogs(query, logs, "PaymentReleased")
 
 	log.Println("Listening for PaymentReleased events...")
 
@@ -107,12 +105,8 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 		case err := <-sub.Err():
 			log.Printf("Subscription error: %v", err)
 
-			time.Sleep(5 * time.Second)
-			sub, err = c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
-			if err != nil {
-				log.Printf("Failed to resubscribe: %v", err)
-				continue
-			}
+			sub.Unsubscribe()
+			sub = c.subscribeLogs(query, logs, "PaymentReleased")
 		case vLog := <-logs:
 			event, err := c.contract.UnpackPaymentReleasedEvent(&vLog)
 			if err != nil {

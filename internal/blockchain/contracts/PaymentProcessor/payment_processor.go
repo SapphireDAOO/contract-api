@@ -284,14 +284,22 @@ func (c *PaymentProcessor) Release(orderId *big.Int) (*common.Hash, error) {
 }
 
 func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (advancedprocessor.IAdvancedPaymentProcessorInvoice, error) {
+	if c == nil || c.client == nil || c.client.HTTP == nil {
+		return advancedprocessor.IAdvancedPaymentProcessorInvoice{}, errors.New("blockchain client not initialized")
+	}
+	if c.address == nil {
+		return advancedprocessor.IAdvancedPaymentProcessorInvoice{}, errors.New("payment processor address not initialized")
+	}
+
 	data := c.contract.PackGetInvoice(orderId)
 
 	out, err := c.client.HTTP.CallContract(context.Background(), ethereum.CallMsg{
+		To:   c.address,
 		Data: data,
 	}, nil)
 
 	if err != nil {
-		panic("")
+		return advancedprocessor.IAdvancedPaymentProcessorInvoice{}, err
 	}
 
 	return c.contract.UnpackGetInvoice(out)

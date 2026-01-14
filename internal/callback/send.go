@@ -16,6 +16,8 @@ func SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 	payload, err := buildRefundCallbackPayload(paymentToken, amount,
 		refundShare, transactionURL, transactionTimestamp)
 
+	fmt.Println("payload", string(payload))
+
 	if err != nil {
 		log.Printf("refund callback payload error for orderId %s: %v", orderId, err)
 		return

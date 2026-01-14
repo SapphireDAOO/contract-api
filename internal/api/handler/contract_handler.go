@@ -157,7 +157,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 	transactionURL := TX_URL + txHash.Hex()
 	go callback.SendRefundCallback(input.OrderId,
-		data.PaymentToken.String(), nil, refundShare, transactionURL, transactionTimestamp)
+		data.PaymentToken.String(), data.AmountPaid, refundShare, transactionURL, transactionTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

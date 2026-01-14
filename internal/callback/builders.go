@@ -37,6 +37,10 @@ func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 
 	data, _ := tokenCurrencyAndDecimals[paymentToken]
 
+	if amount == nil {
+		return []byte{}, fmt.Errorf("%s", "invalid amount")
+	}
+
 	refundAmount := new(big.Int)
 	if refundShare != nil {
 		refundAmount.Mul(amount, refundShare)
