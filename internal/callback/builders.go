@@ -4,18 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"time"
 )
 
 // get the paymnet token address and amount via event
 
-func buildPaymentReceivedCallbackPayload(orderId, transactionURL, paymentToken string, amount *big.Int,
+func buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, amount *big.Int,
 	transactionTimestamp int64) ([]byte, error) {
 	data, _ := tokenCurrencyAndDecimals[paymentToken]
-	// fetch default release time
 
 	if amount == nil {
 		return []byte{}, fmt.Errorf("%s", "invalid amount")
 	}
+
+	currentDefaultReleaseTime := 10 * time.Minute
+	releaseAt := time.Now().Add(currentDefaultReleaseTime).UnixMilli() / 1000
 
 	payload := paymentReceivedCallbackPayload{
 		Currency:             data.Symbol,
@@ -23,7 +26,7 @@ func buildPaymentReceivedCallbackPayload(orderId, transactionURL, paymentToken s
 		TransactionAmount:    formatTokenAmount(amount, data.Decimal),
 		TransactionUrl:       transactionURL,
 		TransactionTimestamp: transactionTimestamp,
-		Releases:             parseTimestampMillis("0"),
+		Releases:             parseTimestampMillis(fmt.Sprint(releaseAt)),
 	}
 
 	return json.Marshal(payload)
@@ -52,14 +55,14 @@ func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 	return json.Marshal(payload)
 }
 
-func buildReleaseCallbackPayload(orderId string, paymentToken string, releaseAmount *big.Int, transactionURL string,
+func buildReleaseCallbackPayload(paymentToken string, releaseAmount *big.Int, transactionURL string,
 	transactionTimestamp int64) ([]byte, error) {
 
-	address := ""
+	address := "0x2c65B472EE968740D8e9235ad0594700b8e5fE82"
 	data, _ := tokenCurrencyAndDecimals[paymentToken]
 
 	payload := releaseCallbackPayload{
-		Currency:             data.Symbol,
+		Currency:             "USDC",
 		Amount:               formatTokenAmount(releaseAmount, data.Decimal),
 		Address:              address,
 		TransactionTimestamp: transactionTimestamp,

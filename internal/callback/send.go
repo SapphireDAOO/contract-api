@@ -1,6 +1,7 @@
 package callback
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -11,8 +12,10 @@ import (
 
 func SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) {
+
 	payload, err := buildRefundCallbackPayload(paymentToken, amount,
 		refundShare, transactionURL, transactionTimestamp)
+
 	if err != nil {
 		log.Printf("refund callback payload error for orderId %s: %v", orderId, err)
 		return
@@ -24,8 +27,10 @@ func SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 func SendReleaseCallback(orderId string, releaseAmount *big.Int, transactionURL string,
 	transactionTimestamp int64) {
 	paymentToken := ""
-	payload, err := buildReleaseCallbackPayload(orderId, paymentToken,
+	payload, err := buildReleaseCallbackPayload(paymentToken,
 		releaseAmount, transactionURL, transactionTimestamp)
+
+	log.Println(string(payload))
 	if err != nil {
 		log.Printf("release callback payload error for orderId %s: %v", orderId, err)
 		return
@@ -35,8 +40,10 @@ func SendReleaseCallback(orderId string, releaseAmount *big.Int, transactionURL 
 }
 
 func SendPaymentReceivedCallback(orderId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
-	payload, err := buildPaymentReceivedCallbackPayload(orderId, transactionURL, paymentToken,
+	payload, err := buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
 		amount, transactionTimestamp)
+
+	log.Println(string(payload))
 	if err != nil {
 		log.Printf("payment received callback payload error for orderId %s: %v", orderId, err)
 		return
@@ -64,6 +71,18 @@ func sendCallbackWithRetry(payload []byte, orderId, action string) {
 		if status == http.StatusOK {
 			_, _ = io.Copy(io.Discard, res.Body)
 			res.Body.Close()
+			success := callbackResponse{
+				Status:  status,
+				Error:   "",
+				Message: json.RawMessage(`"success"`),
+			}
+			encoded, err := json.Marshal(success)
+			if err != nil {
+				log.Printf(`{"status":%d,"error":"log-marshal-failed","message":"%s"}`,
+					status, err.Error())
+				return
+			}
+			log.Print(string(encoded))
 			return
 		}
 
