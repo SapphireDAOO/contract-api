@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -280,6 +281,20 @@ func (c *PaymentProcessor) Release(orderId *big.Int) (*common.Hash, error) {
 	hash := tx.Hash()
 
 	return &hash, nil
+}
+
+func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (advancedprocessor.IAdvancedPaymentProcessorInvoice, error) {
+	data := c.contract.PackGetInvoice(orderId)
+
+	out, err := c.client.HTTP.CallContract(context.Background(), ethereum.CallMsg{
+		Data: data,
+	}, nil)
+
+	if err != nil {
+		panic("")
+	}
+
+	return c.contract.UnpackGetInvoice(out)
 }
 
 func (c *PaymentProcessor) getDisputeResolution(action blockchain.MarketplaceAction) uint8 {
