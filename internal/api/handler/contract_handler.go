@@ -119,8 +119,8 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId     string  `json:"orderId"`
-		RefundShare big.Int `json:"refundShare"`
+		OrderId     string `json:"orderId"`
+		RefundShare string `json:"refundShare"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -128,26 +128,27 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
-	if input.OrderId == "" {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "orderId is required")
+	if input.OrderId == "" || input.RefundShare == "" {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "orderId and refundShare is required")
 		return
 	}
 
-	if input.RefundShare.Cmp(big.NewInt(0)) == 0 {
+	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	refundShare, _ := new(big.Int).SetString(input.RefundShare, 10)
+
+	if refundShare.Cmp(big.NewInt(0)) == 0 {
 		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("share can not be zero"), "invalid request body")
 		return
 	}
 
 	transactionTimestamp := time.Now().UTC().UnixMilli()
-	txHash, err := h.PaymentProcessor.Refund(orderId, &input.RefundShare)
+	txHash, err := h.PaymentProcessor.Refund(orderId, refundShare)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
 	transactionURL := TX_URL + txHash.Hex()
-	refundShare := new(big.Int).Set(&input.RefundShare)
 	go callback.SendRefundCallback(input.OrderId, "", nil, refundShare, transactionURL, transactionTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
