@@ -27,7 +27,9 @@ func formatTokenAmount(amount *big.Int, decimals int) string {
 	if decimals <= 0 {
 		return amount.String()
 	}
-	amountText := amount.Text(10)
+
+	absAmount := new(big.Int).Abs(amount)
+	amountText := absAmount.Text(10)
 
 	if len(amountText) <= decimals {
 		amountText = strings.Repeat("0", decimals-len(amountText)+1) + amountText
