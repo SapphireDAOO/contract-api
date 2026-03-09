@@ -27,16 +27,16 @@ var (
 // IPaymentProcessorStorageConfiguration is an auto generated low-level Go binding around an user-defined struct.
 type IPaymentProcessorStorageConfiguration struct {
 	Owner             common.Address
-	FeeReceiver       common.Address
-	Marketplace       common.Address
 	FeeRate           *big.Int
+	FeeReceiver       common.Address
 	DefaultHoldPeriod *big.Int
-	GasThresold       *big.Int
+	Marketplace       common.Address
+	GasThreshold      *big.Int
 }
 
 // ProcessorstorageMetaData contains all meta data concerning the Processorstorage contract.
 var ProcessorstorageMetaData = bind.MetaData{
-	ABI: "[{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"feeReceiver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"marketplace\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"feeRate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"defaultHoldPeriod\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasThresold\",\"type\":\"uint256\"}],\"internalType\":\"structIPaymentProcessorStorage.Configuration\",\"name\":\"configuration\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AlreadyInitialized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CallFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HoldPeriodCanNotBeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NewOwnerIsZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoHandoverRequest\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotAuthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"OwnershipHandoverCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"OwnershipHandoverRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oldOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"cancelOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"completeOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"execute\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDefaultHoldPeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getFeeRate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getFeeReceiver\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getGasThresold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketplace\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNextInvoiceId\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"\",\"type\":\"uint216\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"result\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"ownershipHandoverExpiresAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"result\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"authorizedAddress\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"authorized\",\"type\":\"bool\"}],\"name\":\"setAuthorizedAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newDefaultHoldPeriod\",\"type\":\"uint256\"}],\"name\":\"setDefaultHoldPeriod\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newFeeRate\",\"type\":\"uint256\"}],\"name\":\"setFeeRate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"feeReceiverAddress\",\"type\":\"address\"}],\"name\":\"setFeeReceiver\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newGasThresold\",\"type\":\"uint256\"}],\"name\":\"setGasThresold\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"marketplaceAddress\",\"type\":\"address\"}],\"name\":\"setMarketplaceAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalInvoiceCreated\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"\",\"type\":\"uint216\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"by\",\"type\":\"uint216\"}],\"name\":\"updateInvoiceId\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"\",\"type\":\"uint216\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint96\",\"name\":\"feeRate\",\"type\":\"uint96\"},{\"internalType\":\"address\",\"name\":\"feeReceiver\",\"type\":\"address\"},{\"internalType\":\"uint96\",\"name\":\"defaultHoldPeriod\",\"type\":\"uint96\"},{\"internalType\":\"address\",\"name\":\"marketplace\",\"type\":\"address\"},{\"internalType\":\"uint96\",\"name\":\"gasThreshold\",\"type\":\"uint96\"}],\"internalType\":\"structIPaymentProcessorStorage.Configuration\",\"name\":\"_configuration\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AlreadyInitialized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HoldPeriodCanNotBeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidFeeRate\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NewOwnerIsZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoHandoverRequest\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotAuthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"OwnershipHandoverCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"OwnershipHandoverRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oldOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"BASIS_POINTS\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"DEFAULT_PAYMENT_VALIDITY_PERIOD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"completeOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDefaultHoldPeriod\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"defaultHoldPeriod\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getFeeRate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"feeRate\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getFeeReceiver\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"feeReceiver\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getGasThreshold\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"gasThreshold\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketplace\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"marketplace\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNextInvoiceNonce\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"nextInvoiceNonceValue\",\"type\":\"uint216\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPaymentValidityDuration\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"validDuration\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"result\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"pendingOwner\",\"type\":\"address\"}],\"name\":\"ownershipHandoverExpiresAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"result\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"requestOwnershipHandover\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_authorizedAddress\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_authorized\",\"type\":\"bool\"}],\"name\":\"setAuthorizedAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newDefaultHoldPeriod\",\"type\":\"uint256\"}],\"name\":\"setDefaultHoldPeriod\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newFeeRate\",\"type\":\"uint256\"}],\"name\":\"setFeeRate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeReceiverAddress\",\"type\":\"address\"}],\"name\":\"setFeeReceiver\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newGasThreshold\",\"type\":\"uint256\"}],\"name\":\"setGasThreshold\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_marketplaceAddress\",\"type\":\"address\"}],\"name\":\"setMarketplaceAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newValidityDuration\",\"type\":\"uint256\"}],\"name\":\"setPaymentValidityDuration\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalInvoiceCreated\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"totalInvoices\",\"type\":\"uint216\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_by\",\"type\":\"uint216\"}],\"name\":\"updateInvoiceNonce\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"totalInvoices\",\"type\":\"uint216\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 	ID:  "Processorstorage",
 }
 
@@ -63,13 +63,63 @@ func (c *Processorstorage) Instance(backend bind.ContractBackend, addr common.Ad
 // PackConstructor is the Go binding used to pack the parameters required for
 // contract deployment.
 //
-// Solidity: constructor((address,address,address,uint256,uint256,uint256) configuration) returns()
-func (processorstorage *Processorstorage) PackConstructor(configuration IPaymentProcessorStorageConfiguration) []byte {
-	enc, err := processorstorage.abi.Pack("", configuration)
+// Solidity: constructor((address,uint96,address,uint96,address,uint96) _configuration) returns()
+func (processorstorage *Processorstorage) PackConstructor(_configuration IPaymentProcessorStorageConfiguration) []byte {
+	enc, err := processorstorage.abi.Pack("", _configuration)
 	if err != nil {
 		panic(err)
 	}
 	return enc
+}
+
+// PackBASISPOINTS is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0xe1f1c4a7.
+//
+// Solidity: function BASIS_POINTS() view returns(uint256)
+func (processorstorage *Processorstorage) PackBASISPOINTS() []byte {
+	enc, err := processorstorage.abi.Pack("BASIS_POINTS")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackBASISPOINTS is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0xe1f1c4a7.
+//
+// Solidity: function BASIS_POINTS() view returns(uint256)
+func (processorstorage *Processorstorage) UnpackBASISPOINTS(data []byte) (*big.Int, error) {
+	out, err := processorstorage.abi.Unpack("BASIS_POINTS", data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := abi.ConvertType(out[0], new(big.Int)).(*big.Int)
+	return out0, err
+}
+
+// PackDEFAULTPAYMENTVALIDITYPERIOD is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0xd4b332b2.
+//
+// Solidity: function DEFAULT_PAYMENT_VALIDITY_PERIOD() view returns(uint256)
+func (processorstorage *Processorstorage) PackDEFAULTPAYMENTVALIDITYPERIOD() []byte {
+	enc, err := processorstorage.abi.Pack("DEFAULT_PAYMENT_VALIDITY_PERIOD")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackDEFAULTPAYMENTVALIDITYPERIOD is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0xd4b332b2.
+//
+// Solidity: function DEFAULT_PAYMENT_VALIDITY_PERIOD() view returns(uint256)
+func (processorstorage *Processorstorage) UnpackDEFAULTPAYMENTVALIDITYPERIOD(data []byte) (*big.Int, error) {
+	out, err := processorstorage.abi.Unpack("DEFAULT_PAYMENT_VALIDITY_PERIOD", data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := abi.ConvertType(out[0], new(big.Int)).(*big.Int)
+	return out0, err
 }
 
 // PackCancelOwnershipHandover is the Go binding used to pack the parameters required for calling
@@ -96,35 +146,10 @@ func (processorstorage *Processorstorage) PackCompleteOwnershipHandover(pendingO
 	return enc
 }
 
-// PackExecute is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x1cff79cd.
-//
-// Solidity: function execute(address target, bytes data) returns(bytes)
-func (processorstorage *Processorstorage) PackExecute(target common.Address, data []byte) []byte {
-	enc, err := processorstorage.abi.Pack("execute", target, data)
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
-// UnpackExecute is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x1cff79cd.
-//
-// Solidity: function execute(address target, bytes data) returns(bytes)
-func (processorstorage *Processorstorage) UnpackExecute(data []byte) ([]byte, error) {
-	out, err := processorstorage.abi.Unpack("execute", data)
-	if err != nil {
-		return *new([]byte), err
-	}
-	out0 := *abi.ConvertType(out[0], new([]byte)).(*[]byte)
-	return out0, err
-}
-
 // PackGetDefaultHoldPeriod is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x4026d697.
 //
-// Solidity: function getDefaultHoldPeriod() view returns(uint256)
+// Solidity: function getDefaultHoldPeriod() view returns(uint256 defaultHoldPeriod)
 func (processorstorage *Processorstorage) PackGetDefaultHoldPeriod() []byte {
 	enc, err := processorstorage.abi.Pack("getDefaultHoldPeriod")
 	if err != nil {
@@ -136,7 +161,7 @@ func (processorstorage *Processorstorage) PackGetDefaultHoldPeriod() []byte {
 // UnpackGetDefaultHoldPeriod is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x4026d697.
 //
-// Solidity: function getDefaultHoldPeriod() view returns(uint256)
+// Solidity: function getDefaultHoldPeriod() view returns(uint256 defaultHoldPeriod)
 func (processorstorage *Processorstorage) UnpackGetDefaultHoldPeriod(data []byte) (*big.Int, error) {
 	out, err := processorstorage.abi.Unpack("getDefaultHoldPeriod", data)
 	if err != nil {
@@ -149,7 +174,7 @@ func (processorstorage *Processorstorage) UnpackGetDefaultHoldPeriod(data []byte
 // PackGetFeeRate is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x84e5eed0.
 //
-// Solidity: function getFeeRate() view returns(uint256)
+// Solidity: function getFeeRate() view returns(uint256 feeRate)
 func (processorstorage *Processorstorage) PackGetFeeRate() []byte {
 	enc, err := processorstorage.abi.Pack("getFeeRate")
 	if err != nil {
@@ -161,7 +186,7 @@ func (processorstorage *Processorstorage) PackGetFeeRate() []byte {
 // UnpackGetFeeRate is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x84e5eed0.
 //
-// Solidity: function getFeeRate() view returns(uint256)
+// Solidity: function getFeeRate() view returns(uint256 feeRate)
 func (processorstorage *Processorstorage) UnpackGetFeeRate(data []byte) (*big.Int, error) {
 	out, err := processorstorage.abi.Unpack("getFeeRate", data)
 	if err != nil {
@@ -174,7 +199,7 @@ func (processorstorage *Processorstorage) UnpackGetFeeRate(data []byte) (*big.In
 // PackGetFeeReceiver is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xe8a35392.
 //
-// Solidity: function getFeeReceiver() view returns(address)
+// Solidity: function getFeeReceiver() view returns(address feeReceiver)
 func (processorstorage *Processorstorage) PackGetFeeReceiver() []byte {
 	enc, err := processorstorage.abi.Pack("getFeeReceiver")
 	if err != nil {
@@ -186,7 +211,7 @@ func (processorstorage *Processorstorage) PackGetFeeReceiver() []byte {
 // UnpackGetFeeReceiver is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0xe8a35392.
 //
-// Solidity: function getFeeReceiver() view returns(address)
+// Solidity: function getFeeReceiver() view returns(address feeReceiver)
 func (processorstorage *Processorstorage) UnpackGetFeeReceiver(data []byte) (common.Address, error) {
 	out, err := processorstorage.abi.Unpack("getFeeReceiver", data)
 	if err != nil {
@@ -196,24 +221,24 @@ func (processorstorage *Processorstorage) UnpackGetFeeReceiver(data []byte) (com
 	return out0, err
 }
 
-// PackGetGasThresold is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x243da283.
+// PackGetGasThreshold is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x55b8245f.
 //
-// Solidity: function getGasThresold() view returns(uint256)
-func (processorstorage *Processorstorage) PackGetGasThresold() []byte {
-	enc, err := processorstorage.abi.Pack("getGasThresold")
+// Solidity: function getGasThreshold() view returns(uint256 gasThreshold)
+func (processorstorage *Processorstorage) PackGetGasThreshold() []byte {
+	enc, err := processorstorage.abi.Pack("getGasThreshold")
 	if err != nil {
 		panic(err)
 	}
 	return enc
 }
 
-// UnpackGetGasThresold is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x243da283.
+// UnpackGetGasThreshold is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x55b8245f.
 //
-// Solidity: function getGasThresold() view returns(uint256)
-func (processorstorage *Processorstorage) UnpackGetGasThresold(data []byte) (*big.Int, error) {
-	out, err := processorstorage.abi.Unpack("getGasThresold", data)
+// Solidity: function getGasThreshold() view returns(uint256 gasThreshold)
+func (processorstorage *Processorstorage) UnpackGetGasThreshold(data []byte) (*big.Int, error) {
+	out, err := processorstorage.abi.Unpack("getGasThreshold", data)
 	if err != nil {
 		return new(big.Int), err
 	}
@@ -224,7 +249,7 @@ func (processorstorage *Processorstorage) UnpackGetGasThresold(data []byte) (*bi
 // PackGetMarketplace is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x0d21bcd5.
 //
-// Solidity: function getMarketplace() view returns(address)
+// Solidity: function getMarketplace() view returns(address marketplace)
 func (processorstorage *Processorstorage) PackGetMarketplace() []byte {
 	enc, err := processorstorage.abi.Pack("getMarketplace")
 	if err != nil {
@@ -236,7 +261,7 @@ func (processorstorage *Processorstorage) PackGetMarketplace() []byte {
 // UnpackGetMarketplace is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x0d21bcd5.
 //
-// Solidity: function getMarketplace() view returns(address)
+// Solidity: function getMarketplace() view returns(address marketplace)
 func (processorstorage *Processorstorage) UnpackGetMarketplace(data []byte) (common.Address, error) {
 	out, err := processorstorage.abi.Unpack("getMarketplace", data)
 	if err != nil {
@@ -246,24 +271,49 @@ func (processorstorage *Processorstorage) UnpackGetMarketplace(data []byte) (com
 	return out0, err
 }
 
-// PackGetNextInvoiceId is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x1471dcb3.
+// PackGetNextInvoiceNonce is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x5614b076.
 //
-// Solidity: function getNextInvoiceId() view returns(uint216)
-func (processorstorage *Processorstorage) PackGetNextInvoiceId() []byte {
-	enc, err := processorstorage.abi.Pack("getNextInvoiceId")
+// Solidity: function getNextInvoiceNonce() view returns(uint216 nextInvoiceNonceValue)
+func (processorstorage *Processorstorage) PackGetNextInvoiceNonce() []byte {
+	enc, err := processorstorage.abi.Pack("getNextInvoiceNonce")
 	if err != nil {
 		panic(err)
 	}
 	return enc
 }
 
-// UnpackGetNextInvoiceId is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x1471dcb3.
+// UnpackGetNextInvoiceNonce is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x5614b076.
 //
-// Solidity: function getNextInvoiceId() view returns(uint216)
-func (processorstorage *Processorstorage) UnpackGetNextInvoiceId(data []byte) (*big.Int, error) {
-	out, err := processorstorage.abi.Unpack("getNextInvoiceId", data)
+// Solidity: function getNextInvoiceNonce() view returns(uint216 nextInvoiceNonceValue)
+func (processorstorage *Processorstorage) UnpackGetNextInvoiceNonce(data []byte) (*big.Int, error) {
+	out, err := processorstorage.abi.Unpack("getNextInvoiceNonce", data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := abi.ConvertType(out[0], new(big.Int)).(*big.Int)
+	return out0, err
+}
+
+// PackGetPaymentValidityDuration is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x82f0db25.
+//
+// Solidity: function getPaymentValidityDuration() view returns(uint256 validDuration)
+func (processorstorage *Processorstorage) PackGetPaymentValidityDuration() []byte {
+	enc, err := processorstorage.abi.Pack("getPaymentValidityDuration")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackGetPaymentValidityDuration is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x82f0db25.
+//
+// Solidity: function getPaymentValidityDuration() view returns(uint256 validDuration)
+func (processorstorage *Processorstorage) UnpackGetPaymentValidityDuration(data []byte) (*big.Int, error) {
+	out, err := processorstorage.abi.Unpack("getPaymentValidityDuration", data)
 	if err != nil {
 		return new(big.Int), err
 	}
@@ -348,7 +398,7 @@ func (processorstorage *Processorstorage) PackRequestOwnershipHandover() []byte 
 // PackSetAuthorizedAddress is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x1351cf51.
 //
-// Solidity: function setAuthorizedAddress(address authorizedAddress, bool authorized) returns()
+// Solidity: function setAuthorizedAddress(address _authorizedAddress, bool _authorized) returns()
 func (processorstorage *Processorstorage) PackSetAuthorizedAddress(authorizedAddress common.Address, authorized bool) []byte {
 	enc, err := processorstorage.abi.Pack("setAuthorizedAddress", authorizedAddress, authorized)
 	if err != nil {
@@ -360,7 +410,7 @@ func (processorstorage *Processorstorage) PackSetAuthorizedAddress(authorizedAdd
 // PackSetDefaultHoldPeriod is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xa5aabfe3.
 //
-// Solidity: function setDefaultHoldPeriod(uint256 newDefaultHoldPeriod) returns()
+// Solidity: function setDefaultHoldPeriod(uint256 _newDefaultHoldPeriod) returns()
 func (processorstorage *Processorstorage) PackSetDefaultHoldPeriod(newDefaultHoldPeriod *big.Int) []byte {
 	enc, err := processorstorage.abi.Pack("setDefaultHoldPeriod", newDefaultHoldPeriod)
 	if err != nil {
@@ -372,7 +422,7 @@ func (processorstorage *Processorstorage) PackSetDefaultHoldPeriod(newDefaultHol
 // PackSetFeeRate is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x45596e2e.
 //
-// Solidity: function setFeeRate(uint256 newFeeRate) returns()
+// Solidity: function setFeeRate(uint256 _newFeeRate) returns()
 func (processorstorage *Processorstorage) PackSetFeeRate(newFeeRate *big.Int) []byte {
 	enc, err := processorstorage.abi.Pack("setFeeRate", newFeeRate)
 	if err != nil {
@@ -384,7 +434,7 @@ func (processorstorage *Processorstorage) PackSetFeeRate(newFeeRate *big.Int) []
 // PackSetFeeReceiver is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xefdcd974.
 //
-// Solidity: function setFeeReceiver(address feeReceiverAddress) returns()
+// Solidity: function setFeeReceiver(address _feeReceiverAddress) returns()
 func (processorstorage *Processorstorage) PackSetFeeReceiver(feeReceiverAddress common.Address) []byte {
 	enc, err := processorstorage.abi.Pack("setFeeReceiver", feeReceiverAddress)
 	if err != nil {
@@ -393,12 +443,12 @@ func (processorstorage *Processorstorage) PackSetFeeReceiver(feeReceiverAddress 
 	return enc
 }
 
-// PackSetGasThresold is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x8da43bec.
+// PackSetGasThreshold is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0xcb3b3ab3.
 //
-// Solidity: function setGasThresold(uint256 newGasThresold) returns()
-func (processorstorage *Processorstorage) PackSetGasThresold(newGasThresold *big.Int) []byte {
-	enc, err := processorstorage.abi.Pack("setGasThresold", newGasThresold)
+// Solidity: function setGasThreshold(uint256 _newGasThreshold) returns()
+func (processorstorage *Processorstorage) PackSetGasThreshold(newGasThreshold *big.Int) []byte {
+	enc, err := processorstorage.abi.Pack("setGasThreshold", newGasThreshold)
 	if err != nil {
 		panic(err)
 	}
@@ -408,9 +458,21 @@ func (processorstorage *Processorstorage) PackSetGasThresold(newGasThresold *big
 // PackSetMarketplaceAddress is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xb47cc556.
 //
-// Solidity: function setMarketplaceAddress(address marketplaceAddress) returns()
+// Solidity: function setMarketplaceAddress(address _marketplaceAddress) returns()
 func (processorstorage *Processorstorage) PackSetMarketplaceAddress(marketplaceAddress common.Address) []byte {
 	enc, err := processorstorage.abi.Pack("setMarketplaceAddress", marketplaceAddress)
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// PackSetPaymentValidityDuration is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x22dceb69.
+//
+// Solidity: function setPaymentValidityDuration(uint256 _newValidityDuration) returns()
+func (processorstorage *Processorstorage) PackSetPaymentValidityDuration(newValidityDuration *big.Int) []byte {
+	enc, err := processorstorage.abi.Pack("setPaymentValidityDuration", newValidityDuration)
 	if err != nil {
 		panic(err)
 	}
@@ -420,7 +482,7 @@ func (processorstorage *Processorstorage) PackSetMarketplaceAddress(marketplaceA
 // PackTotalInvoiceCreated is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xd3d1e2ba.
 //
-// Solidity: function totalInvoiceCreated() view returns(uint216)
+// Solidity: function totalInvoiceCreated() view returns(uint216 totalInvoices)
 func (processorstorage *Processorstorage) PackTotalInvoiceCreated() []byte {
 	enc, err := processorstorage.abi.Pack("totalInvoiceCreated")
 	if err != nil {
@@ -432,7 +494,7 @@ func (processorstorage *Processorstorage) PackTotalInvoiceCreated() []byte {
 // UnpackTotalInvoiceCreated is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0xd3d1e2ba.
 //
-// Solidity: function totalInvoiceCreated() view returns(uint216)
+// Solidity: function totalInvoiceCreated() view returns(uint216 totalInvoices)
 func (processorstorage *Processorstorage) UnpackTotalInvoiceCreated(data []byte) (*big.Int, error) {
 	out, err := processorstorage.abi.Unpack("totalInvoiceCreated", data)
 	if err != nil {
@@ -454,24 +516,24 @@ func (processorstorage *Processorstorage) PackTransferOwnership(newOwner common.
 	return enc
 }
 
-// PackUpdateInvoiceId is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x3e9384ef.
+// PackUpdateInvoiceNonce is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x9e05db13.
 //
-// Solidity: function updateInvoiceId(uint216 by) returns(uint216)
-func (processorstorage *Processorstorage) PackUpdateInvoiceId(by *big.Int) []byte {
-	enc, err := processorstorage.abi.Pack("updateInvoiceId", by)
+// Solidity: function updateInvoiceNonce(uint216 _by) returns(uint216 totalInvoices)
+func (processorstorage *Processorstorage) PackUpdateInvoiceNonce(by *big.Int) []byte {
+	enc, err := processorstorage.abi.Pack("updateInvoiceNonce", by)
 	if err != nil {
 		panic(err)
 	}
 	return enc
 }
 
-// UnpackUpdateInvoiceId is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x3e9384ef.
+// UnpackUpdateInvoiceNonce is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x9e05db13.
 //
-// Solidity: function updateInvoiceId(uint216 by) returns(uint216)
-func (processorstorage *Processorstorage) UnpackUpdateInvoiceId(data []byte) (*big.Int, error) {
-	out, err := processorstorage.abi.Unpack("updateInvoiceId", data)
+// Solidity: function updateInvoiceNonce(uint216 _by) returns(uint216 totalInvoices)
+func (processorstorage *Processorstorage) UnpackUpdateInvoiceNonce(data []byte) (*big.Int, error) {
+	out, err := processorstorage.abi.Unpack("updateInvoiceNonce", data)
 	if err != nil {
 		return new(big.Int), err
 	}
@@ -609,11 +671,11 @@ func (processorstorage *Processorstorage) UnpackError(raw []byte) (any, error) {
 	if bytes.Equal(raw[:4], processorstorage.abi.Errors["AlreadyInitialized"].ID.Bytes()[:4]) {
 		return processorstorage.UnpackAlreadyInitializedError(raw[4:])
 	}
-	if bytes.Equal(raw[:4], processorstorage.abi.Errors["CallFailed"].ID.Bytes()[:4]) {
-		return processorstorage.UnpackCallFailedError(raw[4:])
-	}
 	if bytes.Equal(raw[:4], processorstorage.abi.Errors["HoldPeriodCanNotBeZero"].ID.Bytes()[:4]) {
 		return processorstorage.UnpackHoldPeriodCanNotBeZeroError(raw[4:])
+	}
+	if bytes.Equal(raw[:4], processorstorage.abi.Errors["InvalidFeeRate"].ID.Bytes()[:4]) {
+		return processorstorage.UnpackInvalidFeeRateError(raw[4:])
 	}
 	if bytes.Equal(raw[:4], processorstorage.abi.Errors["NewOwnerIsZeroAddress"].ID.Bytes()[:4]) {
 		return processorstorage.UnpackNewOwnerIsZeroAddressError(raw[4:])
@@ -653,29 +715,6 @@ func (processorstorage *Processorstorage) UnpackAlreadyInitializedError(raw []by
 	return out, nil
 }
 
-// ProcessorstorageCallFailed represents a CallFailed error raised by the Processorstorage contract.
-type ProcessorstorageCallFailed struct {
-}
-
-// ErrorID returns the hash of canonical representation of the error's signature.
-//
-// Solidity: error CallFailed()
-func ProcessorstorageCallFailedErrorID() common.Hash {
-	return common.HexToHash("0x3204506f6a813959cffc5fd04d7ea98039e9c7444048856baf6c10ae312eb843")
-}
-
-// UnpackCallFailedError is the Go binding used to decode the provided
-// error data into the corresponding Go error struct.
-//
-// Solidity: error CallFailed()
-func (processorstorage *Processorstorage) UnpackCallFailedError(raw []byte) (*ProcessorstorageCallFailed, error) {
-	out := new(ProcessorstorageCallFailed)
-	if err := processorstorage.abi.UnpackIntoInterface(out, "CallFailed", raw); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProcessorstorageHoldPeriodCanNotBeZero represents a HoldPeriodCanNotBeZero error raised by the Processorstorage contract.
 type ProcessorstorageHoldPeriodCanNotBeZero struct {
 }
@@ -694,6 +733,29 @@ func ProcessorstorageHoldPeriodCanNotBeZeroErrorID() common.Hash {
 func (processorstorage *Processorstorage) UnpackHoldPeriodCanNotBeZeroError(raw []byte) (*ProcessorstorageHoldPeriodCanNotBeZero, error) {
 	out := new(ProcessorstorageHoldPeriodCanNotBeZero)
 	if err := processorstorage.abi.UnpackIntoInterface(out, "HoldPeriodCanNotBeZero", raw); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ProcessorstorageInvalidFeeRate represents a InvalidFeeRate error raised by the Processorstorage contract.
+type ProcessorstorageInvalidFeeRate struct {
+}
+
+// ErrorID returns the hash of canonical representation of the error's signature.
+//
+// Solidity: error InvalidFeeRate()
+func ProcessorstorageInvalidFeeRateErrorID() common.Hash {
+	return common.HexToHash("0x56d69198c50c349b33dac636e06a8847667e835557d137a3943dab95f3d5ce59")
+}
+
+// UnpackInvalidFeeRateError is the Go binding used to decode the provided
+// error data into the corresponding Go error struct.
+//
+// Solidity: error InvalidFeeRate()
+func (processorstorage *Processorstorage) UnpackInvalidFeeRateError(raw []byte) (*ProcessorstorageInvalidFeeRate, error) {
+	out := new(ProcessorstorageInvalidFeeRate)
+	if err := processorstorage.abi.UnpackIntoInterface(out, "InvalidFeeRate", raw); err != nil {
 		return nil, err
 	}
 	return out, nil

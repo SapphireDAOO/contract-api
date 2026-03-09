@@ -32,7 +32,7 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 		return
 	}
 
-	invoicePaidTopic := crypto.Keccak256Hash([]byte("InvoicePaid(uint216,address,address,uint256)"))
+	invoicePaidTopic := crypto.Keccak256Hash([]byte("InvoicePaid(uint216,address,address,uint256,uint40)"))
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{*c.address},
@@ -60,7 +60,7 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 			}
 
 			log.Printf("InvoicePaid Event:\n")
-			log.Printf("  OrderId: %s\n", event.OrderId.String())
+			log.Printf("  OrderId: %s\n", event.InvoiceId.String())
 			log.Printf("  Amount: %s\n", event.Amount.String())
 
 			transactionTimestamp := time.Now().UTC().UnixMilli()
@@ -75,7 +75,7 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 
 			transactionURL := txURL + vLog.TxHash.Hex()
 			go callback.
-				SendPaymentReceivedCallback(event.OrderId.String(), transactionURL, event.PaymentToken.Hex(),
+				SendPaymentReceivedCallback(event.InvoiceId.String(), transactionURL, event.PaymentToken.Hex(),
 					event.Amount, transactionTimestamp)
 		}
 	}
@@ -115,7 +115,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 			}
 
 			log.Printf("PaymentReleased Event:\n")
-			log.Printf("  OrderId: %s\n", event.OrderId.String())
+			log.Printf("  OrderId: %s\n", event.InvoiceId.String())
 			log.Printf("  SellerAmount: %s\n", event.SellerAmount.String())
 
 			transactionTimestamp := time.Now().UTC().UnixMilli()
@@ -130,7 +130,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 
 			transactionURL := txURL + vLog.TxHash.Hex()
 			go callback.
-				SendReleaseCallback(event.OrderId.String(),
+				SendReleaseCallback(event.InvoiceId.String(),
 					event.SellerAmount, transactionURL, transactionTimestamp)
 		}
 	}

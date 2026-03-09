@@ -14,7 +14,7 @@ type CreateInvoiceParam struct {
 	OrderId          string
 	Seller           string
 	Price            int
-	EscrowHoldPeriod int64
+	EscrowHoldPeriod uint32
 	Currency         string
 }
 
@@ -29,10 +29,10 @@ func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPayme
 		price := new(big.Int).Mul(big.NewInt(int64(v.Price)), multiplier)
 
 		result = advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam{
-			OrderId:          v.OrderId,
+			InvoiceId:        v.OrderId,
 			Seller:           common.HexToAddress(v.Seller),
 			Price:            price,
-			EscrowHoldPeriod: big.NewInt(v.EscrowHoldPeriod),
+			EscrowHoldPeriod: v.EscrowHoldPeriod,
 		}
 		results = append(results, result)
 
@@ -43,7 +43,7 @@ func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPayme
 
 func ValidateInvoices(invoices []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) error {
 	for i, inv := range invoices {
-		if strings.TrimSpace(inv.OrderId) == "" {
+		if strings.TrimSpace(inv.InvoiceId) == "" {
 			return fmt.Errorf("invoice %d missing orderId", i)
 		}
 		if (inv.Seller == common.Address{}) {
@@ -51,9 +51,6 @@ func ValidateInvoices(invoices []advancedprocessor.IAdvancedPaymentProcessorInvo
 		}
 		if inv.Price == nil {
 			return fmt.Errorf("invoice %d missing price", i)
-		}
-		if inv.EscrowHoldPeriod == nil {
-			return fmt.Errorf("invoice %d missing escrowHoldPeriod", i)
 		}
 	}
 	return nil

@@ -16,11 +16,6 @@ type InvoiceResponse struct {
 	} `json:"orders"`
 }
 
-// type SingleInvoiceResponse struct {
-// 	Url     string `json:"url"`
-// 	OrderId string `json:"orderId"`
-// }
-
 type PaymentProcessor struct {
 	address  *common.Address
 	instance *bind.BoundContract

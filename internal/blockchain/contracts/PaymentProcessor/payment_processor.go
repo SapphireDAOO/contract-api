@@ -53,7 +53,7 @@ func (c *PaymentProcessor) CreateInvoice(
 		OrderId string `json:"orderId"`
 	})
 
-	id := param[0].OrderId
+	id := param[0].InvoiceId
 	o := orders[id]
 
 	o.Seller = param[0].Seller.Hex()
@@ -90,7 +90,7 @@ func (c *PaymentProcessor) CreateInvoices(
 	})
 
 	for i := range param {
-		id := param[i].OrderId
+		id := param[i].InvoiceId
 
 		o := orders[id]
 		o.Seller = param[i].Seller.Hex()
