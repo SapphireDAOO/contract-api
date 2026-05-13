@@ -1,0 +1,11 @@
+services:
+  myapp:
+    build: .
+    container_name: myapp
+    ports:
+      - "8080:8080"
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - PRODUCTION=1

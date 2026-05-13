@@ -1,51 +1,35 @@
-name: Deploy Payment Processor API
-
 on:
   push:
     branches: [main]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24.4"
-
-      - name: Build
-        run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-          go build -ldflags="-s -w" -o myapp ./server
-
-      - name: Stop service
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
-          script: |
-            sudo systemctl stop myapp.service || true
-
-      - name: Deploy via SCP
+      - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
-          source: "myapp"
-          target: ${{ secrets.TARGET_DIR }}/
-          overwrite: true
+          source: "."
+          target: ${{ secrets.TARGET_DIR }}
 
-      - name: Restart service
+      - name: Deploy with Docker
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           script: |
+            set -e
             cd ${{ secrets.TARGET_DIR }}
-            chmod +x myapp
-            sudo systemctl restart myapp.service
+            if [ ! -f .env ]; then
+              echo ".env missing in ${{ secrets.TARGET_DIR }} — aborting deploy"
+              exit 1
+            fi
+            docker compose down
+            docker compose up -d --build
+            docker image prune -f
