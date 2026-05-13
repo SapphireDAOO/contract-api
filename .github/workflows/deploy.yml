@@ -1,20 +1,33 @@
+name: Deploy Payment Processor API
+
 on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy files to server
+      - name: Package source
+        run: |
+          tar --exclude='.git' --exclude='.github' --exclude='tmp' \
+              --exclude='api-test' \
+              -czf source.tar.gz .
+
+      - name: Copy archive to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
-          source: "."
+          source: "source.tar.gz"
           target: ${{ secrets.TARGET_DIR }}
 
       - name: Deploy with Docker
@@ -26,10 +39,7 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.TARGET_DIR }}
-            if [ ! -f .env ]; then
-              echo ".env missing in ${{ secrets.TARGET_DIR }} — aborting deploy"
-              exit 1
-            fi
-            docker compose down
+            tar -xzf source.tar.gz
+            rm -f source.tar.gz
             docker compose up -d --build
             docker image prune -f

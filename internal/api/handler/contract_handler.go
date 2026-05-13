@@ -14,7 +14,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
-const TX_URL string = "https://sepolia.etherscan.io/tx/"
+const TX_URL string = "https://sepolia.basescan.org/tx/"
 
 type ContractHandler struct {
 	PaymentProcessor        *paymentprocesor.PaymentProcessor

@@ -13,7 +13,7 @@ import (
 )
 
 const RELEASE_TOPIC_HASH = "0x8ea2131e86229753e4a36a9ffc579af1b38fdada1aefe3e09a44cf2eab25befe"
-const txURL = "https://sepolia.etherscan.io/tx/"
+const txURL = "https://sepolia.basescan.org/tx/"
 
 func (c *PaymentProcessor) subscribeLogs(query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
 	for {
