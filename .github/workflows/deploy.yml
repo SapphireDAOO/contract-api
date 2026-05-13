@@ -8,6 +8,9 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  TARGET_DIR: /root/payment-api
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -17,10 +20,14 @@ jobs:
 
       - name: Package source
         run: |
-          tar --exclude='./source.tar.gz' \
+          set +e
+          tar --warning=no-file-changed \
+              --exclude='./source.tar.gz' \
               --exclude='./.git' --exclude='./.github' \
               --exclude='./tmp' --exclude='./api-test' \
               -czf source.tar.gz .
+          status=$?
+          if [ $status -gt 1 ]; then exit $status; fi
 
       - name: Copy archive to server
         uses: appleboy/scp-action@v0.1.7
@@ -29,7 +36,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           source: "source.tar.gz"
-          target: ${{ secrets.TARGET_DIR }}
+          target: ${{ env.TARGET_DIR }}
 
       - name: Deploy with Docker
         uses: appleboy/ssh-action@v1.0.0
@@ -39,7 +46,8 @@ jobs:
           key: ${{ secrets.KEY }}
           script: |
             set -e
-            cd ${{ secrets.TARGET_DIR }}
+            mkdir -p ${{ env.TARGET_DIR }}
+            cd ${{ env.TARGET_DIR }}
             tar -xzf source.tar.gz
             rm -f source.tar.gz
             docker compose up -d --build
