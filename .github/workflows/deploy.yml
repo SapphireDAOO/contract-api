@@ -17,9 +17,10 @@ jobs:
 
       - name: Package source
         run: |
-          tar --exclude='.git' --exclude='.github' --exclude='tmp' \
-              --exclude='api-test' \
-              -czf /tmp/source.tar.gz .
+          tar --exclude='./source.tar.gz' \
+              --exclude='./.git' --exclude='./.github' \
+              --exclude='./tmp' --exclude='./api-test' \
+              -czf source.tar.gz .
 
       - name: Copy archive to server
         uses: appleboy/scp-action@v0.1.7
@@ -27,9 +28,8 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
-          source: "/tmp/source.tar.gz"
+          source: "source.tar.gz"
           target: ${{ secrets.TARGET_DIR }}
-          strip_components: 2
 
       - name: Deploy with Docker
         uses: appleboy/ssh-action@v1.0.0
