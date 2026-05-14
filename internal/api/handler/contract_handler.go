@@ -38,15 +38,15 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	invoices := utils.ConvertParam(param)
-
-	if err := utils.ValidateInvoices(invoices); err != nil {
+	if err := utils.ValidateCreateInvoiceParams(param); err != nil {
 		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
 	}
 
-	if len(invoices) == 0 {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "no invoice parameters provided")
+	invoices := utils.ConvertParam(param)
+
+	if err := utils.ValidateInvoices(invoices); err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
 	}
 

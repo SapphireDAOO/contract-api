@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const tokenTTL = 24 * time.Hour
+const tokenTTL = 24 * 7 * time.Hour
 
 func GenerateToken(orderId string) (string, error) {
 	secret := os.Getenv("SECRET_KEY")

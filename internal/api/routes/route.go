@@ -33,6 +33,7 @@ func Route(h *handler.ContractHandler) *http.ServeMux {
 			"status": "ok",
 			"time":   time.Now().Format(time.RFC3339),
 		}
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 	})
 

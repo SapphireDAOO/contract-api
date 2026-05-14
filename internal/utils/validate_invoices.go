@@ -1,4 +1,3 @@
-// internal/utils/validation.go
 package utils
 
 import (
@@ -18,6 +17,38 @@ type CreateInvoiceParam struct {
 	Currency         string
 }
 
+func isValidAddress(addr string) bool {
+	addr = strings.TrimSpace(addr)
+
+	if !common.IsHexAddress(addr) {
+		return false
+	}
+
+	if (common.HexToAddress(addr) == common.Address{}) {
+		return false
+	}
+
+	return true
+}
+
+func ValidateCreateInvoiceParams(params []CreateInvoiceParam) error {
+	if len(params) == 0 {
+		return fmt.Errorf("no invoice parameters provided")
+	}
+	for i, p := range params {
+		if strings.TrimSpace(p.OrderId) == "" {
+			return fmt.Errorf("invoice %d: orderId is required", i)
+		}
+		if !isValidAddress(p.Seller) {
+			return fmt.Errorf("invoice %d: seller %q is not a valid address", i, p.Seller)
+		}
+		if p.Price <= 0 {
+			return fmt.Errorf("invoice %d: price must be greater than zero", i)
+		}
+	}
+	return nil
+}
+
 func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam {
 	var results []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
 
@@ -30,7 +61,7 @@ func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPayme
 
 		result = advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam{
 			InvoiceId:        v.OrderId,
-			Seller:           common.HexToAddress(v.Seller),
+			Seller:           common.HexToAddress(strings.TrimSpace(v.Seller)),
 			Price:            price,
 			EscrowHoldPeriod: v.EscrowHoldPeriod,
 		}
@@ -55,3 +86,12 @@ func ValidateInvoices(invoices []advancedprocessor.IAdvancedPaymentProcessorInvo
 	}
 	return nil
 }
+
+// addr = strings.TrimSpace(addr)
+// if !common.IsHexAddress(addr) {
+// 	return false
+// }
+// if (common.HexToAddress(addr) == common.Address{}) {
+// 	return false
+// }
+// return true
