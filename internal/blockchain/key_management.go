@@ -13,12 +13,12 @@ func Auth(chainId *big.Int) (*bind.TransactOpts, error) {
 
 	k, _ := hex.DecodeString(os.Getenv("PASS"))
 
-	privKey, err := crypto.ToECDSA(k)
+	value, err := crypto.ToECDSA(k)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return bind.NewKeyedTransactor(privKey, chainId), nil
+	return bind.NewKeyedTransactor(value, chainId), nil
 
 }

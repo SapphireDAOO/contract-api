@@ -305,18 +305,17 @@ func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (advancedprocessor.I
 	return c.contract.UnpackGetInvoice(out)
 }
 
+const (
+	disputeDismissed uint8 = 7
+	disputeSettled   uint8 = 8
+)
+
 func (c *PaymentProcessor) getDisputeResolution(action blockchain.MarketplaceAction) uint8 {
-	if action == blockchain.DismissDispute {
-		value, _ := bind.Call(
-			c.instance, nil, c.contract.PackDISPUTEDISMISSED(), c.contract.UnpackDISPUTEDISMISSED)
-		return value
+	switch action {
+	case blockchain.DismissDispute:
+		return disputeDismissed
+	case blockchain.SettleDispute:
+		return disputeSettled
 	}
-
-	if action == blockchain.SettleDispute {
-		value, _ := bind.Call(
-			c.instance, nil, c.contract.PackDISPUTESETTLED(), c.contract.UnpackDISPUTESETTLED)
-		return value
-	}
-
 	return 0
 }

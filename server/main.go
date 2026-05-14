@@ -21,7 +21,8 @@ const (
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("Server failed to start: %v\n", err)
+		log.Printf("Server failed to start: %v\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -51,8 +52,8 @@ func run() error {
 	pp := paymentprocesor.NewPaymentprocessor(client)
 	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
 
-	// go pp.ListenToPaymentReceivedEvent()
-	// go pp.ListenToReleaseEvent()
+	go pp.ListenToPaymentReceivedEvent()
+	go pp.ListenToReleaseEvent()
 
 	contract := handler.NewContractHandler(
 		&handler.ContractHandler{
