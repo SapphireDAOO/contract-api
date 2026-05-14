@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	middleware "github.com/orgs/SapphireDAOO/contract-api/internal"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
@@ -26,9 +28,14 @@ func Route(h *handler.ContractHandler) *http.ServeMux {
 	router := Router{mux: http.NewServeMux()}
 	contractHandler := handler.NewContractHandler(h)
 
-	router.GET("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello world"))
-	}))
+	router.GET("/", func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]string{
+			"status": "ok",
+			"time":   time.Now().Format(time.RFC3339),
+		}
+		json.NewEncoder(w).Encode(response)
+	})
+
 	router.POST("/create", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
 	router.POST("/release", middleware.AccessControlMiddleWare(contractHandler.Release))
 	router.POST("/createDispute", middleware.AccessControlMiddleWare(contractHandler.CreateDispute))
