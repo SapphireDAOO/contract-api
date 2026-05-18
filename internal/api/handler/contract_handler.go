@@ -198,34 +198,34 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		OrderId string `json:"orderId"`
-	}
+// func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
+// 	var input struct {
+// 		OrderId string `json:"orderId"`
+// 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
-		return
-	}
+// 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+// 		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+// 		return
+// 	}
 
-	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
-	transactionTimestamp := time.Now().UTC().UnixMilli()
-	txHash, err := h.PaymentProcessor.Release(orderId)
-	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
-		return
-	}
+// 	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+// 	transactionTimestamp := time.Now().UTC().UnixMilli()
+// 	txHash, err := h.PaymentProcessor.Release(orderId)
+// 	if err != nil {
+// 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+// 		return
+// 	}
 
-	transactionURL := TX_URL + txHash.Hex()
-	go callback.
-		SendReleaseCallback(input.OrderId, nil, transactionURL, transactionTimestamp)
+// 	transactionURL := TX_URL + txHash.Hex()
+// 	go callback.
+// 		SendReleaseCallback(input.OrderId, nil, transactionURL, transactionTimestamp)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":         "success",
-		"transactionUrl": transactionURL,
-	})
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(map[string]string{
+// 		"status":         "success",
+// 		"transactionUrl": transactionURL,
+// 	})
+// }
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {

@@ -38,7 +38,7 @@ func Route(h *handler.ContractHandler) *http.ServeMux {
 	})
 
 	router.POST("/create", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
-	router.POST("/release", middleware.AccessControlMiddleWare(contractHandler.Release))
+	// router.POST("/release", middleware.AccessControlMiddleWare(contractHandler.Release))
 	router.POST("/createDispute", middleware.AccessControlMiddleWare(contractHandler.CreateDispute))
 	router.POST("/handleDispute", middleware.AccessControlMiddleWare(contractHandler.HandleDispute))
 	router.POST("/cancel", middleware.AccessControlMiddleWare(contractHandler.Cancel))

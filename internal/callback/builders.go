@@ -59,7 +59,7 @@ func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 	return json.Marshal(payload)
 }
 
-func buildReleaseCallbackPayload(paymentToken string, releaseAmount *big.Int, transactionURL string,
+func buildReleaseCallbackPayload(paymentToken, receiver string, releaseAmount *big.Int, transactionURL string,
 	transactionTimestamp int64) ([]byte, error) {
 
 	address := "0x2c65B472EE968740D8e9235ad0594700b8e5fE82"

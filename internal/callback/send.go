@@ -26,10 +26,10 @@ func SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 	sendCallbackWithRetry(payload, orderId, refundCallbackAction)
 }
 
-func SendReleaseCallback(orderId string, releaseAmount *big.Int, transactionURL string,
+func SendReleaseCallback(orderId, receiver string, releaseAmount *big.Int, transactionURL string,
 	transactionTimestamp int64) {
 	paymentToken := ""
-	payload, err := buildReleaseCallbackPayload(paymentToken,
+	payload, err := buildReleaseCallbackPayload(paymentToken, receiver,
 		releaseAmount, transactionURL, transactionTimestamp)
 
 	log.Println(string(payload))

@@ -130,7 +130,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 
 			transactionURL := txURL + vLog.TxHash.Hex()
 			go callback.
-				SendReleaseCallback(event.InvoiceId.String(),
+				SendReleaseCallback(event.InvoiceId.String(), event.Receiver.Hex(),
 					event.SellerAmount, transactionURL, transactionTimestamp)
 		}
 	}
