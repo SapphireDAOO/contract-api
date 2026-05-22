@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 )
 
@@ -62,13 +63,19 @@ func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 func buildReleaseCallbackPayload(paymentToken, receiver string, releaseAmount *big.Int, transactionURL string,
 	transactionTimestamp int64) ([]byte, error) {
 
-	address := "0x2c65B472EE968740D8e9235ad0594700b8e5fE82"
-	data, _ := tokenCurrencyAndDecimals[paymentToken]
+	if releaseAmount == nil {
+		return nil, fmt.Errorf("invalid amount")
+	}
+
+	data, ok := tokenCurrencyAndDecimals[strings.ToLower(paymentToken)]
+	if !ok {
+		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
+	}
 
 	payload := releaseCallbackPayload{
-		Currency:             "USDC",
+		Currency:             data.Symbol,
 		Amount:               formatTokenAmount(releaseAmount, data.Decimal),
-		Address:              address,
+		Address:              receiver,
 		TransactionTimestamp: transactionTimestamp,
 		TransactionUrl:       transactionURL,
 	}

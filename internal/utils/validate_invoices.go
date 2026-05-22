@@ -86,12 +86,3 @@ func ValidateInvoices(invoices []advancedprocessor.IAdvancedPaymentProcessorInvo
 	}
 	return nil
 }
-
-// addr = strings.TrimSpace(addr)
-// if !common.IsHexAddress(addr) {
-// 	return false
-// }
-// if (common.HexToAddress(addr) == common.Address{}) {
-// 	return false
-// }
-// return true

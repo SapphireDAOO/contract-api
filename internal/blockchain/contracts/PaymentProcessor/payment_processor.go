@@ -254,9 +254,16 @@ func (c *PaymentProcessor) Refund(orderId *big.Int, refundShare *big.Int) (*comm
 	return &hash, nil
 }
 
-func (c *PaymentProcessor) Release(orderId *big.Int) (*common.Hash, error) {
-	auth, err := blockchain.Auth(c.client.ChainId)
+type ReleaseResult struct {
+	TxHash          common.Hash
+	Seller          common.Address
+	PaymentToken    common.Address
+	SellerAmount    *big.Int
+	BlockTimestamp int64
+}
 
+func (c *PaymentProcessor) Release(orderId *big.Int) (*ReleaseResult, error) {
+	auth, err := blockchain.Auth(c.client.ChainId)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +271,6 @@ func (c *PaymentProcessor) Release(orderId *big.Int) (*common.Hash, error) {
 	data := c.contract.PackRelease(orderId)
 
 	tx, err := bind.Transact(c.instance, auth, data)
-
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +284,46 @@ func (c *PaymentProcessor) Release(orderId *big.Int) (*common.Hash, error) {
 		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
 	}
 
-	hash := tx.Hash()
+	result := &ReleaseResult{
+		TxHash:         tx.Hash(),
+		BlockTimestamp: c.blockTimestampMillis(receipt.BlockHash),
+	}
+	if event := c.findPaymentReleasedEvent(receipt); event != nil {
+		result.Seller = event.Receiver
+		result.PaymentToken = event.Currency
+		result.SellerAmount = event.SellerAmount
+	}
+	return result, nil
+}
 
-	return &hash, nil
+func (c *PaymentProcessor) blockTimestampMillis(blockHash common.Hash) int64 {
+	if c.client == nil || c.client.HTTP == nil {
+		return 0
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	header, err := c.client.HTTP.HeaderByHash(ctx, blockHash)
+	if err != nil || header == nil {
+		return 0
+	}
+	return int64(header.Time) * 1000
+}
+
+func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *advancedprocessor.AdvancedprocessorPaymentReleased {
+	if receipt == nil || c.address == nil {
+		return nil
+	}
+	for _, vlog := range receipt.Logs {
+		if vlog == nil || vlog.Address != *c.address {
+			continue
+		}
+		event, err := c.contract.UnpackPaymentReleasedEvent(vlog)
+		if err != nil || event == nil {
+			continue
+		}
+		return event
+	}
+	return nil
 }
 
 func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (advancedprocessor.IAdvancedPaymentProcessorInvoice, error) {

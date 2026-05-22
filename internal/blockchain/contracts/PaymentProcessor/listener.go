@@ -12,7 +12,6 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
 )
 
-const RELEASE_TOPIC_HASH = "0x8ea2131e86229753e4a36a9ffc579af1b38fdada1aefe3e09a44cf2eab25befe"
 const txURL = "https://sepolia.basescan.org/tx/"
 
 func (c *PaymentProcessor) subscribeLogs(query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
@@ -88,7 +87,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 		return
 	}
 
-	paymentReleasedTopic := common.HexToHash(RELEASE_TOPIC_HASH)
+	paymentReleasedTopic := crypto.Keccak256Hash([]byte("PaymentReleased(uint216,address,address,uint256)"))
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{*c.address},
@@ -130,8 +129,8 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 
 			transactionURL := txURL + vLog.TxHash.Hex()
 			go callback.
-				SendReleaseCallback(event.InvoiceId.String(), event.Receiver.Hex(),
-					event.SellerAmount, transactionURL, transactionTimestamp)
+				SendReleaseCallback(event.InvoiceId.String(), event.Currency.Hex(),
+					event.Receiver.Hex(), event.SellerAmount, transactionURL, transactionTimestamp)
 		}
 	}
 }
