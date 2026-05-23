@@ -14,18 +14,23 @@ import (
 
 const txURL = "https://sepolia.basescan.org/tx/"
 
-func (c *PaymentProcessor) subscribeLogs(query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
+func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
 	for {
-		sub, err := c.client.WS.SubscribeFilterLogs(context.Background(), query, logs)
+		sub, err := c.client.WS.SubscribeFilterLogs(ctx, query, logs)
 		if err == nil {
 			return sub
 		}
 		log.Printf("Failed to subscribe to %s logs: %v", label, err)
-		time.Sleep(5 * time.Second)
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(5 * time.Second):
+		}
 	}
 }
 
-func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
+func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
 		log.Printf("payment listener disabled: client or contract address not initialized")
 		return
@@ -39,17 +44,27 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 	}
 
 	logs := make(chan types.Log)
-	sub := c.subscribeLogs(query, logs, "InvoicePaid")
+	sub := c.subscribeLogs(ctx, query, logs, "InvoicePaid")
+	if sub == nil {
+		return
+	}
+	defer sub.Unsubscribe()
 
 	log.Println("Listening for InvoicePaid events...")
 
 	for {
 		select {
+		case <-ctx.Done():
+			log.Println("InvoicePaid listener stopping")
+			return
+
 		case err := <-sub.Err():
 			log.Printf("InvoicePaid subscription error: %v", err)
-
 			sub.Unsubscribe()
-			sub = c.subscribeLogs(query, logs, "InvoicePaid")
+			sub = c.subscribeLogs(ctx, query, logs, "InvoicePaid")
+			if sub == nil {
+				return
+			}
 
 		case vLog := <-logs:
 			event, err := c.contract.UnpackInvoicePaidEvent(&vLog)
@@ -64,7 +79,9 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 
 			transactionTimestamp := time.Now().UTC().UnixMilli()
 			if c.client.HTTP != nil {
-				header, err := c.client.HTTP.HeaderByHash(context.Background(), vLog.BlockHash)
+				headerCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+				header, err := c.client.HTTP.HeaderByHash(headerCtx, vLog.BlockHash)
+				cancel()
 				if err != nil {
 					log.Printf("Failed to fetch block header for InvoicePaid event: %v", err)
 				} else {
@@ -78,10 +95,9 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent() {
 					event.Amount, transactionTimestamp)
 		}
 	}
-
 }
 
-func (c *PaymentProcessor) ListenToReleaseEvent() {
+func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
 		log.Printf("release listener disabled: client or contract address not initialized")
 		return
@@ -95,17 +111,28 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 	}
 
 	logs := make(chan types.Log)
-	sub := c.subscribeLogs(query, logs, "PaymentReleased")
+	sub := c.subscribeLogs(ctx, query, logs, "PaymentReleased")
+	if sub == nil {
+		return
+	}
+	defer sub.Unsubscribe()
 
 	log.Println("Listening for PaymentReleased events...")
 
 	for {
 		select {
+		case <-ctx.Done():
+			log.Println("PaymentReleased listener stopping")
+			return
+
 		case err := <-sub.Err():
 			log.Printf("Subscription error: %v", err)
-
 			sub.Unsubscribe()
-			sub = c.subscribeLogs(query, logs, "PaymentReleased")
+			sub = c.subscribeLogs(ctx, query, logs, "PaymentReleased")
+			if sub == nil {
+				return
+			}
+
 		case vLog := <-logs:
 			event, err := c.contract.UnpackPaymentReleasedEvent(&vLog)
 			if err != nil {
@@ -119,7 +146,9 @@ func (c *PaymentProcessor) ListenToReleaseEvent() {
 
 			transactionTimestamp := time.Now().UTC().UnixMilli()
 			if c.client.HTTP != nil {
-				header, err := c.client.HTTP.HeaderByHash(context.Background(), vLog.BlockHash)
+				headerCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+				header, err := c.client.HTTP.HeaderByHash(headerCtx, vLog.BlockHash)
+				cancel()
 				if err != nil {
 					log.Printf("Failed to fetch block header for release event: %v", err)
 				} else {
