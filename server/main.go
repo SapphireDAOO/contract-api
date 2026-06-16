@@ -17,6 +17,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
+	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
 )
 
 const (
@@ -57,6 +58,7 @@ func run() error {
 
 	pp := paymentprocesor.NewPaymentprocessor(client)
 	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
+	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -76,6 +78,7 @@ func run() error {
 		&handler.ContractHandler{
 			PaymentProcessor:        pp,
 			PaymentProcessorStorage: pps,
+			SimplePaymentProcessor:  spp,
 			BaseUrl:                 url,
 		},
 	)

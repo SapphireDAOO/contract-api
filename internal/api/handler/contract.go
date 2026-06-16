@@ -10,6 +10,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
+	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
@@ -19,6 +20,7 @@ const TX_URL string = "https://sepolia.basescan.org/tx/"
 type ContractHandler struct {
 	PaymentProcessor        *paymentprocesor.PaymentProcessor
 	PaymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
+	SimplePaymentProcessor  *simplepaymentprocessor.SimplePaymentProcessor
 	BaseUrl                 string
 }
 
@@ -26,6 +28,7 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 	return &ContractHandler{
 		PaymentProcessor:        c.PaymentProcessor,
 		PaymentProcessorStorage: c.PaymentProcessorStorage,
+		SimplePaymentProcessor:  c.SimplePaymentProcessor,
 		BaseUrl:                 c.BaseUrl,
 	}
 }
