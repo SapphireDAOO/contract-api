@@ -15,6 +15,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/routes"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
+	multisig "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Multisig"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
@@ -59,12 +60,13 @@ func run() error {
 	pp := paymentprocesor.NewPaymentprocessor(client)
 	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
 	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client)
+	ms := multisig.NewMultisig(client)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	var listeners sync.WaitGroup
-	listeners.Add(2)
+	listeners.Add(3)
 	go func() {
 		defer listeners.Done()
 		pp.ListenToPaymentReceivedEvent(ctx)
@@ -72,6 +74,10 @@ func run() error {
 	go func() {
 		defer listeners.Done()
 		pp.ListenToReleaseEvent(ctx)
+	}()
+	go func() {
+		defer listeners.Done()
+		ms.ListenToEvents(ctx)
 	}()
 
 	contract := handler.NewContractHandler(
