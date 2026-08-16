@@ -1,8 +1,9 @@
-package main
+package server
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,30 +28,11 @@ const (
 	shutdownTimeout time.Duration = 15 * time.Second
 )
 
-func main() {
-	if err := run(); err != nil {
-		log.Printf("Server failed to start: %v\n", err)
-		os.Exit(1)
+func Run() error {
+	url, err := checkoutURL()
+	if err != nil {
+		return err
 	}
-}
-
-func run() error {
-	var url string
-	if _, ok := os.LookupEnv("PRODUCTION"); !ok {
-		if err := godotenv.Load(); err != nil {
-			log.Fatalln("Error loading .env file")
-		}
-		url = BASE_URL
-	} else {
-		url = WEB_URL
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	addr := ":" + port
 
 	client, err := blockchain.NewClient()
 	if err != nil {
@@ -65,20 +47,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	var listeners sync.WaitGroup
-	listeners.Add(3)
-	go func() {
-		defer listeners.Done()
-		pp.ListenToPaymentReceivedEvent(ctx)
-	}()
-	go func() {
-		defer listeners.Done()
-		pp.ListenToReleaseEvent(ctx)
-	}()
-	go func() {
-		defer listeners.Done()
-		ms.ListenToEvents(ctx)
-	}()
+	listeners := startListeners(ctx, pp, pps, ms)
 
 	contract := handler.NewContractHandler(
 		&handler.ContractHandler{
@@ -89,18 +58,11 @@ func run() error {
 		},
 	)
 
-	mux := routes.Route(contract)
-
-	server := &http.Server{
-		Addr:         addr,
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
+	server := newHTTPServer(routes.Route(contract))
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("Server running at port %s", addr)
+		log.Printf("Server running at port %s", server.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -124,4 +86,52 @@ func run() error {
 	listeners.Wait()
 	log.Println("Shutdown complete")
 	return nil
+}
+
+func checkoutURL() (string, error) {
+	if _, ok := os.LookupEnv("PRODUCTION"); ok {
+		return WEB_URL, nil
+	}
+	if err := godotenv.Load(); err != nil {
+		return "", fmt.Errorf("error loading .env file: %w", err)
+	}
+	return BASE_URL, nil
+}
+
+func startListeners(
+	ctx context.Context,
+	pp *paymentprocesor.PaymentProcessor,
+	pps *paymentprocessorstorage.PaymentProcessorStorage,
+	ms *multisig.Multisig,
+) *sync.WaitGroup {
+	var listeners sync.WaitGroup
+
+	for _, listen := range []func(context.Context){
+		pp.ListenToPaymentReceivedEvent,
+		pp.ListenToReleaseEvent,
+		ms.ListenToEvents,
+		pps.ListenToPauseEvents,
+	} {
+		listeners.Add(1)
+		go func() {
+			defer listeners.Done()
+			listen(ctx)
+		}()
+	}
+
+	return &listeners
+}
+
+func newHTTPServer(mux http.Handler) *http.Server {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	return &http.Server{
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
 }

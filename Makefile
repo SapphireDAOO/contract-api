@@ -30,4 +30,4 @@ gen:
 	@abigen --v2 --abi $(ERC20_ABI_FILE) --pkg $(ERC20_GO_PKG) --out $(ERC20_GO_OUT)
 
 run:
-	@go run ./server/main.go
+	@go run ./cmd/server
