@@ -63,7 +63,7 @@ func SendEmbed(embed Embed) {
 	}
 
 	payload, err := json.Marshal(message{
-		Username: "Multisig Monitor",
+		Username: "Contract Monitor",
 		Embeds:   []Embed{embed},
 	})
 	if err != nil {
