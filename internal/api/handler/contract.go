@@ -3,8 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"math/big"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
@@ -16,6 +19,14 @@ import (
 )
 
 const TX_URL string = "https://sepolia.basescan.org/tx/"
+
+func parseBigInt(field, value string) (*big.Int, error) {
+	n, ok := new(big.Int).SetString(strings.TrimSpace(value), 10)
+	if !ok {
+		return nil, fmt.Errorf("%s must be a base-10 integer, got %q", field, value)
+	}
+	return n, nil
+}
 
 type ContractHandler struct {
 	PaymentProcessor        *paymentprocesor.PaymentProcessor
@@ -106,8 +117,13 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	n, _ := new(big.Int).SetString(input.OrderId, 10)
-	txHash, err := h.PaymentProcessor.Cancel(n)
+	orderId, err := parseBigInt("orderId", input.OrderId)
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
+	txHash, err := h.PaymentProcessor.Cancel(orderId)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -136,10 +152,19 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
-	refundShare, _ := new(big.Int).SetString(input.RefundShare, 10)
+	orderId, err := parseBigInt("orderId", input.OrderId)
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
 
-	if refundShare.Cmp(big.NewInt(0)) == 0 {
+	refundShare, err := parseBigInt("refundShare", input.RefundShare)
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
+	if refundShare.Sign() == 0 {
 		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("share can not be zero"), "invalid request body")
 		return
 	}
@@ -151,16 +176,16 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	transactionURL := TX_URL + txHash.Hex()
+
 	data, err := h.PaymentProcessor.GetInvoiceData(orderId)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("error invoice data"),
-			"invalid payment token")
-		return
+		// The refund transaction already succeeded; only the callback is skipped.
+		log.Printf("refund callback skipped for orderId %s: fetching invoice data failed: %v", input.OrderId, err)
+	} else {
+		go callback.SendRefundCallback(input.OrderId,
+			data.PaymentToken.String(), data.AmountPaid, refundShare, transactionURL, transactionTimestamp)
 	}
-
-	transactionURL := TX_URL + txHash.Hex()
-	go callback.SendRefundCallback(input.OrderId,
-		data.PaymentToken.String(), data.AmountPaid, refundShare, transactionURL, transactionTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -180,13 +205,18 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
-	if err != nil && marketplaceAddress != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil,
-			"error fetching marketplace address: "+err.Error())
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err,
+			"error fetching marketplace address")
 		return
 	}
 
-	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	orderId, err := parseBigInt("orderId", input.OrderId)
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
 	txHash, err := h.PaymentProcessor.CreateDispute(orderId, *marketplaceAddress)
 
 	if err != nil {
@@ -211,7 +241,12 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
+	orderId, err := parseBigInt("orderId", input.OrderId)
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
 	res, err := h.PaymentProcessor.Release(orderId)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")
@@ -242,8 +277,21 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	orderId, _ := new(big.Int).SetString(input.OrderId, 10)
-	sellerShare, _ := new(big.Int).SetString(input.SellerShare, 10)
+	orderId, err := parseBigInt("orderId", input.OrderId)
+	if err != nil {
+		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		return
+	}
+
+	var sellerShare *big.Int
+	if strings.TrimSpace(input.SellerShare) != "" {
+		sellerShare, err = parseBigInt("sellerShare", input.SellerShare)
+		if err != nil {
+			utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+			return
+		}
+	}
+
 	txHash, err := h.PaymentProcessor.HandleDispute(orderId, input.Resolution, sellerShare)
 	if err != nil {
 		utils.WriteMappedRevertError(w, err, "Error sending transaction")

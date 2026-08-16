@@ -43,7 +43,7 @@ func GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 
 func GetInvoiceData(id string) (*SmartInvoice, error) {
 	if id == "" {
-		return nil, fmt.Errorf("address cannot be empty")
+		return nil, fmt.Errorf("id cannot be empty")
 	}
 
 	payload := map[string]any{
@@ -79,10 +79,14 @@ func handleRequest(payload map[string]any) ([]byte, error) {
 		return nil, err
 	}
 
+	endpoint := os.Getenv("END_POINT")
+	if endpoint == "" {
+		return nil, fmt.Errorf("END_POINT env var not set")
+	}
+
 	client := http.Client{Timeout: 10 * time.Second}
 
-	req, err := http.NewRequest("POST", os.Getenv("END_POINT"), bytes.NewBuffer(jsonData))
-
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -90,24 +94,19 @@ func handleRequest(payload map[string]any) ([]byte, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("non-200 status code: %d, body: %s", res.StatusCode, string(bodyBytes))
-	}
-
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("non-200 status code: %d, body: %s", res.StatusCode, string(body))
 	}
 
 	return body, nil
-
 }

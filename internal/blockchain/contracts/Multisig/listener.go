@@ -319,7 +319,10 @@ func capitalize(s string) string {
 }
 
 func plural(n *big.Int, unit string) string {
-	if n != nil && n.Cmp(big.NewInt(1)) == 0 {
+	if n == nil {
+		return "0 " + unit + "s"
+	}
+	if n.Cmp(big.NewInt(1)) == 0 {
 		return "1 " + unit
 	}
 	return n.String() + " " + unit + "s"

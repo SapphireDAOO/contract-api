@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 )
 
@@ -12,22 +11,26 @@ import (
 
 func buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, amount *big.Int,
 	transactionTimestamp int64) ([]byte, error) {
-	data, _ := tokenCurrencyAndDecimals[paymentToken]
-
 	if amount == nil {
-		return []byte{}, fmt.Errorf("%s", "invalid amount")
+		return nil, fmt.Errorf("invalid amount")
+	}
+
+	data, ok := tokenData(paymentToken)
+	if !ok {
+		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
 	}
 
 	currentDefaultReleaseTime := 10 * time.Minute
-	releaseAt := time.Now().Add(currentDefaultReleaseTime).UnixMilli() / 1000
+	releaseAt := time.Now().Add(currentDefaultReleaseTime).UnixMilli()
 
+	amountText := formatTokenAmount(amount, data.Decimal)
 	payload := paymentReceivedCallbackPayload{
 		Currency:             data.Symbol,
-		Amount:               formatTokenAmount(amount, data.Decimal),
-		TransactionAmount:    formatTokenAmount(amount, data.Decimal),
+		Amount:               amountText,
+		TransactionAmount:    amountText,
 		TransactionUrl:       transactionURL,
 		TransactionTimestamp: transactionTimestamp,
-		Releases:             parseTimestampMillis(fmt.Sprint(releaseAt)),
+		Releases:             releaseAt,
 	}
 
 	return json.Marshal(payload)
@@ -36,10 +39,13 @@ func buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, am
 func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) ([]byte, error) {
 
-	data, _ := tokenCurrencyAndDecimals[paymentToken]
-
 	if amount == nil {
-		return []byte{}, fmt.Errorf("%s", "invalid amount")
+		return nil, fmt.Errorf("invalid amount")
+	}
+
+	data, ok := tokenData(paymentToken)
+	if !ok {
+		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
 	}
 
 	refundAmount := new(big.Int)
@@ -67,7 +73,7 @@ func buildReleaseCallbackPayload(paymentToken, receiver string, releaseAmount *b
 		return nil, fmt.Errorf("invalid amount")
 	}
 
-	data, ok := tokenCurrencyAndDecimals[strings.ToLower(paymentToken)]
+	data, ok := tokenData(paymentToken)
 	if !ok {
 		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
 	}

@@ -24,6 +24,7 @@ func NewPaymentProcessorStorage(client *blockchain.Client) *PaymentProcessorStor
 		address:  &address,
 		instance: instance,
 		contract: contract,
+		client:   client,
 	}
 }
 

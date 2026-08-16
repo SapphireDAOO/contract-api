@@ -26,6 +26,7 @@ func NewSimplePaymentProcessor(client *blockchain.Client) *SimplePaymentProcesso
 		address:  &address,
 		instance: instance,
 		contract: contract,
+		client:   client,
 	}
 }
 

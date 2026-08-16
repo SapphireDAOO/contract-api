@@ -2,9 +2,8 @@ package utils
 
 import (
 	"encoding/hex"
-	"fmt"
+	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -41,11 +40,22 @@ var RevertErrorStatusCodes = map[string]int{
 	"The price specified is too low.":                             http.StatusBadRequest,
 }
 
-func WriteHTTPErrorWithStatus(w http.ResponseWriter, statusCode int, err error, msg string) {
-	reason := Reason(err)
+func writeJSONError(w http.ResponseWriter, statusCode int, msg, reason string) {
+	body, err := json.Marshal(map[string]string{
+		"error":  msg,
+		"reason": reason,
+	})
+	if err != nil {
+		http.Error(w, msg, statusCode)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	w.Write(body)
+}
 
-	errorMessage := fmt.Sprintf(`{"error": "%s", "reason": "%s"}`, msg, strings.ReplaceAll(reason, `"`, `'`))
-	http.Error(w, errorMessage, statusCode)
+func WriteHTTPErrorWithStatus(w http.ResponseWriter, statusCode int, err error, msg string) {
+	writeJSONError(w, statusCode, msg, Reason(err))
 }
 
 func WriteMappedRevertError(w http.ResponseWriter, err error, msg string) {
@@ -54,17 +64,19 @@ func WriteMappedRevertError(w http.ResponseWriter, err error, msg string) {
 	if statusCode == 0 {
 		statusCode = http.StatusInternalServerError
 	}
-	errorMessage := fmt.Sprintf(`{"error": "%s", "reason": "%s"}`, msg, strings.ReplaceAll(reason, `"`, `'`))
-	http.Error(w, errorMessage, statusCode)
+	writeJSONError(w, statusCode, msg, reason)
 }
 
+// Reason maps a contract revert to its human-readable description, falling
+// back to the error's own message.
 func Reason(err error) string {
-	if data, ok := ethclient.RevertErrorData(err); ok {
-		selector := data[:4]
-		if reason, ok := RevertErrorDescriptions["0x"+hex.EncodeToString(selector)]; ok {
+	if err == nil {
+		return ""
+	}
+	if data, ok := ethclient.RevertErrorData(err); ok && len(data) >= 4 {
+		if reason, ok := RevertErrorDescriptions["0x"+hex.EncodeToString(data[:4])]; ok {
 			return reason
 		}
-		return err.Error()
 	}
-	return "Call failed, but no revert data"
+	return err.Error()
 }

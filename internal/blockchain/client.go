@@ -27,25 +27,24 @@ func NewClient() (*Client, error) {
 
 	httpClient, err := ethclient.Dial(httpURL)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
+		return nil, fmt.Errorf("failed to connect to RPC: %w", err)
 	}
 
 	wsClient, err := ethclient.Dial(wssURL)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to WSS: %v", err)
+		return nil, fmt.Errorf("failed to connect to WSS: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	chainId, err := httpClient.ChainID(ctx)
-
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve chain ID: %v", err)
+		return nil, fmt.Errorf("failed to retrieve chain ID: %w", err)
 	}
 
 	return &Client{
-		HTTP: httpClient,
+		HTTP:    httpClient,
 		WS:      wsClient,
 		ChainId: chainId,
 	}, nil

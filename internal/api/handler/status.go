@@ -13,7 +13,7 @@ func (h *ContractHandler) HandleSettlement(w http.ResponseWriter, r *http.Reques
 		utils.WriteHTTPErrorWithStatus(w,
 			http.StatusInternalServerError,
 			err,
-			"failed to determine settlement statu",
+			"failed to determine settlement status",
 		)
 		return
 	}

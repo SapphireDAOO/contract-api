@@ -117,7 +117,12 @@ func (c *PaymentProcessor) CreateInvoices(
 	}
 
 	if response.Result == nil {
-		result := new(big.Int).SetBytes(response.Receipt.Logs[len(param)].Topics[1].Bytes()).String()
+		logs := response.Receipt.Logs
+		if len(logs) <= len(param) || len(logs[len(param)].Topics) < 2 {
+			return nil, fmt.Errorf(
+				"meta invoice id not found in receipt logs for tx %s", response.Receipt.TxHash.Hex())
+		}
+		result := new(big.Int).SetBytes(logs[len(param)].Topics[1].Bytes()).String()
 		return &InvoiceResponse{
 			MetaInvoiceId: &result,
 			Orders:        orders,
@@ -255,10 +260,10 @@ func (c *PaymentProcessor) Refund(orderId *big.Int, refundShare *big.Int) (*comm
 }
 
 type ReleaseResult struct {
-	TxHash          common.Hash
-	Seller          common.Address
-	PaymentToken    common.Address
-	SellerAmount    *big.Int
+	TxHash         common.Hash
+	Seller         common.Address
+	PaymentToken   common.Address
+	SellerAmount   *big.Int
 	BlockTimestamp int64
 }
 
