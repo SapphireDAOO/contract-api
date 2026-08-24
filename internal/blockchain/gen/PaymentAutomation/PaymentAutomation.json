@@ -1,0 +1,201 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_processorAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_paymentProcessorStorageAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "checker",
+    "inputs": [],
+    "outputs": [
+      { "name": "canExec", "type": "bool", "internalType": "bool" },
+      { "name": "execPayload", "type": "bytes", "internalType": "bytes" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getForwarder",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "forwarderAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getWorkflowOwner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "workflowOwnerAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hasDueTasks",
+    "inputs": [],
+    "outputs": [
+      { "name": "dueTasksExist", "type": "bool", "internalType": "bool" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "onReport",
+    "inputs": [
+      { "name": "_metadata", "type": "bytes", "internalType": "bytes" },
+      { "name": "", "type": "bytes", "internalType": "bytes" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "ppStorage",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IPaymentProcessorStorage"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "processDueTasks",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "processor",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ISimplePaymentProcessor"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setForwarderAddress",
+    "inputs": [
+      {
+        "name": "_forwarderAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setWorkflowOwner",
+    "inputs": [
+      {
+        "name": "_workflowOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "supportsInterface",
+    "inputs": [
+      { "name": "_interfaceId", "type": "bytes4", "internalType": "bytes4" }
+    ],
+    "outputs": [
+      { "name": "supported", "type": "bool", "internalType": "bool" }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "event",
+    "name": "DueTasksProcessed",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "source",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ForwarderUpdated",
+    "inputs": [
+      {
+        "name": "forwarder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "WorkflowOwnerUpdated",
+    "inputs": [
+      {
+        "name": "workflowOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  { "type": "error", "name": "InvalidAddress", "inputs": [] },
+  { "type": "error", "name": "NotAuthorized", "inputs": [] },
+  {
+    "type": "error",
+    "name": "UnauthorizedWorkflowOwner",
+    "inputs": [
+      {
+        "name": "_workflowOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  }
+]
