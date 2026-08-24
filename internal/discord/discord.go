@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// large wallet movement
+// volume spike
+// low wallet balance
+
 const (
 	ColorBlue   = 0x3498DB
 	ColorYellow = 0xF1C40F
