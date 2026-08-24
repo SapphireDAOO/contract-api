@@ -1,0 +1,16 @@
+# Secrets are supplied at runtime via compose env_file, never baked into a layer.
+.env
+.env.*
+
+.git
+.gitignore
+
+# Local build output and tooling artifacts.
+tmp/
+api-test
+.air.toml
+
+Dockerfile
+docker-compose.yml
+README.md
+.claude

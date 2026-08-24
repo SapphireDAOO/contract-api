@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/orgs/SapphireDAOO/contract-api/server"
+	"github.com/orgs/SapphireDAOO/contract-api/internal/server"
 )
 
 func main() {
