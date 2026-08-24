@@ -17,6 +17,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/routes"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	multisig "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Multisig"
+	paymentautomation "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentAutomation"
 	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
@@ -43,11 +44,12 @@ func Run() error {
 	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
 	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client)
 	ms := multisig.NewMultisig(client)
+	pa := paymentautomation.NewPaymentAutomation(client)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	listeners := startListeners(ctx, pp, pps, ms)
+	listeners := startListeners(ctx, pp, pps, ms, pa)
 
 	contract := handler.NewContractHandler(
 		&handler.ContractHandler{
@@ -103,6 +105,7 @@ func startListeners(
 	pp *paymentprocesor.PaymentProcessor,
 	pps *paymentprocessorstorage.PaymentProcessorStorage,
 	ms *multisig.Multisig,
+	pa *paymentautomation.PaymentAutomation,
 ) *sync.WaitGroup {
 	var listeners sync.WaitGroup
 
@@ -111,6 +114,7 @@ func startListeners(
 		pp.ListenToReleaseEvent,
 		ms.ListenToEvents,
 		pps.ListenToPauseEvents,
+		pa.PollDueTasks,
 	} {
 		listeners.Add(1)
 		go func() {
