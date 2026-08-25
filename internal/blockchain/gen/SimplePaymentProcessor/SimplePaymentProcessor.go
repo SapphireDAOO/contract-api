@@ -26,24 +26,27 @@ var (
 
 // ISimplePaymentProcessorInvoice is an auto generated low-level Go binding around an user-defined struct.
 type ISimplePaymentProcessorInvoice struct {
-	InvoiceNonce      *big.Int
-	CreatedAt         *big.Int
-	PaidAt            *big.Int
-	ReleaseAt         *big.Int
-	InvalidateAt      *big.Int
-	ExpiresAt         *big.Int
-	State             uint8
-	WithdrawalRetries uint8
-	Seller            common.Address
-	Buyer             common.Address
-	Escrow            common.Address
-	Price             *big.Int
-	Balance           *big.Int
+	InvoiceNonce         *big.Int
+	CreatedAt            *big.Int
+	PaidAt               *big.Int
+	ReleaseAt            *big.Int
+	ExpiresAt            *big.Int
+	SellerActionDeadline *big.Int
+	EscrowHoldPeriod     uint32
+	State                uint8
+	WithdrawalRetries    uint8
+	FeeRate              uint16
+	Seller               common.Address
+	Buyer                common.Address
+	Escrow               common.Address
+	FeeReceiver          common.Address
+	Price                *big.Int
+	Balance              *big.Int
 }
 
 // SimpleprocessorMetaData contains all meta data concerning the Simpleprocessor contract.
 var SimpleprocessorMetaData = bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_paymentProcessorStorageAddress\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_minimumInvoicePrice\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_notesAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AcceptanceWindowExceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DuplicateTask\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EscrowWithdrawFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HoldPeriodHasNotBeenExceeded\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_sent\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_expected\",\"type\":\"uint256\"}],\"name\":\"IncorrectPaymentAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidDecisionWindow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidHeapPosition\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_invoiceState\",\"type\":\"uint256\"}],\"name\":\"InvalidInvoiceState\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceAlreadyExists\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceIsNoLongerValid\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvoiceNotEligibleForRefund\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotAuthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Reentrancy\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SellerCannotPayOwnedInvoice\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TaskNotFound\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ValueIsTooLow\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"}],\"name\":\"InvoiceAccepted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"}],\"name\":\"InvoiceCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"},{\"components\":[{\"internalType\":\"uint216\",\"name\":\"invoiceNonce\",\"type\":\"uint216\"},{\"internalType\":\"uint40\",\"name\":\"createdAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"paidAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"releaseAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"invalidateAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"expiresAt\",\"type\":\"uint40\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"withdrawalRetries\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structISimplePaymentProcessor.Invoice\",\"name\":\"invoice\",\"type\":\"tuple\"}],\"name\":\"InvoiceCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amountPaid\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint40\",\"name\":\"expiresAt\",\"type\":\"uint40\"}],\"name\":\"InvoicePaid\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"}],\"name\":\"InvoiceRefunded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"}],\"name\":\"InvoiceRejected\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"}],\"name\":\"InvoiceReleased\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"LockedPaymentRecovered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"TransferFailed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"releaseDueTimestamp\",\"type\":\"uint256\"}],\"name\":\"UpdateHoldPeriod\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"attempt\",\"type\":\"uint8\"}],\"name\":\"WithdrawalRetried\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"}],\"name\":\"acceptPayment\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"calculateFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"feeValue\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"}],\"name\":\"cancelInvoice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"checkUpkeep\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"upkeepNeeded\",\"type\":\"bool\"},{\"internalType\":\"bytes\",\"name\":\"performData\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_price\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_storageRef\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"_share\",\"type\":\"bool\"}],\"name\":\"createInvoice\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"invoiceId\",\"type\":\"uint216\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decisionWindow\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getForwarder\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"forwarderAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"}],\"name\":\"getInvoiceData\",\"outputs\":[{\"components\":[{\"internalType\":\"uint216\",\"name\":\"invoiceNonce\",\"type\":\"uint216\"},{\"internalType\":\"uint40\",\"name\":\"createdAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"paidAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"releaseAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"invalidateAt\",\"type\":\"uint40\"},{\"internalType\":\"uint40\",\"name\":\"expiresAt\",\"type\":\"uint40\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"withdrawalRetries\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"seller\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"}],\"internalType\":\"structISimplePaymentProcessor.Invoice\",\"name\":\"i\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getItems\",\"outputs\":[{\"internalType\":\"uint216[]\",\"name\":\"items\",\"type\":\"uint216[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMinimumInvoiceValue\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"minimumValue\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNextInvoiceNonce\",\"outputs\":[{\"internalType\":\"uint216\",\"name\":\"nextInvoiceNonceValue\",\"type\":\"uint216\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"},{\"internalType\":\"bytes\",\"name\":\"_storageRef\",\"type\":\"bytes\"},{\"internalType\":\"bool\",\"name\":\"_share\",\"type\":\"bool\"}],\"name\":\"pay\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"escrowAddress\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"performUpkeep\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ppStorage\",\"outputs\":[{\"internalType\":\"contractIPaymentProcessorStorage\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"}],\"name\":\"refundBuyer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"}],\"name\":\"rejectPayment\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"}],\"name\":\"release\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"},{\"internalType\":\"address\",\"name\":\"_recipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"releaseLocked\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newDecisionWindow\",\"type\":\"uint256\"}],\"name\":\"setDecisionWindow\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_forwarderAddress\",\"type\":\"address\"}],\"name\":\"setForwarderAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint216\",\"name\":\"_invoiceId\",\"type\":\"uint216\"},{\"internalType\":\"uint40\",\"name\":\"_holdPeriod\",\"type\":\"uint40\"}],\"name\":\"setInvoiceReleaseTime\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_newMinimumInvoiceValue\",\"type\":\"uint256\"}],\"name\":\"setMinimumInvoiceValue\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_paymentProcessorStorageAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_minimumInvoicePrice\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_notesAddress\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_wethAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"receive\",\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"acceptPayment\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"},{\"name\":\"_feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateFee\",\"inputs\":[{\"name\":\"_amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"feeValue\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cancelInvoice\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createInvoice\",\"inputs\":[{\"name\":\"_price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_holdPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"_storageRef\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"_share\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getAutomation\",\"inputs\":[],\"outputs\":[{\"name\":\"automationAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDecisionWindow\",\"inputs\":[],\"outputs\":[{\"name\":\"decisionWindowValue\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getInvoiceData\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[{\"name\":\"i\",\"type\":\"tuple\",\"internalType\":\"structISimplePaymentProcessor.Invoice\",\"components\":[{\"name\":\"invoiceNonce\",\"type\":\"uint216\",\"internalType\":\"uint216\"},{\"name\":\"createdAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"paidAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"releaseAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"expiresAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"sellerActionDeadline\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"escrowHoldPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"state\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"withdrawalRetries\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"feeRate\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"escrow\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getItems\",\"inputs\":[],\"outputs\":[{\"name\":\"items\",\"type\":\"uint216[]\",\"internalType\":\"uint216[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMinimumInvoiceValue\",\"inputs\":[],\"outputs\":[{\"name\":\"minimumValue\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextInvoiceNonce\",\"inputs\":[],\"outputs\":[{\"name\":\"nextInvoiceNonceValue\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasDueTasks\",\"inputs\":[],\"outputs\":[{\"name\":\"dueTasksExist\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pay\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"},{\"name\":\"_storageRef\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"_share\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[{\"name\":\"escrowAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"ppStorage\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPaymentProcessorStorage\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"processDueTasks\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"refundBuyer\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rejectPayment\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"release\",\"inputs\":[{\"name\":\"_invoiceId\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAutomation\",\"inputs\":[{\"name\":\"_automationAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDecisionWindow\",\"inputs\":[{\"name\":\"_newDecisionWindow\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinimumInvoiceValue\",\"inputs\":[{\"name\":\"_newMinimumInvoiceValue\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"weth\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIWETH\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"AutomationUpdated\",\"inputs\":[{\"name\":\"automation\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceAccepted\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"releaseAt\",\"type\":\"uint40\",\"indexed\":false,\"internalType\":\"uint40\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceCanceled\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceCreated\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"invoice\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structISimplePaymentProcessor.Invoice\",\"components\":[{\"name\":\"invoiceNonce\",\"type\":\"uint216\",\"internalType\":\"uint216\"},{\"name\":\"createdAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"paidAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"releaseAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"expiresAt\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"sellerActionDeadline\",\"type\":\"uint40\",\"internalType\":\"uint40\"},{\"name\":\"escrowHoldPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"state\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"withdrawalRetries\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"feeRate\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"seller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"buyer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"escrow\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"price\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoicePaid\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"buyer\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amountPaid\",\"type\":\"uint256\",\"indexed\":true,\"internalType\":\"uint256\"},{\"name\":\"sellerActionDeadline\",\"type\":\"uint40\",\"indexed\":false,\"internalType\":\"uint40\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceRefunded\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceRejected\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"InvoiceReleased\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"sellerAmount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"fee\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PaymentBurned\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransferFailed\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"recipient\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WithdrawalRetried\",\"inputs\":[{\"name\":\"invoiceId\",\"type\":\"uint216\",\"indexed\":true,\"internalType\":\"uint216\"},{\"name\":\"recipient\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"attempt\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AcceptanceWindowExceeded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ContractPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DuplicateTask\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EscrowWithdrawFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"HoldPeriodHasNotBeenExceeded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"IncorrectPaymentAmount\",\"inputs\":[{\"name\":\"_sent\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_expected\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InvalidDecisionWindow\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidFeeAuthorization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidFeeReceiver\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidHeapPosition\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidInvoiceState\",\"inputs\":[{\"name\":\"_invoiceState\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InvoiceAlreadyExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceIsNoLongerValid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvoiceNotEligibleForRefund\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotAuthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Reentrancy\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SellerCannotPayOwnedInvoice\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TaskNotFound\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnexpectedNativeTransfer\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValueIsTooLow\",\"inputs\":[]}]",
 	ID:  "Simpleprocessor",
 }
 
@@ -70,9 +73,9 @@ func (c *Simpleprocessor) Instance(backend bind.ContractBackend, addr common.Add
 // PackConstructor is the Go binding used to pack the parameters required for
 // contract deployment.
 //
-// Solidity: constructor(address _paymentProcessorStorageAddress, uint256 _minimumInvoicePrice, address _notesAddress) returns()
-func (simpleprocessor *Simpleprocessor) PackConstructor(_paymentProcessorStorageAddress common.Address, _minimumInvoicePrice *big.Int, _notesAddress common.Address) []byte {
-	enc, err := simpleprocessor.abi.Pack("", _paymentProcessorStorageAddress, _minimumInvoicePrice, _notesAddress)
+// Solidity: constructor(address _paymentProcessorStorageAddress, uint256 _minimumInvoicePrice, address _notesAddress, address _wethAddress) returns()
+func (simpleprocessor *Simpleprocessor) PackConstructor(_paymentProcessorStorageAddress common.Address, _minimumInvoicePrice *big.Int, _notesAddress common.Address, _wethAddress common.Address) []byte {
+	enc, err := simpleprocessor.abi.Pack("", _paymentProcessorStorageAddress, _minimumInvoicePrice, _notesAddress, _wethAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -80,11 +83,11 @@ func (simpleprocessor *Simpleprocessor) PackConstructor(_paymentProcessorStorage
 }
 
 // PackAcceptPayment is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x56794664.
+// the contract method with ID 0x0ecb321d.
 //
-// Solidity: function acceptPayment(uint216 _invoiceId) returns()
-func (simpleprocessor *Simpleprocessor) PackAcceptPayment(invoiceId *big.Int) []byte {
-	enc, err := simpleprocessor.abi.Pack("acceptPayment", invoiceId)
+// Solidity: function acceptPayment(uint216 _invoiceId, address _feeReceiver, bytes _data) returns()
+func (simpleprocessor *Simpleprocessor) PackAcceptPayment(invoiceId *big.Int, feeReceiver common.Address, data []byte) []byte {
+	enc, err := simpleprocessor.abi.Pack("acceptPayment", invoiceId, feeReceiver, data)
 	if err != nil {
 		panic(err)
 	}
@@ -128,47 +131,12 @@ func (simpleprocessor *Simpleprocessor) PackCancelInvoice(invoiceId *big.Int) []
 	return enc
 }
 
-// PackCheckUpkeep is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x6e04ff0d.
-//
-// Solidity: function checkUpkeep(bytes ) view returns(bool upkeepNeeded, bytes performData)
-func (simpleprocessor *Simpleprocessor) PackCheckUpkeep(arg0 []byte) []byte {
-	enc, err := simpleprocessor.abi.Pack("checkUpkeep", arg0)
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
-// CheckUpkeepOutput serves as a container for the return parameters of contract
-// method CheckUpkeep.
-type CheckUpkeepOutput struct {
-	UpkeepNeeded bool
-	PerformData  []byte
-}
-
-// UnpackCheckUpkeep is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x6e04ff0d.
-//
-// Solidity: function checkUpkeep(bytes ) view returns(bool upkeepNeeded, bytes performData)
-func (simpleprocessor *Simpleprocessor) UnpackCheckUpkeep(data []byte) (CheckUpkeepOutput, error) {
-	out, err := simpleprocessor.abi.Unpack("checkUpkeep", data)
-	outstruct := new(CheckUpkeepOutput)
-	if err != nil {
-		return *outstruct, err
-	}
-	outstruct.UpkeepNeeded = *abi.ConvertType(out[0], new(bool)).(*bool)
-	outstruct.PerformData = *abi.ConvertType(out[1], new([]byte)).(*[]byte)
-	return *outstruct, err
-
-}
-
 // PackCreateInvoice is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x1cb76361.
+// the contract method with ID 0x580a586c.
 //
-// Solidity: function createInvoice(uint256 _price, bytes _storageRef, bool _share) returns(uint216 invoiceId)
-func (simpleprocessor *Simpleprocessor) PackCreateInvoice(price *big.Int, storageRef []byte, share bool) []byte {
-	enc, err := simpleprocessor.abi.Pack("createInvoice", price, storageRef, share)
+// Solidity: function createInvoice(uint256 _price, uint32 _holdPeriod, bytes _storageRef, bool _share) returns(uint216 invoiceId)
+func (simpleprocessor *Simpleprocessor) PackCreateInvoice(price *big.Int, holdPeriod uint32, storageRef []byte, share bool) []byte {
+	enc, err := simpleprocessor.abi.Pack("createInvoice", price, holdPeriod, storageRef, share)
 	if err != nil {
 		panic(err)
 	}
@@ -176,9 +144,9 @@ func (simpleprocessor *Simpleprocessor) PackCreateInvoice(price *big.Int, storag
 }
 
 // UnpackCreateInvoice is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x1cb76361.
+// from invoking the contract method with ID 0x580a586c.
 //
-// Solidity: function createInvoice(uint256 _price, bytes _storageRef, bool _share) returns(uint216 invoiceId)
+// Solidity: function createInvoice(uint256 _price, uint32 _holdPeriod, bytes _storageRef, bool _share) returns(uint216 invoiceId)
 func (simpleprocessor *Simpleprocessor) UnpackCreateInvoice(data []byte) (*big.Int, error) {
 	out, err := simpleprocessor.abi.Unpack("createInvoice", data)
 	if err != nil {
@@ -188,49 +156,24 @@ func (simpleprocessor *Simpleprocessor) UnpackCreateInvoice(data []byte) (*big.I
 	return out0, err
 }
 
-// PackDecisionWindow is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x4168df97.
+// PackGetAutomation is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0xd3a7ad1e.
 //
-// Solidity: function decisionWindow() view returns(uint256)
-func (simpleprocessor *Simpleprocessor) PackDecisionWindow() []byte {
-	enc, err := simpleprocessor.abi.Pack("decisionWindow")
+// Solidity: function getAutomation() view returns(address automationAddress)
+func (simpleprocessor *Simpleprocessor) PackGetAutomation() []byte {
+	enc, err := simpleprocessor.abi.Pack("getAutomation")
 	if err != nil {
 		panic(err)
 	}
 	return enc
 }
 
-// UnpackDecisionWindow is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x4168df97.
+// UnpackGetAutomation is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0xd3a7ad1e.
 //
-// Solidity: function decisionWindow() view returns(uint256)
-func (simpleprocessor *Simpleprocessor) UnpackDecisionWindow(data []byte) (*big.Int, error) {
-	out, err := simpleprocessor.abi.Unpack("decisionWindow", data)
-	if err != nil {
-		return new(big.Int), err
-	}
-	out0 := abi.ConvertType(out[0], new(big.Int)).(*big.Int)
-	return out0, err
-}
-
-// PackGetForwarder is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0xa0042526.
-//
-// Solidity: function getForwarder() view returns(address forwarderAddress)
-func (simpleprocessor *Simpleprocessor) PackGetForwarder() []byte {
-	enc, err := simpleprocessor.abi.Pack("getForwarder")
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
-// UnpackGetForwarder is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0xa0042526.
-//
-// Solidity: function getForwarder() view returns(address forwarderAddress)
-func (simpleprocessor *Simpleprocessor) UnpackGetForwarder(data []byte) (common.Address, error) {
-	out, err := simpleprocessor.abi.Unpack("getForwarder", data)
+// Solidity: function getAutomation() view returns(address automationAddress)
+func (simpleprocessor *Simpleprocessor) UnpackGetAutomation(data []byte) (common.Address, error) {
+	out, err := simpleprocessor.abi.Unpack("getAutomation", data)
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -238,10 +181,35 @@ func (simpleprocessor *Simpleprocessor) UnpackGetForwarder(data []byte) (common.
 	return out0, err
 }
 
+// PackGetDecisionWindow is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x5d86abad.
+//
+// Solidity: function getDecisionWindow() view returns(uint256 decisionWindowValue)
+func (simpleprocessor *Simpleprocessor) PackGetDecisionWindow() []byte {
+	enc, err := simpleprocessor.abi.Pack("getDecisionWindow")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackGetDecisionWindow is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x5d86abad.
+//
+// Solidity: function getDecisionWindow() view returns(uint256 decisionWindowValue)
+func (simpleprocessor *Simpleprocessor) UnpackGetDecisionWindow(data []byte) (*big.Int, error) {
+	out, err := simpleprocessor.abi.Unpack("getDecisionWindow", data)
+	if err != nil {
+		return new(big.Int), err
+	}
+	out0 := abi.ConvertType(out[0], new(big.Int)).(*big.Int)
+	return out0, err
+}
+
 // PackGetInvoiceData is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x8ec7bbf9.
 //
-// Solidity: function getInvoiceData(uint216 _invoiceId) view returns((uint216,uint40,uint40,uint40,uint40,uint40,uint8,uint8,address,address,address,uint256,uint256) i)
+// Solidity: function getInvoiceData(uint216 _invoiceId) view returns((uint216,uint40,uint40,uint40,uint40,uint40,uint32,uint8,uint8,uint16,address,address,address,address,uint256,uint256) i)
 func (simpleprocessor *Simpleprocessor) PackGetInvoiceData(invoiceId *big.Int) []byte {
 	enc, err := simpleprocessor.abi.Pack("getInvoiceData", invoiceId)
 	if err != nil {
@@ -253,7 +221,7 @@ func (simpleprocessor *Simpleprocessor) PackGetInvoiceData(invoiceId *big.Int) [
 // UnpackGetInvoiceData is the Go binding that unpacks the parameters returned
 // from invoking the contract method with ID 0x8ec7bbf9.
 //
-// Solidity: function getInvoiceData(uint216 _invoiceId) view returns((uint216,uint40,uint40,uint40,uint40,uint40,uint8,uint8,address,address,address,uint256,uint256) i)
+// Solidity: function getInvoiceData(uint216 _invoiceId) view returns((uint216,uint40,uint40,uint40,uint40,uint40,uint32,uint8,uint8,uint16,address,address,address,address,uint256,uint256) i)
 func (simpleprocessor *Simpleprocessor) UnpackGetInvoiceData(data []byte) (ISimplePaymentProcessorInvoice, error) {
 	out, err := simpleprocessor.abi.Unpack("getInvoiceData", data)
 	if err != nil {
@@ -338,6 +306,31 @@ func (simpleprocessor *Simpleprocessor) UnpackGetNextInvoiceNonce(data []byte) (
 	return out0, err
 }
 
+// PackHasDueTasks is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x0a9a0dea.
+//
+// Solidity: function hasDueTasks() view returns(bool dueTasksExist)
+func (simpleprocessor *Simpleprocessor) PackHasDueTasks() []byte {
+	enc, err := simpleprocessor.abi.Pack("hasDueTasks")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackHasDueTasks is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x0a9a0dea.
+//
+// Solidity: function hasDueTasks() view returns(bool dueTasksExist)
+func (simpleprocessor *Simpleprocessor) UnpackHasDueTasks(data []byte) (bool, error) {
+	out, err := simpleprocessor.abi.Unpack("hasDueTasks", data)
+	if err != nil {
+		return *new(bool), err
+	}
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+	return out0, err
+}
+
 // PackPay is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x9224df4a.
 //
@@ -363,18 +356,6 @@ func (simpleprocessor *Simpleprocessor) UnpackPay(data []byte) (common.Address, 
 	return out0, err
 }
 
-// PackPerformUpkeep is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x4585e33b.
-//
-// Solidity: function performUpkeep(bytes ) returns()
-func (simpleprocessor *Simpleprocessor) PackPerformUpkeep(arg0 []byte) []byte {
-	enc, err := simpleprocessor.abi.Pack("performUpkeep", arg0)
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
 // PackPpStorage is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x49f97927.
 //
@@ -398,6 +379,18 @@ func (simpleprocessor *Simpleprocessor) UnpackPpStorage(data []byte) (common.Add
 	}
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 	return out0, err
+}
+
+// PackProcessDueTasks is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0xb138aa8a.
+//
+// Solidity: function processDueTasks() returns()
+func (simpleprocessor *Simpleprocessor) PackProcessDueTasks() []byte {
+	enc, err := simpleprocessor.abi.Pack("processDueTasks")
+	if err != nil {
+		panic(err)
+	}
+	return enc
 }
 
 // PackRefundBuyer is the Go binding used to pack the parameters required for calling
@@ -436,12 +429,12 @@ func (simpleprocessor *Simpleprocessor) PackRelease(invoiceId *big.Int) []byte {
 	return enc
 }
 
-// PackReleaseLocked is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0xecfd3490.
+// PackSetAutomation is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x730dcc8e.
 //
-// Solidity: function releaseLocked(uint216 _invoiceId, address _recipient, uint256 _amount) returns()
-func (simpleprocessor *Simpleprocessor) PackReleaseLocked(invoiceId *big.Int, recipient common.Address, amount *big.Int) []byte {
-	enc, err := simpleprocessor.abi.Pack("releaseLocked", invoiceId, recipient, amount)
+// Solidity: function setAutomation(address _automationAddress) returns()
+func (simpleprocessor *Simpleprocessor) PackSetAutomation(automationAddress common.Address) []byte {
+	enc, err := simpleprocessor.abi.Pack("setAutomation", automationAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -460,30 +453,6 @@ func (simpleprocessor *Simpleprocessor) PackSetDecisionWindow(newDecisionWindow 
 	return enc
 }
 
-// PackSetForwarderAddress is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0xd777cc6d.
-//
-// Solidity: function setForwarderAddress(address _forwarderAddress) returns()
-func (simpleprocessor *Simpleprocessor) PackSetForwarderAddress(forwarderAddress common.Address) []byte {
-	enc, err := simpleprocessor.abi.Pack("setForwarderAddress", forwarderAddress)
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
-// PackSetInvoiceReleaseTime is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0xa1485765.
-//
-// Solidity: function setInvoiceReleaseTime(uint216 _invoiceId, uint40 _holdPeriod) returns()
-func (simpleprocessor *Simpleprocessor) PackSetInvoiceReleaseTime(invoiceId *big.Int, holdPeriod *big.Int) []byte {
-	enc, err := simpleprocessor.abi.Pack("setInvoiceReleaseTime", invoiceId, holdPeriod)
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
 // PackSetMinimumInvoiceValue is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0xf82afa07.
 //
@@ -496,10 +465,78 @@ func (simpleprocessor *Simpleprocessor) PackSetMinimumInvoiceValue(newMinimumInv
 	return enc
 }
 
+// PackWeth is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x3fc8cef3.
+//
+// Solidity: function weth() view returns(address)
+func (simpleprocessor *Simpleprocessor) PackWeth() []byte {
+	enc, err := simpleprocessor.abi.Pack("weth")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackWeth is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x3fc8cef3.
+//
+// Solidity: function weth() view returns(address)
+func (simpleprocessor *Simpleprocessor) UnpackWeth(data []byte) (common.Address, error) {
+	out, err := simpleprocessor.abi.Unpack("weth", data)
+	if err != nil {
+		return *new(common.Address), err
+	}
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	return out0, err
+}
+
+// SimpleprocessorAutomationUpdated represents a AutomationUpdated event raised by the Simpleprocessor contract.
+type SimpleprocessorAutomationUpdated struct {
+	Automation common.Address
+	Raw        *types.Log // Blockchain specific contextual infos
+}
+
+const SimpleprocessorAutomationUpdatedEventName = "AutomationUpdated"
+
+// ContractEventName returns the user-defined event name.
+func (SimpleprocessorAutomationUpdated) ContractEventName() string {
+	return SimpleprocessorAutomationUpdatedEventName
+}
+
+// UnpackAutomationUpdatedEvent is the Go binding that unpacks the event data emitted
+// by contract.
+//
+// Solidity: event AutomationUpdated(address indexed automation)
+func (simpleprocessor *Simpleprocessor) UnpackAutomationUpdatedEvent(log *types.Log) (*SimpleprocessorAutomationUpdated, error) {
+	event := "AutomationUpdated"
+	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
+		return nil, errors.New("event signature mismatch")
+	}
+	out := new(SimpleprocessorAutomationUpdated)
+	if len(log.Data) > 0 {
+		if err := simpleprocessor.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
+			return nil, err
+		}
+	}
+	var indexed abi.Arguments
+	for _, arg := range simpleprocessor.abi.Events[event].Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	out.Raw = log
+	return out, nil
+}
+
 // SimpleprocessorInvoiceAccepted represents a InvoiceAccepted event raised by the Simpleprocessor contract.
 type SimpleprocessorInvoiceAccepted struct {
-	InvoiceId *big.Int
-	Raw       *types.Log // Blockchain specific contextual infos
+	InvoiceId   *big.Int
+	FeeReceiver common.Address
+	ReleaseAt   *big.Int
+	Raw         *types.Log // Blockchain specific contextual infos
 }
 
 const SimpleprocessorInvoiceAcceptedEventName = "InvoiceAccepted"
@@ -512,7 +549,7 @@ func (SimpleprocessorInvoiceAccepted) ContractEventName() string {
 // UnpackInvoiceAcceptedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceAccepted(uint216 indexed invoiceId)
+// Solidity: event InvoiceAccepted(uint216 indexed invoiceId, address indexed feeReceiver, uint40 releaseAt)
 func (simpleprocessor *Simpleprocessor) UnpackInvoiceAcceptedEvent(log *types.Log) (*SimpleprocessorInvoiceAccepted, error) {
 	event := "InvoiceAccepted"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
@@ -595,7 +632,7 @@ func (SimpleprocessorInvoiceCreated) ContractEventName() string {
 // UnpackInvoiceCreatedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceCreated(uint216 indexed invoiceId, (uint216,uint40,uint40,uint40,uint40,uint40,uint8,uint8,address,address,address,uint256,uint256) invoice)
+// Solidity: event InvoiceCreated(uint216 indexed invoiceId, (uint216,uint40,uint40,uint40,uint40,uint40,uint32,uint8,uint8,uint16,address,address,address,address,uint256,uint256) invoice)
 func (simpleprocessor *Simpleprocessor) UnpackInvoiceCreatedEvent(log *types.Log) (*SimpleprocessorInvoiceCreated, error) {
 	event := "InvoiceCreated"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
@@ -622,11 +659,11 @@ func (simpleprocessor *Simpleprocessor) UnpackInvoiceCreatedEvent(log *types.Log
 
 // SimpleprocessorInvoicePaid represents a InvoicePaid event raised by the Simpleprocessor contract.
 type SimpleprocessorInvoicePaid struct {
-	InvoiceId  *big.Int
-	Buyer      common.Address
-	AmountPaid *big.Int
-	ExpiresAt  *big.Int
-	Raw        *types.Log // Blockchain specific contextual infos
+	InvoiceId            *big.Int
+	Buyer                common.Address
+	AmountPaid           *big.Int
+	SellerActionDeadline *big.Int
+	Raw                  *types.Log // Blockchain specific contextual infos
 }
 
 const SimpleprocessorInvoicePaidEventName = "InvoicePaid"
@@ -639,7 +676,7 @@ func (SimpleprocessorInvoicePaid) ContractEventName() string {
 // UnpackInvoicePaidEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoicePaid(uint216 indexed invoiceId, address indexed buyer, uint256 indexed amountPaid, uint40 expiresAt)
+// Solidity: event InvoicePaid(uint216 indexed invoiceId, address indexed buyer, uint256 indexed amountPaid, uint40 sellerActionDeadline)
 func (simpleprocessor *Simpleprocessor) UnpackInvoicePaidEvent(log *types.Log) (*SimpleprocessorInvoicePaid, error) {
 	event := "InvoicePaid"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
@@ -667,6 +704,7 @@ func (simpleprocessor *Simpleprocessor) UnpackInvoicePaidEvent(log *types.Log) (
 // SimpleprocessorInvoiceRefunded represents a InvoiceRefunded event raised by the Simpleprocessor contract.
 type SimpleprocessorInvoiceRefunded struct {
 	InvoiceId *big.Int
+	Amount    *big.Int
 	Raw       *types.Log // Blockchain specific contextual infos
 }
 
@@ -680,7 +718,7 @@ func (SimpleprocessorInvoiceRefunded) ContractEventName() string {
 // UnpackInvoiceRefundedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceRefunded(uint216 indexed invoiceId)
+// Solidity: event InvoiceRefunded(uint216 indexed invoiceId, uint256 amount)
 func (simpleprocessor *Simpleprocessor) UnpackInvoiceRefundedEvent(log *types.Log) (*SimpleprocessorInvoiceRefunded, error) {
 	event := "InvoiceRefunded"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
@@ -708,6 +746,7 @@ func (simpleprocessor *Simpleprocessor) UnpackInvoiceRefundedEvent(log *types.Lo
 // SimpleprocessorInvoiceRejected represents a InvoiceRejected event raised by the Simpleprocessor contract.
 type SimpleprocessorInvoiceRejected struct {
 	InvoiceId *big.Int
+	Amount    *big.Int
 	Raw       *types.Log // Blockchain specific contextual infos
 }
 
@@ -721,7 +760,7 @@ func (SimpleprocessorInvoiceRejected) ContractEventName() string {
 // UnpackInvoiceRejectedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceRejected(uint216 indexed invoiceId)
+// Solidity: event InvoiceRejected(uint216 indexed invoiceId, uint256 amount)
 func (simpleprocessor *Simpleprocessor) UnpackInvoiceRejectedEvent(log *types.Log) (*SimpleprocessorInvoiceRejected, error) {
 	event := "InvoiceRejected"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
@@ -748,8 +787,10 @@ func (simpleprocessor *Simpleprocessor) UnpackInvoiceRejectedEvent(log *types.Lo
 
 // SimpleprocessorInvoiceReleased represents a InvoiceReleased event raised by the Simpleprocessor contract.
 type SimpleprocessorInvoiceReleased struct {
-	InvoiceId *big.Int
-	Raw       *types.Log // Blockchain specific contextual infos
+	InvoiceId    *big.Int
+	SellerAmount *big.Int
+	Fee          *big.Int
+	Raw          *types.Log // Blockchain specific contextual infos
 }
 
 const SimpleprocessorInvoiceReleasedEventName = "InvoiceReleased"
@@ -762,7 +803,7 @@ func (SimpleprocessorInvoiceReleased) ContractEventName() string {
 // UnpackInvoiceReleasedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event InvoiceReleased(uint216 indexed invoiceId)
+// Solidity: event InvoiceReleased(uint216 indexed invoiceId, uint256 sellerAmount, uint256 fee)
 func (simpleprocessor *Simpleprocessor) UnpackInvoiceReleasedEvent(log *types.Log) (*SimpleprocessorInvoiceReleased, error) {
 	event := "InvoiceReleased"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
@@ -787,31 +828,30 @@ func (simpleprocessor *Simpleprocessor) UnpackInvoiceReleasedEvent(log *types.Lo
 	return out, nil
 }
 
-// SimpleprocessorLockedPaymentRecovered represents a LockedPaymentRecovered event raised by the Simpleprocessor contract.
-type SimpleprocessorLockedPaymentRecovered struct {
+// SimpleprocessorPaymentBurned represents a PaymentBurned event raised by the Simpleprocessor contract.
+type SimpleprocessorPaymentBurned struct {
 	InvoiceId *big.Int
-	Recipient common.Address
 	Amount    *big.Int
 	Raw       *types.Log // Blockchain specific contextual infos
 }
 
-const SimpleprocessorLockedPaymentRecoveredEventName = "LockedPaymentRecovered"
+const SimpleprocessorPaymentBurnedEventName = "PaymentBurned"
 
 // ContractEventName returns the user-defined event name.
-func (SimpleprocessorLockedPaymentRecovered) ContractEventName() string {
-	return SimpleprocessorLockedPaymentRecoveredEventName
+func (SimpleprocessorPaymentBurned) ContractEventName() string {
+	return SimpleprocessorPaymentBurnedEventName
 }
 
-// UnpackLockedPaymentRecoveredEvent is the Go binding that unpacks the event data emitted
+// UnpackPaymentBurnedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event LockedPaymentRecovered(uint216 indexed invoiceId, address indexed recipient, uint256 amount)
-func (simpleprocessor *Simpleprocessor) UnpackLockedPaymentRecoveredEvent(log *types.Log) (*SimpleprocessorLockedPaymentRecovered, error) {
-	event := "LockedPaymentRecovered"
+// Solidity: event PaymentBurned(uint216 indexed invoiceId, uint256 amount)
+func (simpleprocessor *Simpleprocessor) UnpackPaymentBurnedEvent(log *types.Log) (*SimpleprocessorPaymentBurned, error) {
+	event := "PaymentBurned"
 	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
 	}
-	out := new(SimpleprocessorLockedPaymentRecovered)
+	out := new(SimpleprocessorPaymentBurned)
 	if len(log.Data) > 0 {
 		if err := simpleprocessor.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
 			return nil, err
@@ -855,48 +895,6 @@ func (simpleprocessor *Simpleprocessor) UnpackTransferFailedEvent(log *types.Log
 		return nil, errors.New("event signature mismatch")
 	}
 	out := new(SimpleprocessorTransferFailed)
-	if len(log.Data) > 0 {
-		if err := simpleprocessor.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
-			return nil, err
-		}
-	}
-	var indexed abi.Arguments
-	for _, arg := range simpleprocessor.abi.Events[event].Inputs {
-		if arg.Indexed {
-			indexed = append(indexed, arg)
-		}
-	}
-	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
-		return nil, err
-	}
-	out.Raw = log
-	return out, nil
-}
-
-// SimpleprocessorUpdateHoldPeriod represents a UpdateHoldPeriod event raised by the Simpleprocessor contract.
-type SimpleprocessorUpdateHoldPeriod struct {
-	InvoiceId           *big.Int
-	ReleaseDueTimestamp *big.Int
-	Raw                 *types.Log // Blockchain specific contextual infos
-}
-
-const SimpleprocessorUpdateHoldPeriodEventName = "UpdateHoldPeriod"
-
-// ContractEventName returns the user-defined event name.
-func (SimpleprocessorUpdateHoldPeriod) ContractEventName() string {
-	return SimpleprocessorUpdateHoldPeriodEventName
-}
-
-// UnpackUpdateHoldPeriodEvent is the Go binding that unpacks the event data emitted
-// by contract.
-//
-// Solidity: event UpdateHoldPeriod(uint216 indexed invoiceId, uint256 indexed releaseDueTimestamp)
-func (simpleprocessor *Simpleprocessor) UnpackUpdateHoldPeriodEvent(log *types.Log) (*SimpleprocessorUpdateHoldPeriod, error) {
-	event := "UpdateHoldPeriod"
-	if log.Topics[0] != simpleprocessor.abi.Events[event].ID {
-		return nil, errors.New("event signature mismatch")
-	}
-	out := new(SimpleprocessorUpdateHoldPeriod)
 	if len(log.Data) > 0 {
 		if err := simpleprocessor.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
 			return nil, err
@@ -965,6 +963,9 @@ func (simpleprocessor *Simpleprocessor) UnpackError(raw []byte) (any, error) {
 	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["AcceptanceWindowExceeded"].ID.Bytes()[:4]) {
 		return simpleprocessor.UnpackAcceptanceWindowExceededError(raw[4:])
 	}
+	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["ContractPaused"].ID.Bytes()[:4]) {
+		return simpleprocessor.UnpackContractPausedError(raw[4:])
+	}
 	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["DuplicateTask"].ID.Bytes()[:4]) {
 		return simpleprocessor.UnpackDuplicateTaskError(raw[4:])
 	}
@@ -979,6 +980,12 @@ func (simpleprocessor *Simpleprocessor) UnpackError(raw []byte) (any, error) {
 	}
 	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["InvalidDecisionWindow"].ID.Bytes()[:4]) {
 		return simpleprocessor.UnpackInvalidDecisionWindowError(raw[4:])
+	}
+	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["InvalidFeeAuthorization"].ID.Bytes()[:4]) {
+		return simpleprocessor.UnpackInvalidFeeAuthorizationError(raw[4:])
+	}
+	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["InvalidFeeReceiver"].ID.Bytes()[:4]) {
+		return simpleprocessor.UnpackInvalidFeeReceiverError(raw[4:])
 	}
 	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["InvalidHeapPosition"].ID.Bytes()[:4]) {
 		return simpleprocessor.UnpackInvalidHeapPositionError(raw[4:])
@@ -1007,6 +1014,9 @@ func (simpleprocessor *Simpleprocessor) UnpackError(raw []byte) (any, error) {
 	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["TaskNotFound"].ID.Bytes()[:4]) {
 		return simpleprocessor.UnpackTaskNotFoundError(raw[4:])
 	}
+	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["UnexpectedNativeTransfer"].ID.Bytes()[:4]) {
+		return simpleprocessor.UnpackUnexpectedNativeTransferError(raw[4:])
+	}
 	if bytes.Equal(raw[:4], simpleprocessor.abi.Errors["ValueIsTooLow"].ID.Bytes()[:4]) {
 		return simpleprocessor.UnpackValueIsTooLowError(raw[4:])
 	}
@@ -1031,6 +1041,29 @@ func SimpleprocessorAcceptanceWindowExceededErrorID() common.Hash {
 func (simpleprocessor *Simpleprocessor) UnpackAcceptanceWindowExceededError(raw []byte) (*SimpleprocessorAcceptanceWindowExceeded, error) {
 	out := new(SimpleprocessorAcceptanceWindowExceeded)
 	if err := simpleprocessor.abi.UnpackIntoInterface(out, "AcceptanceWindowExceeded", raw); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SimpleprocessorContractPaused represents a ContractPaused error raised by the Simpleprocessor contract.
+type SimpleprocessorContractPaused struct {
+}
+
+// ErrorID returns the hash of canonical representation of the error's signature.
+//
+// Solidity: error ContractPaused()
+func SimpleprocessorContractPausedErrorID() common.Hash {
+	return common.HexToHash("0xab35696f06e428ebc5ceba8cd17f8fed287baf43440206d1943af1ee53e6d267")
+}
+
+// UnpackContractPausedError is the Go binding used to decode the provided
+// error data into the corresponding Go error struct.
+//
+// Solidity: error ContractPaused()
+func (simpleprocessor *Simpleprocessor) UnpackContractPausedError(raw []byte) (*SimpleprocessorContractPaused, error) {
+	out := new(SimpleprocessorContractPaused)
+	if err := simpleprocessor.abi.UnpackIntoInterface(out, "ContractPaused", raw); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1148,6 +1181,52 @@ func SimpleprocessorInvalidDecisionWindowErrorID() common.Hash {
 func (simpleprocessor *Simpleprocessor) UnpackInvalidDecisionWindowError(raw []byte) (*SimpleprocessorInvalidDecisionWindow, error) {
 	out := new(SimpleprocessorInvalidDecisionWindow)
 	if err := simpleprocessor.abi.UnpackIntoInterface(out, "InvalidDecisionWindow", raw); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SimpleprocessorInvalidFeeAuthorization represents a InvalidFeeAuthorization error raised by the Simpleprocessor contract.
+type SimpleprocessorInvalidFeeAuthorization struct {
+}
+
+// ErrorID returns the hash of canonical representation of the error's signature.
+//
+// Solidity: error InvalidFeeAuthorization()
+func SimpleprocessorInvalidFeeAuthorizationErrorID() common.Hash {
+	return common.HexToHash("0x1735eabec15c7395efafdfa0dda5c74faf3517b604ff55660d6ef0e7457f2c1d")
+}
+
+// UnpackInvalidFeeAuthorizationError is the Go binding used to decode the provided
+// error data into the corresponding Go error struct.
+//
+// Solidity: error InvalidFeeAuthorization()
+func (simpleprocessor *Simpleprocessor) UnpackInvalidFeeAuthorizationError(raw []byte) (*SimpleprocessorInvalidFeeAuthorization, error) {
+	out := new(SimpleprocessorInvalidFeeAuthorization)
+	if err := simpleprocessor.abi.UnpackIntoInterface(out, "InvalidFeeAuthorization", raw); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SimpleprocessorInvalidFeeReceiver represents a InvalidFeeReceiver error raised by the Simpleprocessor contract.
+type SimpleprocessorInvalidFeeReceiver struct {
+}
+
+// ErrorID returns the hash of canonical representation of the error's signature.
+//
+// Solidity: error InvalidFeeReceiver()
+func SimpleprocessorInvalidFeeReceiverErrorID() common.Hash {
+	return common.HexToHash("0xd200485c51caaf66763f8b49c9cfa281a0a10132cb56c8fffc35867701d3fc5f")
+}
+
+// UnpackInvalidFeeReceiverError is the Go binding used to decode the provided
+// error data into the corresponding Go error struct.
+//
+// Solidity: error InvalidFeeReceiver()
+func (simpleprocessor *Simpleprocessor) UnpackInvalidFeeReceiverError(raw []byte) (*SimpleprocessorInvalidFeeReceiver, error) {
+	out := new(SimpleprocessorInvalidFeeReceiver)
+	if err := simpleprocessor.abi.UnpackIntoInterface(out, "InvalidFeeReceiver", raw); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1356,6 +1435,29 @@ func SimpleprocessorTaskNotFoundErrorID() common.Hash {
 func (simpleprocessor *Simpleprocessor) UnpackTaskNotFoundError(raw []byte) (*SimpleprocessorTaskNotFound, error) {
 	out := new(SimpleprocessorTaskNotFound)
 	if err := simpleprocessor.abi.UnpackIntoInterface(out, "TaskNotFound", raw); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SimpleprocessorUnexpectedNativeTransfer represents a UnexpectedNativeTransfer error raised by the Simpleprocessor contract.
+type SimpleprocessorUnexpectedNativeTransfer struct {
+}
+
+// ErrorID returns the hash of canonical representation of the error's signature.
+//
+// Solidity: error UnexpectedNativeTransfer()
+func SimpleprocessorUnexpectedNativeTransferErrorID() common.Hash {
+	return common.HexToHash("0xecb8b30d3aabfab45e153cab7e267d8f707ed670125178fc459f4849e0504fa3")
+}
+
+// UnpackUnexpectedNativeTransferError is the Go binding used to decode the provided
+// error data into the corresponding Go error struct.
+//
+// Solidity: error UnexpectedNativeTransfer()
+func (simpleprocessor *Simpleprocessor) UnpackUnexpectedNativeTransferError(raw []byte) (*SimpleprocessorUnexpectedNativeTransfer, error) {
+	out := new(SimpleprocessorUnexpectedNativeTransfer)
+	if err := simpleprocessor.abi.UnpackIntoInterface(out, "UnexpectedNativeTransfer", raw); err != nil {
 		return nil, err
 	}
 	return out, nil

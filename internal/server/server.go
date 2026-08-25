@@ -16,9 +16,9 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/api/routes"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
+	intermediatedpaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/IntermediatedPaymentProcessor"
 	multisig "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Multisig"
 	paymentautomation "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentAutomation"
-	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
 )
@@ -40,7 +40,7 @@ func Run() error {
 		return err
 	}
 
-	pp := paymentprocesor.NewPaymentprocessor(client)
+	pp := intermediatedpaymentprocessor.NewPaymentprocessor(client)
 	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
 	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client)
 	ms := multisig.NewMultisig(client)
@@ -102,7 +102,7 @@ func checkoutURL() (string, error) {
 
 func startListeners(
 	ctx context.Context,
-	pp *paymentprocesor.PaymentProcessor,
+	pp *intermediatedpaymentprocessor.PaymentProcessor,
 	pps *paymentprocessorstorage.PaymentProcessorStorage,
 	ms *multisig.Multisig,
 	pa *paymentautomation.PaymentAutomation,

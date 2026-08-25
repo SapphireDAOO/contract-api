@@ -1,6 +1,6 @@
 # Sapphire Contract API – REST Endpoints
 
-This API provides HTTP endpoints for interacting with the Sapphire DAO's `AdvancedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x90F3F9816a637A8f30576Deecd6B09D825EB94C2`. It supports invoice creation, cancellation, refunding, dispute creation, dispute resolution, and fund release for secure, decentralized transactions in a marketplace.
+This API provides HTTP endpoints for interacting with the Sapphire DAO's `IntermediatedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x90F3F9816a637A8f30576Deecd6B09D825EB94C2`. It supports invoice creation, cancellation, refunding, dispute creation, dispute resolution, and fund release for secure, decentralized transactions in a marketplace.
 
 **Base URL**: `https://pp-api.serveftp.com/`
 
@@ -18,7 +18,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Advanc
 ### Endpoint: `/create`
 
 - **Method**: POST
-- **Description**: Creates one or more on-chain invoices using the `AdvancedPaymentProcessor` contract's `createSingleInvoice` (for one invoice) or `createMetaInvoice` (for multiple invoices) functions. Invoices are stored in the contract's `invoice` or `metaInvoice` mappings with unique IDs.
+- **Description**: Creates one or more on-chain invoices using the `IntermediatedPaymentProcessor` contract's `createSingleInvoice` (for one invoice) or `createMetaInvoice` (for multiple invoices) functions. Invoices are stored in the contract's `invoice` or `metaInvoice` mappings with unique IDs.
 
 #### **Request Body**
 
@@ -157,7 +157,7 @@ curl -X POST https://pp-api.serveftp.com/create \
 ### Endpoint: `/release`
 
 - **Method**: POST
-- **Description**: Releases escrow funds for a specific invoice using the `AdvancedPaymentProcessor` contract’s `release` function, distributing funds to the seller and platform.
+- **Description**: Releases escrow funds for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `release` function, distributing funds to the seller and platform.
 
 #### **Request Body**
 
@@ -222,7 +222,7 @@ curl -X POST https://pp-api.serveftp.com/release \
 ### Endpoint: `/createDispute`
 
 - **Method**: POST
-- **Description**: Initiates a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract’s `createDispute` function, setting the invoice state to `DISPUTED`.
+- **Description**: Initiates a dispute for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `createDispute` function, setting the invoice state to `DISPUTED`.
 
 #### **Request Body**
 
@@ -298,7 +298,7 @@ curl -X POST https://pp-api.serveftp.com/createDispute \
 ### Endpoint: `/handleDispute`
 
 - **Method**: POST
-- **Description**: Resolves a dispute for a specific invoice using the `AdvancedPaymentProcessor` contract’s `resolveDispute` or `handleDispute` functions, updating the invoice state and distributing funds if applicable.
+- **Description**: Resolves a dispute for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `resolveDispute` or `handleDispute` functions, updating the invoice state and distributing funds if applicable.
 
 #### **Request Body**
 
@@ -384,7 +384,7 @@ curl -X POST https://pp-api.serveftp.com/handleDispute \
 ### Endpoint: `/cancel`
 
 - **Method**: POST
-- **Description**: Cancels a specific invoice using the `AdvancedPaymentProcessor` contract’s `cancelInvoice` function, setting the invoice state to `CANCELED`. Can only be called before payment.
+- **Description**: Cancels a specific invoice using the `IntermediatedPaymentProcessor` contract’s `cancelInvoice` function, setting the invoice state to `CANCELED`. Can only be called before payment.
 
 #### **Request Body**
 
@@ -449,7 +449,7 @@ curl -X POST https://pp-api.serveftp.com/cancel \
 ### Endpoint: `/refund`
 
 - **Method**: POST
-- **Description**: Issues a refund for a specific invoice using the `AdvancedPaymentProcessor` contract’s `refund` function, withdrawing funds from escrow to the buyer.
+- **Description**: Issues a refund for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `refund` function, withdrawing funds from escrow to the buyer.
 
 #### **Request Body**
 
@@ -528,12 +528,12 @@ curl -X POST https://pp-api.serveftp.com/refund \
 ## Notes
 
 - All endpoints require an `X-API-KEY` header for authentication, enforced by `AccessControlMiddleWare`.
-- The `AdvancedPaymentProcessor` contract is deployed on the Ethereum Sepolia testnet and uses Solady libraries (`SafeTransferLib`, `SafeCastLib`, `FixedPointMathLib`) for secure token transfers, type casting, and fixed-point arithmetic.
+- The `IntermediatedPaymentProcessor` contract is deployed on the Ethereum Sepolia testnet and uses Solady libraries (`SafeTransferLib`, `SafeCastLib`, `FixedPointMathLib`) for secure token transfers, type casting, and fixed-point arithmetic.
 - Invoice states are: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
 - The contract uses Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting ETH and ERC20 tokens.
 - The `marketplace` address, retrieved via `PaymentProcessorStorage.GetMarketplaceAddress`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
 - Transaction hashes are linked to `https://sepolia.etherscan.io/tx/`.
-- The `IAdvancedPaymentProcessorInvoiceCreationParam` struct in Go ensures type safety for `orderId` (string), `seller` (Ethereum address), `price` (big.Int), and `escrowHoldPeriod` (big.Int).
+- The `IIntermediatedPaymentProcessorInvoiceCreationParam` struct in Go ensures type safety for `orderId` (string), `seller` (Ethereum address), `price` (big.Int), and `escrowHoldPeriod` (big.Int).
 - The `orderId` in the request (client-provided `requestId`) is hashed to a `uint216` using `utils.OrderIDToUint216` for on-chain storage, resulting in a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`).
 - Blockchain errors are mapped to human-readable messages via `utils.RevertErrorDescriptions`, including:
   - `The buyer and seller addresses cannot be the same.`

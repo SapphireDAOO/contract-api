@@ -1,4 +1,4 @@
-package paymentprocesor
+package intermediatedpaymentprocessor
 
 import (
 	"context"

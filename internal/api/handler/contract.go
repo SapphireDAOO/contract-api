@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
-	paymentprocesor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessor"
+
+	intermediatedpaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/IntermediatedPaymentProcessor"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
@@ -29,7 +30,7 @@ func parseBigInt(field, value string) (*big.Int, error) {
 }
 
 type ContractHandler struct {
-	PaymentProcessor        *paymentprocesor.PaymentProcessor
+	PaymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
 	PaymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
 	SimplePaymentProcessor  *simplepaymentprocessor.SimplePaymentProcessor
 	BaseUrl                 string

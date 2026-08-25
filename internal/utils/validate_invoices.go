@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
+	intermediatedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/IntermediatedPaymentProcessor"
 )
 
 type CreateInvoiceParam struct {
@@ -49,17 +49,17 @@ func ValidateCreateInvoiceParams(params []CreateInvoiceParam) error {
 	return nil
 }
 
-func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam {
-	var results []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
+func ConvertParam(param []CreateInvoiceParam) []intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam {
+	var results []intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam
 
 	for _, v := range param {
-		var result advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam
+		var result intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam
 		precision := CurrencyPrecision[v.Currency]
 		multiple := precision - 2
 		multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(multiple)), nil)
 		price := new(big.Int).Mul(big.NewInt(int64(v.Price)), multiplier)
 
-		result = advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam{
+		result = intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam{
 			InvoiceId:        v.OrderId,
 			Seller:           common.HexToAddress(strings.TrimSpace(v.Seller)),
 			Price:            price,
@@ -72,7 +72,7 @@ func ConvertParam(param []CreateInvoiceParam) []advancedprocessor.IAdvancedPayme
 	return results
 }
 
-func ValidateInvoices(invoices []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam) error {
+func ValidateInvoices(invoices []intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam) error {
 	for i, inv := range invoices {
 		if strings.TrimSpace(inv.InvoiceId) == "" {
 			return fmt.Errorf("invoice %d missing orderId", i)

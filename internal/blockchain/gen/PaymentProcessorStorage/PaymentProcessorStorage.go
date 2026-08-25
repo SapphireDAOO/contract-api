@@ -26,17 +26,16 @@ var (
 
 // IPaymentProcessorStorageConfiguration is an auto generated low-level Go binding around an user-defined struct.
 type IPaymentProcessorStorageConfiguration struct {
-	Owner             common.Address
-	FeeRate           *big.Int
-	FeeReceiver       common.Address
-	DefaultHoldPeriod *big.Int
-	Marketplace       common.Address
-	GasThreshold      *big.Int
+	Owner                          common.Address
+	FeeRate                        *big.Int
+	FeeReceiver                    common.Address
+	IntermediatedPlatformsOperator common.Address
+	GasThreshold                   *big.Int
 }
 
 // ProcessorstorageMetaData contains all meta data concerning the Processorstorage contract.
 var ProcessorstorageMetaData = bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_configuration\",\"type\":\"tuple\",\"internalType\":\"structIPaymentProcessorStorage.Configuration\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"feeRate\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"defaultHoldPeriod\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"marketplace\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"gasThreshold\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"BASIS_POINTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DEFAULT_PAYMENT_VALIDITY_PERIOD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"EMERGENCY_PAUSE_DURATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approveEmergencyPause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cancelOwnershipHandover\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"completeOwnershipHandover\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"emergencyPause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getDefaultHoldPeriod\",\"inputs\":[],\"outputs\":[{\"name\":\"defaultHoldPeriod\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEmergencyPauseExpiry\",\"inputs\":[],\"outputs\":[{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEmergencyPauser\",\"inputs\":[],\"outputs\":[{\"name\":\"emergencyPauserAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getFeeRate\",\"inputs\":[],\"outputs\":[{\"name\":\"feeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getFeeReceiver\",\"inputs\":[],\"outputs\":[{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGasThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"gasThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getMarketplace\",\"inputs\":[],\"outputs\":[{\"name\":\"marketplace\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextInvoiceNonce\",\"inputs\":[],\"outputs\":[{\"name\":\"nextInvoiceNonceValue\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPaymentValidityDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"validDuration\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isPaused\",\"inputs\":[],\"outputs\":[{\"name\":\"pausedState\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownershipHandoverExpiresAt\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"requestOwnershipHandover\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"setDefaultHoldPeriod\",\"inputs\":[{\"name\":\"_newDefaultHoldPeriod\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setEmergencyPauser\",\"inputs\":[{\"name\":\"_emergencyPauser\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeRate\",\"inputs\":[{\"name\":\"_newFeeRate\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeReceiver\",\"inputs\":[{\"name\":\"_feeReceiverAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGasThreshold\",\"inputs\":[{\"name\":\"_newGasThreshold\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMarketplaceAddress\",\"inputs\":[{\"name\":\"_marketplaceAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPaymentValidityDuration\",\"inputs\":[{\"name\":\"_newValidityDuration\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalInvoiceCreated\",\"inputs\":[],\"outputs\":[{\"name\":\"totalInvoices\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateInvoiceNonce\",\"inputs\":[{\"name\":\"_by\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[{\"name\":\"totalInvoices\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AuthorizationUpdated\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"authorized\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ConfigurationInitialized\",\"inputs\":[{\"name\":\"config\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIPaymentProcessorStorage.Configuration\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"feeRate\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"defaultHoldPeriod\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"marketplace\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"gasThreshold\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DefaultHoldPeriodUpdated\",\"inputs\":[{\"name\":\"defaultHoldPeriod\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EmergencyPauseApproved\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EmergencyPaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EmergencyPauserUpdated\",\"inputs\":[{\"name\":\"emergencyPauser\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeRateUpdated\",\"inputs\":[{\"name\":\"feeRate\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeReceiverUpdated\",\"inputs\":[{\"name\":\"feeReceiver\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GasThresholdUpdated\",\"inputs\":[{\"name\":\"gasThreshold\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MarketplaceUpdated\",\"inputs\":[{\"name\":\"marketplace\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipHandoverCanceled\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipHandoverRequested\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"oldOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PaymentValidityDurationUpdated\",\"inputs\":[{\"name\":\"validityDuration\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyInitialized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AlreadyPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"HoldPeriodCanNotBeZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidFeeRate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NewOwnerIsZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoActiveEmergencyPause\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoHandoverRequest\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotAuthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Unauthorized\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_configuration\",\"type\":\"tuple\",\"internalType\":\"structIPaymentProcessorStorage.Configuration\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"feeRate\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intermediatedPlatformsOperator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"gasThreshold\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"BASIS_POINTS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DEFAULT_PAYMENT_VALIDITY_PERIOD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"EMERGENCY_PAUSE_DURATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approveEmergencyPause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cancelOwnershipHandover\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"completeOwnershipHandover\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"emergencyPause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getEmergencyPauseExpiry\",\"inputs\":[],\"outputs\":[{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getEmergencyPauser\",\"inputs\":[],\"outputs\":[{\"name\":\"emergencyPauserAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getFeeRate\",\"inputs\":[],\"outputs\":[{\"name\":\"feeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getFeeReceiver\",\"inputs\":[],\"outputs\":[{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getFeeSigner\",\"inputs\":[],\"outputs\":[{\"name\":\"feeSignerAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGasThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"gasThreshold\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getIntermediatedPlatformsOperator\",\"inputs\":[],\"outputs\":[{\"name\":\"intermediatedPlatformsOperator\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getNextInvoiceNonce\",\"inputs\":[],\"outputs\":[{\"name\":\"nextInvoiceNonceValue\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPaymentValidityDuration\",\"inputs\":[],\"outputs\":[{\"name\":\"validDuration\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isPaused\",\"inputs\":[],\"outputs\":[{\"name\":\"pausedState\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"result\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownershipHandoverExpiresAt\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"requestOwnershipHandover\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"setEmergencyPauser\",\"inputs\":[{\"name\":\"_emergencyPauser\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeRate\",\"inputs\":[{\"name\":\"_newFeeRate\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeReceiver\",\"inputs\":[{\"name\":\"_feeReceiverAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFeeSigner\",\"inputs\":[{\"name\":\"_feeSigner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGasThreshold\",\"inputs\":[{\"name\":\"_newGasThreshold\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setIntermediatedPlatformsOperator\",\"inputs\":[{\"name\":\"_intermediatedPlatformsOperatorWallet\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPaymentValidityDuration\",\"inputs\":[{\"name\":\"_newValidityDuration\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalInvoiceCreated\",\"inputs\":[],\"outputs\":[{\"name\":\"totalInvoices\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateInvoiceNonce\",\"inputs\":[{\"name\":\"_by\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"outputs\":[{\"name\":\"totalInvoices\",\"type\":\"uint216\",\"internalType\":\"uint216\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AuthorizationUpdated\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"authorized\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ConfigurationInitialized\",\"inputs\":[{\"name\":\"config\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIPaymentProcessorStorage.Configuration\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"feeRate\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"feeReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intermediatedPlatformsOperator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"gasThreshold\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EmergencyPauseApproved\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EmergencyPaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"EmergencyPauserUpdated\",\"inputs\":[{\"name\":\"emergencyPauser\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeRateUpdated\",\"inputs\":[{\"name\":\"feeRate\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeReceiverUpdated\",\"inputs\":[{\"name\":\"feeReceiver\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeSignerUpdated\",\"inputs\":[{\"name\":\"feeSigner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GasThresholdUpdated\",\"inputs\":[{\"name\":\"gasThreshold\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"IntermediatedPlatformsOperatorUpdated\",\"inputs\":[{\"name\":\"intermediatedPlatformsOperator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipHandoverCanceled\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipHandoverRequested\",\"inputs\":[{\"name\":\"pendingOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"oldOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PaymentValidityDurationUpdated\",\"inputs\":[{\"name\":\"validityDuration\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyInitialized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AlreadyPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidFeeRate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidFeeSigner\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NewOwnerIsZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoActiveEmergencyPause\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoHandoverRequest\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotAuthorized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"Unauthorized\",\"inputs\":[]}]",
 	ID:  "Processorstorage",
 }
 
@@ -63,7 +62,7 @@ func (c *Processorstorage) Instance(backend bind.ContractBackend, addr common.Ad
 // PackConstructor is the Go binding used to pack the parameters required for
 // contract deployment.
 //
-// Solidity: constructor((address,uint96,address,uint96,address,uint96) _configuration) returns()
+// Solidity: constructor((address,uint96,address,address,uint96) _configuration) returns()
 func (processorstorage *Processorstorage) PackConstructor(_configuration IPaymentProcessorStorageConfiguration) []byte {
 	enc, err := processorstorage.abi.Pack("", _configuration)
 	if err != nil {
@@ -195,31 +194,6 @@ func (processorstorage *Processorstorage) PackEmergencyPause() []byte {
 	return enc
 }
 
-// PackGetDefaultHoldPeriod is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x4026d697.
-//
-// Solidity: function getDefaultHoldPeriod() view returns(uint256 defaultHoldPeriod)
-func (processorstorage *Processorstorage) PackGetDefaultHoldPeriod() []byte {
-	enc, err := processorstorage.abi.Pack("getDefaultHoldPeriod")
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
-// UnpackGetDefaultHoldPeriod is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x4026d697.
-//
-// Solidity: function getDefaultHoldPeriod() view returns(uint256 defaultHoldPeriod)
-func (processorstorage *Processorstorage) UnpackGetDefaultHoldPeriod(data []byte) (*big.Int, error) {
-	out, err := processorstorage.abi.Unpack("getDefaultHoldPeriod", data)
-	if err != nil {
-		return new(big.Int), err
-	}
-	out0 := abi.ConvertType(out[0], new(big.Int)).(*big.Int)
-	return out0, err
-}
-
 // PackGetEmergencyPauseExpiry is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x498bbe69.
 //
@@ -320,6 +294,31 @@ func (processorstorage *Processorstorage) UnpackGetFeeReceiver(data []byte) (com
 	return out0, err
 }
 
+// PackGetFeeSigner is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0xac3ea0a2.
+//
+// Solidity: function getFeeSigner() view returns(address feeSignerAddress)
+func (processorstorage *Processorstorage) PackGetFeeSigner() []byte {
+	enc, err := processorstorage.abi.Pack("getFeeSigner")
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
+// UnpackGetFeeSigner is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0xac3ea0a2.
+//
+// Solidity: function getFeeSigner() view returns(address feeSignerAddress)
+func (processorstorage *Processorstorage) UnpackGetFeeSigner(data []byte) (common.Address, error) {
+	out, err := processorstorage.abi.Unpack("getFeeSigner", data)
+	if err != nil {
+		return *new(common.Address), err
+	}
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	return out0, err
+}
+
 // PackGetGasThreshold is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x55b8245f.
 //
@@ -345,24 +344,24 @@ func (processorstorage *Processorstorage) UnpackGetGasThreshold(data []byte) (*b
 	return out0, err
 }
 
-// PackGetMarketplace is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0x0d21bcd5.
+// PackGetIntermediatedPlatformsOperator is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x7d2bfd47.
 //
-// Solidity: function getMarketplace() view returns(address marketplace)
-func (processorstorage *Processorstorage) PackGetMarketplace() []byte {
-	enc, err := processorstorage.abi.Pack("getMarketplace")
+// Solidity: function getIntermediatedPlatformsOperator() view returns(address intermediatedPlatformsOperator)
+func (processorstorage *Processorstorage) PackGetIntermediatedPlatformsOperator() []byte {
+	enc, err := processorstorage.abi.Pack("getIntermediatedPlatformsOperator")
 	if err != nil {
 		panic(err)
 	}
 	return enc
 }
 
-// UnpackGetMarketplace is the Go binding that unpacks the parameters returned
-// from invoking the contract method with ID 0x0d21bcd5.
+// UnpackGetIntermediatedPlatformsOperator is the Go binding that unpacks the parameters returned
+// from invoking the contract method with ID 0x7d2bfd47.
 //
-// Solidity: function getMarketplace() view returns(address marketplace)
-func (processorstorage *Processorstorage) UnpackGetMarketplace(data []byte) (common.Address, error) {
-	out, err := processorstorage.abi.Unpack("getMarketplace", data)
+// Solidity: function getIntermediatedPlatformsOperator() view returns(address intermediatedPlatformsOperator)
+func (processorstorage *Processorstorage) UnpackGetIntermediatedPlatformsOperator(data []byte) (common.Address, error) {
+	out, err := processorstorage.abi.Unpack("getIntermediatedPlatformsOperator", data)
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -531,18 +530,6 @@ func (processorstorage *Processorstorage) PackRequestOwnershipHandover() []byte 
 	return enc
 }
 
-// PackSetDefaultHoldPeriod is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0xb4ccf11a.
-//
-// Solidity: function setDefaultHoldPeriod(uint96 _newDefaultHoldPeriod) returns()
-func (processorstorage *Processorstorage) PackSetDefaultHoldPeriod(newDefaultHoldPeriod *big.Int) []byte {
-	enc, err := processorstorage.abi.Pack("setDefaultHoldPeriod", newDefaultHoldPeriod)
-	if err != nil {
-		panic(err)
-	}
-	return enc
-}
-
 // PackSetEmergencyPauser is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x3e70838b.
 //
@@ -579,6 +566,18 @@ func (processorstorage *Processorstorage) PackSetFeeReceiver(feeReceiverAddress 
 	return enc
 }
 
+// PackSetFeeSigner is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x7e1aa178.
+//
+// Solidity: function setFeeSigner(address _feeSigner) returns()
+func (processorstorage *Processorstorage) PackSetFeeSigner(feeSigner common.Address) []byte {
+	enc, err := processorstorage.abi.Pack("setFeeSigner", feeSigner)
+	if err != nil {
+		panic(err)
+	}
+	return enc
+}
+
 // PackSetGasThreshold is the Go binding used to pack the parameters required for calling
 // the contract method with ID 0x42d5816f.
 //
@@ -591,12 +590,12 @@ func (processorstorage *Processorstorage) PackSetGasThreshold(newGasThreshold *b
 	return enc
 }
 
-// PackSetMarketplaceAddress is the Go binding used to pack the parameters required for calling
-// the contract method with ID 0xb47cc556.
+// PackSetIntermediatedPlatformsOperator is the Go binding used to pack the parameters required for calling
+// the contract method with ID 0x9a329028.
 //
-// Solidity: function setMarketplaceAddress(address _marketplaceAddress) returns()
-func (processorstorage *Processorstorage) PackSetMarketplaceAddress(marketplaceAddress common.Address) []byte {
-	enc, err := processorstorage.abi.Pack("setMarketplaceAddress", marketplaceAddress)
+// Solidity: function setIntermediatedPlatformsOperator(address _intermediatedPlatformsOperatorWallet) returns()
+func (processorstorage *Processorstorage) PackSetIntermediatedPlatformsOperator(intermediatedPlatformsOperatorWallet common.Address) []byte {
+	enc, err := processorstorage.abi.Pack("setIntermediatedPlatformsOperator", intermediatedPlatformsOperatorWallet)
 	if err != nil {
 		panic(err)
 	}
@@ -747,54 +746,13 @@ func (ProcessorstorageConfigurationInitialized) ContractEventName() string {
 // UnpackConfigurationInitializedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event ConfigurationInitialized((address,uint96,address,uint96,address,uint96) config)
+// Solidity: event ConfigurationInitialized((address,uint96,address,address,uint96) config)
 func (processorstorage *Processorstorage) UnpackConfigurationInitializedEvent(log *types.Log) (*ProcessorstorageConfigurationInitialized, error) {
 	event := "ConfigurationInitialized"
 	if log.Topics[0] != processorstorage.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
 	}
 	out := new(ProcessorstorageConfigurationInitialized)
-	if len(log.Data) > 0 {
-		if err := processorstorage.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
-			return nil, err
-		}
-	}
-	var indexed abi.Arguments
-	for _, arg := range processorstorage.abi.Events[event].Inputs {
-		if arg.Indexed {
-			indexed = append(indexed, arg)
-		}
-	}
-	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
-		return nil, err
-	}
-	out.Raw = log
-	return out, nil
-}
-
-// ProcessorstorageDefaultHoldPeriodUpdated represents a DefaultHoldPeriodUpdated event raised by the Processorstorage contract.
-type ProcessorstorageDefaultHoldPeriodUpdated struct {
-	DefaultHoldPeriod *big.Int
-	Raw               *types.Log // Blockchain specific contextual infos
-}
-
-const ProcessorstorageDefaultHoldPeriodUpdatedEventName = "DefaultHoldPeriodUpdated"
-
-// ContractEventName returns the user-defined event name.
-func (ProcessorstorageDefaultHoldPeriodUpdated) ContractEventName() string {
-	return ProcessorstorageDefaultHoldPeriodUpdatedEventName
-}
-
-// UnpackDefaultHoldPeriodUpdatedEvent is the Go binding that unpacks the event data emitted
-// by contract.
-//
-// Solidity: event DefaultHoldPeriodUpdated(uint96 defaultHoldPeriod)
-func (processorstorage *Processorstorage) UnpackDefaultHoldPeriodUpdatedEvent(log *types.Log) (*ProcessorstorageDefaultHoldPeriodUpdated, error) {
-	event := "DefaultHoldPeriodUpdated"
-	if log.Topics[0] != processorstorage.abi.Events[event].ID {
-		return nil, errors.New("event signature mismatch")
-	}
-	out := new(ProcessorstorageDefaultHoldPeriodUpdated)
 	if len(log.Data) > 0 {
 		if err := processorstorage.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
 			return nil, err
@@ -1019,6 +977,47 @@ func (processorstorage *Processorstorage) UnpackFeeReceiverUpdatedEvent(log *typ
 	return out, nil
 }
 
+// ProcessorstorageFeeSignerUpdated represents a FeeSignerUpdated event raised by the Processorstorage contract.
+type ProcessorstorageFeeSignerUpdated struct {
+	FeeSigner common.Address
+	Raw       *types.Log // Blockchain specific contextual infos
+}
+
+const ProcessorstorageFeeSignerUpdatedEventName = "FeeSignerUpdated"
+
+// ContractEventName returns the user-defined event name.
+func (ProcessorstorageFeeSignerUpdated) ContractEventName() string {
+	return ProcessorstorageFeeSignerUpdatedEventName
+}
+
+// UnpackFeeSignerUpdatedEvent is the Go binding that unpacks the event data emitted
+// by contract.
+//
+// Solidity: event FeeSignerUpdated(address indexed feeSigner)
+func (processorstorage *Processorstorage) UnpackFeeSignerUpdatedEvent(log *types.Log) (*ProcessorstorageFeeSignerUpdated, error) {
+	event := "FeeSignerUpdated"
+	if log.Topics[0] != processorstorage.abi.Events[event].ID {
+		return nil, errors.New("event signature mismatch")
+	}
+	out := new(ProcessorstorageFeeSignerUpdated)
+	if len(log.Data) > 0 {
+		if err := processorstorage.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
+			return nil, err
+		}
+	}
+	var indexed abi.Arguments
+	for _, arg := range processorstorage.abi.Events[event].Inputs {
+		if arg.Indexed {
+			indexed = append(indexed, arg)
+		}
+	}
+	if err := abi.ParseTopics(out, indexed, log.Topics[1:]); err != nil {
+		return nil, err
+	}
+	out.Raw = log
+	return out, nil
+}
+
 // ProcessorstorageGasThresholdUpdated represents a GasThresholdUpdated event raised by the Processorstorage contract.
 type ProcessorstorageGasThresholdUpdated struct {
 	GasThreshold *big.Int
@@ -1060,29 +1059,29 @@ func (processorstorage *Processorstorage) UnpackGasThresholdUpdatedEvent(log *ty
 	return out, nil
 }
 
-// ProcessorstorageMarketplaceUpdated represents a MarketplaceUpdated event raised by the Processorstorage contract.
-type ProcessorstorageMarketplaceUpdated struct {
-	Marketplace common.Address
-	Raw         *types.Log // Blockchain specific contextual infos
+// ProcessorstorageIntermediatedPlatformsOperatorUpdated represents a IntermediatedPlatformsOperatorUpdated event raised by the Processorstorage contract.
+type ProcessorstorageIntermediatedPlatformsOperatorUpdated struct {
+	IntermediatedPlatformsOperator common.Address
+	Raw                            *types.Log // Blockchain specific contextual infos
 }
 
-const ProcessorstorageMarketplaceUpdatedEventName = "MarketplaceUpdated"
+const ProcessorstorageIntermediatedPlatformsOperatorUpdatedEventName = "IntermediatedPlatformsOperatorUpdated"
 
 // ContractEventName returns the user-defined event name.
-func (ProcessorstorageMarketplaceUpdated) ContractEventName() string {
-	return ProcessorstorageMarketplaceUpdatedEventName
+func (ProcessorstorageIntermediatedPlatformsOperatorUpdated) ContractEventName() string {
+	return ProcessorstorageIntermediatedPlatformsOperatorUpdatedEventName
 }
 
-// UnpackMarketplaceUpdatedEvent is the Go binding that unpacks the event data emitted
+// UnpackIntermediatedPlatformsOperatorUpdatedEvent is the Go binding that unpacks the event data emitted
 // by contract.
 //
-// Solidity: event MarketplaceUpdated(address indexed marketplace)
-func (processorstorage *Processorstorage) UnpackMarketplaceUpdatedEvent(log *types.Log) (*ProcessorstorageMarketplaceUpdated, error) {
-	event := "MarketplaceUpdated"
+// Solidity: event IntermediatedPlatformsOperatorUpdated(address indexed intermediatedPlatformsOperator)
+func (processorstorage *Processorstorage) UnpackIntermediatedPlatformsOperatorUpdatedEvent(log *types.Log) (*ProcessorstorageIntermediatedPlatformsOperatorUpdated, error) {
+	event := "IntermediatedPlatformsOperatorUpdated"
 	if log.Topics[0] != processorstorage.abi.Events[event].ID {
 		return nil, errors.New("event signature mismatch")
 	}
-	out := new(ProcessorstorageMarketplaceUpdated)
+	out := new(ProcessorstorageIntermediatedPlatformsOperatorUpdated)
 	if len(log.Data) > 0 {
 		if err := processorstorage.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
 			return nil, err
@@ -1357,11 +1356,11 @@ func (processorstorage *Processorstorage) UnpackError(raw []byte) (any, error) {
 	if bytes.Equal(raw[:4], processorstorage.abi.Errors["AlreadyPaused"].ID.Bytes()[:4]) {
 		return processorstorage.UnpackAlreadyPausedError(raw[4:])
 	}
-	if bytes.Equal(raw[:4], processorstorage.abi.Errors["HoldPeriodCanNotBeZero"].ID.Bytes()[:4]) {
-		return processorstorage.UnpackHoldPeriodCanNotBeZeroError(raw[4:])
-	}
 	if bytes.Equal(raw[:4], processorstorage.abi.Errors["InvalidFeeRate"].ID.Bytes()[:4]) {
 		return processorstorage.UnpackInvalidFeeRateError(raw[4:])
+	}
+	if bytes.Equal(raw[:4], processorstorage.abi.Errors["InvalidFeeSigner"].ID.Bytes()[:4]) {
+		return processorstorage.UnpackInvalidFeeSignerError(raw[4:])
 	}
 	if bytes.Equal(raw[:4], processorstorage.abi.Errors["NewOwnerIsZeroAddress"].ID.Bytes()[:4]) {
 		return processorstorage.UnpackNewOwnerIsZeroAddressError(raw[4:])
@@ -1430,29 +1429,6 @@ func (processorstorage *Processorstorage) UnpackAlreadyPausedError(raw []byte) (
 	return out, nil
 }
 
-// ProcessorstorageHoldPeriodCanNotBeZero represents a HoldPeriodCanNotBeZero error raised by the Processorstorage contract.
-type ProcessorstorageHoldPeriodCanNotBeZero struct {
-}
-
-// ErrorID returns the hash of canonical representation of the error's signature.
-//
-// Solidity: error HoldPeriodCanNotBeZero()
-func ProcessorstorageHoldPeriodCanNotBeZeroErrorID() common.Hash {
-	return common.HexToHash("0x705a71532da8bae84d5c54245bfd200d9655b2c961da65ccc7fcf54a50ad44b4")
-}
-
-// UnpackHoldPeriodCanNotBeZeroError is the Go binding used to decode the provided
-// error data into the corresponding Go error struct.
-//
-// Solidity: error HoldPeriodCanNotBeZero()
-func (processorstorage *Processorstorage) UnpackHoldPeriodCanNotBeZeroError(raw []byte) (*ProcessorstorageHoldPeriodCanNotBeZero, error) {
-	out := new(ProcessorstorageHoldPeriodCanNotBeZero)
-	if err := processorstorage.abi.UnpackIntoInterface(out, "HoldPeriodCanNotBeZero", raw); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProcessorstorageInvalidFeeRate represents a InvalidFeeRate error raised by the Processorstorage contract.
 type ProcessorstorageInvalidFeeRate struct {
 }
@@ -1471,6 +1447,29 @@ func ProcessorstorageInvalidFeeRateErrorID() common.Hash {
 func (processorstorage *Processorstorage) UnpackInvalidFeeRateError(raw []byte) (*ProcessorstorageInvalidFeeRate, error) {
 	out := new(ProcessorstorageInvalidFeeRate)
 	if err := processorstorage.abi.UnpackIntoInterface(out, "InvalidFeeRate", raw); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ProcessorstorageInvalidFeeSigner represents a InvalidFeeSigner error raised by the Processorstorage contract.
+type ProcessorstorageInvalidFeeSigner struct {
+}
+
+// ErrorID returns the hash of canonical representation of the error's signature.
+//
+// Solidity: error InvalidFeeSigner()
+func ProcessorstorageInvalidFeeSignerErrorID() common.Hash {
+	return common.HexToHash("0x20d80102f2c2e94add93a29fd4abca50beaac174ffcd1d339ade41326ba6323d")
+}
+
+// UnpackInvalidFeeSignerError is the Go binding used to decode the provided
+// error data into the corresponding Go error struct.
+//
+// Solidity: error InvalidFeeSigner()
+func (processorstorage *Processorstorage) UnpackInvalidFeeSignerError(raw []byte) (*ProcessorstorageInvalidFeeSigner, error) {
+	out := new(ProcessorstorageInvalidFeeSigner)
+	if err := processorstorage.abi.UnpackIntoInterface(out, "InvalidFeeSigner", raw); err != nil {
 		return nil, err
 	}
 	return out, nil

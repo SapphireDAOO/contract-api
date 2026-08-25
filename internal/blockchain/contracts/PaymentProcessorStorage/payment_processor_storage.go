@@ -29,9 +29,9 @@ func NewPaymentProcessorStorage(client *blockchain.Client) *PaymentProcessorStor
 }
 
 func (c *PaymentProcessorStorage) GetMarketplaceAddress() (*common.Address, error) {
-	senderData := c.contract.PackGetMarketplace()
+	senderData := c.contract.PackGetIntermediatedPlatformsOperator()
 	marketplaceAddress, err := bind.Call(c.instance, &bind.CallOpts{Pending: true},
-		senderData, c.contract.UnpackGetMarketplace)
+		senderData, c.contract.UnpackGetIntermediatedPlatformsOperator)
 
 	if err != nil {
 		return nil, err

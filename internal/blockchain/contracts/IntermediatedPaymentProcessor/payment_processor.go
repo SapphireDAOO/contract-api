@@ -1,4 +1,4 @@
-package paymentprocesor
+package intermediatedpaymentprocessor
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts"
-	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
+	intermediatedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/IntermediatedPaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
 func NewPaymentprocessor(client *blockchain.Client) *PaymentProcessor {
 	address := common.HexToAddress(utils.PAYMENT_PROCESSOR_ADDRESS)
-	contract := advancedprocessor.NewAdvancedprocessor()
+	contract := intermediatedprocessor.NewIntermediatedprocessor()
 	instance := contract.Instance(client.HTTP, address)
 
 	return &PaymentProcessor{
@@ -32,7 +32,7 @@ func NewPaymentprocessor(client *blockchain.Client) *PaymentProcessor {
 }
 
 func (c *PaymentProcessor) CreateInvoice(
-	param []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
+	param []intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam,
 	marketplaceAddress common.Address,
 ) (*InvoiceResponse, error) {
 
@@ -77,7 +77,7 @@ func (c *PaymentProcessor) CreateInvoice(
 }
 
 func (c *PaymentProcessor) CreateInvoices(
-	param []advancedprocessor.IAdvancedPaymentProcessorInvoiceCreationParam,
+	param []intermediatedprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam,
 	marketplaceAddress common.Address,
 ) (*InvoiceResponse, error) {
 	if len(param) < 2 {
@@ -314,7 +314,7 @@ func (c *PaymentProcessor) blockTimestampMillis(blockHash common.Hash) int64 {
 	return int64(header.Time) * 1000
 }
 
-func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *advancedprocessor.AdvancedprocessorPaymentReleased {
+func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *intermediatedprocessor.IntermediatedprocessorPaymentReleased {
 	if receipt == nil || c.address == nil {
 		return nil
 	}
@@ -331,12 +331,12 @@ func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *adv
 	return nil
 }
 
-func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (advancedprocessor.IAdvancedPaymentProcessorInvoice, error) {
+func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (intermediatedprocessor.IIntermediatedPaymentProcessorInvoice, error) {
 	if c == nil || c.client == nil || c.client.HTTP == nil {
-		return advancedprocessor.IAdvancedPaymentProcessorInvoice{}, errors.New("blockchain client not initialized")
+		return intermediatedprocessor.IIntermediatedPaymentProcessorInvoice{}, errors.New("blockchain client not initialized")
 	}
 	if c.address == nil {
-		return advancedprocessor.IAdvancedPaymentProcessorInvoice{}, errors.New("payment processor address not initialized")
+		return intermediatedprocessor.IIntermediatedPaymentProcessorInvoice{}, errors.New("payment processor address not initialized")
 	}
 
 	data := c.contract.PackGetInvoice(orderId)
@@ -347,7 +347,7 @@ func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (advancedprocessor.I
 	}, nil)
 
 	if err != nil {
-		return advancedprocessor.IAdvancedPaymentProcessorInvoice{}, err
+		return intermediatedprocessor.IIntermediatedPaymentProcessorInvoice{}, err
 	}
 
 	return c.contract.UnpackGetInvoice(out)

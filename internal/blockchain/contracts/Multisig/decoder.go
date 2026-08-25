@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	advancedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/AdvancedPaymentProcessor"
+	intermediatedprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/IntermediatedPaymentProcessor"
 	gen "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/Multisig"
 	processorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/PaymentProcessorStorage"
 	simpleprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/gen/SimplePaymentProcessor"
@@ -35,7 +35,7 @@ func buildKnownContracts() []knownContract {
 		address  string
 		metadata *bind.MetaData
 	}{
-		{"Payment Processor", utils.PAYMENT_PROCESSOR_ADDRESS, &advancedprocessor.AdvancedprocessorMetaData},
+		{"Payment Processor", utils.PAYMENT_PROCESSOR_ADDRESS, &intermediatedprocessor.IntermediatedprocessorMetaData},
 		{"Simple Payment Processor", utils.SIMPLE_PAYMENT_PROCESSOR_ADDRESS, &simpleprocessor.SimpleprocessorMetaData},
 		{"Payment Processor Storage", utils.PAYMENT_PROCESSOR_STORAGE_ADDRESS, &processorstorage.ProcessorstorageMetaData},
 		{"Multisig", utils.MULTISIG_ADDRESS, &gen.MultisigMetaData},
