@@ -16,6 +16,10 @@ import (
 // volume spike
 // low wallet balance
 
+// everyoneMention is sent as the message content of every notification so
+// the whole channel is pinged.
+const everyoneMention = "@everyone"
+
 const (
 	ColorBlue   = 0x3498DB
 	ColorYellow = 0xF1C40F
@@ -44,9 +48,20 @@ type Embed struct {
 	Timestamp   string  `json:"timestamp,omitempty"`
 }
 
+// allowedMentions opts the payload into the mentions it is allowed to
+// resolve. Without it Discord still parses @everyone, but stating it keeps
+// the intent explicit.
+type allowedMentions struct {
+	Parse []string `json:"parse"`
+}
+
 type message struct {
 	Username string  `json:"username,omitempty"`
+	Content  string  `json:"content,omitempty"`
 	Embeds   []Embed `json:"embeds,omitempty"`
+	// A mention only notifies from the content field; one placed inside an
+	// embed renders as text and pings nobody.
+	AllowedMentions *allowedMentions `json:"allowed_mentions,omitempty"`
 }
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
@@ -67,8 +82,10 @@ func SendEmbed(embed Embed) {
 	}
 
 	payload, err := json.Marshal(message{
-		Username: "Contract Monitor",
-		Embeds:   []Embed{embed},
+		Username:        "Contract Monitor",
+		Content:         everyoneMention,
+		Embeds:          []Embed{embed},
+		AllowedMentions: &allowedMentions{Parse: []string{"everyone"}},
 	})
 	if err != nil {
 		log.Printf("Failed to marshal Discord payload: %v", err)
