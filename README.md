@@ -12,6 +12,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Interm
 - [POST `/handleDispute`](#endpoint-handledispute)
 - [POST `/cancel`](#endpoint-cancel)
 - [POST `/refund`](#endpoint-refund)
+- [POST `/notes`](#endpoint-notes)
 
 ---
 
@@ -520,6 +521,116 @@ curl -X POST https://pp-api.serveftp.com/refund \
 -d '{
   "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
   "refundShare": "5000"
+}'
+```
+
+---
+
+### Endpoint: `/notes`
+
+- **Method**: POST
+- **Description**: Reads and writes invoice notes on the `Notes` contract (`0x092722fF05A2Fe1dFeA4b8C3E6CEE3dc868D7be2`). Notes are encrypted with a server-held key before they reach the chain, so the ciphertext is public but the content is not. A single endpoint serves four actions, selected by the `action` field.
+
+#### Actions
+
+| `action`    | Description                                                                              | On-chain |
+| ----------- | ---------------------------------------------------------------------------------------- | -------- |
+| `create`    | Encrypts a note and writes it for an invoice via `createNote`.                            | ✅        |
+| `setOpened` | Marks a note as opened by the author via `setOpened`. `open: false` is a no-op.           | ✅        |
+| `encrypt`   | Encrypts content and returns it as hex, for the `storageRef` note a client sends itself.  | ❌        |
+| `decrypt`   | Reads notes by id from the chain and decrypts the ones the caller is allowed to see.      | ❌        |
+
+#### Authorization
+
+The `X-API-KEY` header is the only check. This API pays the gas and signs on the author's behalf, so the caller is trusted to have authenticated whoever the `author` and `viewer` fields name, and to have confirmed that they are a party on the invoice. Do not expose this endpoint to browsers directly.
+
+#### **Request Body**
+
+```json
+{
+  "action": "create",
+  "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+  "content": "Left at the door",
+  "share": true
+}
+```
+
+#### Field Details
+
+| Field       | Type     | Required                    | Description                                                             |
+| ----------- | -------- | --------------------------- | ----------------------------------------------------------------------- |
+| `action`    | string   | ✅                          | `create`, `setOpened`, `encrypt` or `decrypt`.                          |
+| `invoiceId` | string   | ✅ except `encrypt`         | On-chain order ID.                                                      |
+| `author`    | string   | ✅ for `create`/`setOpened` | Address the note is attributed to; must be a party on the invoice.      |
+| `content`   | string   | ✅ for `create`/`encrypt`   | Note text, at most 20 characters.                                       |
+| `share`     | boolean  | ❌                          | `true` publishes the note to both parties; private otherwise.           |
+| `noteId`    | string   | ✅ for `setOpened`          | Id of the note to mark opened.                                          |
+| `open`      | boolean  | ❌                          | Only `true` is written on chain.                                        |
+| `noteIds`   | string[] | ✅ for `decrypt`            | Up to 50 note ids to read.                                              |
+| `viewer`    | string   | ❌ for `decrypt`            | Address reading the notes; required to see that address's private notes. |
+
+#### **Response**
+
+**Success (200)** — `create` and `setOpened`:
+
+```json
+{
+  "success": true,
+  "txHash": "0x123456..."
+}
+```
+
+**Success (200)** — `encrypt`:
+
+```json
+{
+  "success": true,
+  "payload": "0x4a6f..."
+}
+```
+
+**Success (200)** — `decrypt`. `content` is `null` for a note the caller may not read, or one that could not be read back:
+
+```json
+{
+  "success": true,
+  "notes": [
+    { "noteId": "1", "content": "Left at the door" },
+    { "noteId": "2", "content": null }
+  ]
+}
+```
+
+**Error (400 / 413)**:
+
+```json
+{
+  "success": false,
+  "error": "Invalid author address"
+}
+```
+
+- `400` for a malformed body, an unknown action, or a missing required field.
+- `413` for content over 20 characters or more than 50 `noteIds`.
+
+**Notes**:
+
+- Notes are encrypted with AES-256-CBC under `sha256(NOTES_SECRET_KEY)` and stored as `<base64 iv>:<base64 ciphertext>`. This matches the scheme the website used, so notes written by either side stay readable by both. With `NOTES_SECRET_KEY` unset, notes are written and read in the clear.
+- `decrypt` resolves notes by `(invoiceId, noteId)` from the chain rather than accepting ciphertext from the caller, so a party cannot decrypt a blob lifted from another invoice. Shared notes are readable by anyone; a private note decrypts only for the `viewer` that authored it.
+- Write actions return as soon as the transaction is broadcast; the receipt is not awaited.
+
+**Example**:
+
+```bash
+curl -X POST https://pp-api.serveftp.com/notes \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "action": "decrypt",
+  "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "noteIds": ["1", "2"],
+  "viewer": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4"
 }'
 ```
 

@@ -13,6 +13,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 
 	intermediatedpaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/IntermediatedPaymentProcessor"
+	notes "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Notes"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
 	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
@@ -33,6 +34,7 @@ type ContractHandler struct {
 	PaymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
 	PaymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
 	SimplePaymentProcessor  *simplepaymentprocessor.SimplePaymentProcessor
+	Notes                   *notes.Notes
 	BaseUrl                 string
 }
 
@@ -41,6 +43,7 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 		PaymentProcessor:        c.PaymentProcessor,
 		PaymentProcessorStorage: c.PaymentProcessorStorage,
 		SimplePaymentProcessor:  c.SimplePaymentProcessor,
+		Notes:                   c.Notes,
 		BaseUrl:                 c.BaseUrl,
 	}
 }

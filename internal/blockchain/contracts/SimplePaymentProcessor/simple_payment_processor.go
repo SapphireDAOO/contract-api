@@ -1,6 +1,9 @@
 package simplepaymentprocessor
 
 import (
+	"context"
+	"errors"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
@@ -62,4 +65,18 @@ func (c *SimplePaymentProcessor) IsSettlementExpired() (bool, error) {
 	currentTime := time.Now().Unix() + 60
 
 	return currentTime > exp, nil
+}
+
+// GetInvoiceData reads a single invoice. A zero state means the invoice does
+// not exist on this processor.
+func (c *SimplePaymentProcessor) GetInvoiceData(
+	ctx context.Context, invoiceId *big.Int,
+) (simpleprocessor.ISimplePaymentProcessorInvoice, error) {
+	if c == nil || c.instance == nil {
+		return simpleprocessor.ISimplePaymentProcessorInvoice{},
+			errors.New("simple payment processor contract is not initialized")
+	}
+
+	data := c.contract.PackGetInvoiceData(invoiceId)
+	return bind.Call(c.instance, &bind.CallOpts{Context: ctx}, data, c.contract.UnpackGetInvoiceData)
 }

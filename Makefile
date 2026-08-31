@@ -23,10 +23,15 @@ AUTOMATION_ABI_FILE    = $(AUTOMATION_ABI_FOLDER)/PaymentAutomation.json
 AUTOMATION_GO_OUT      = $(AUTOMATION_ABI_FOLDER)/PaymentAutomation.go
 AUTOMATION_GO_PKG      = paymentautomation
 
+NOTES_ABI_FOLDER  = internal/blockchain/gen/Notes
+NOTES_ABI_FILE    = $(NOTES_ABI_FOLDER)/Notes.json
+NOTES_GO_OUT      = $(NOTES_ABI_FOLDER)/Notes.go
+NOTES_GO_PKG      = notescontract
+
 .PHONY: clean gen run
 
 clean:
-	@rm -f $(INTERMEDIATED_GO_OUT) $(STORAGE_GO_OUT) $(SIMPLE_GO_OUT) $(ERC20_GO_OUT) $(AUTOMATION_GO_OUT)
+	@rm -f $(INTERMEDIATED_GO_OUT) $(STORAGE_GO_OUT) $(SIMPLE_GO_OUT) $(ERC20_GO_OUT) $(AUTOMATION_GO_OUT) $(NOTES_GO_OUT)
 
 gen:
 	@abigen --v2 --abi $(INTERMEDIATED_ABI_FILE) --pkg $(INTERMEDIATED_GO_PKG) --out $(INTERMEDIATED_GO_OUT)
@@ -34,6 +39,7 @@ gen:
 	@abigen --v2 --abi $(STORAGE_ABI_FILE) --pkg $(STORAGE_GO_PKG) --out $(STORAGE_GO_OUT)
 	@abigen --v2 --abi $(ERC20_ABI_FILE) --pkg $(ERC20_GO_PKG) --out $(ERC20_GO_OUT)
 	@abigen --v2 --abi $(AUTOMATION_ABI_FILE) --pkg $(AUTOMATION_GO_PKG) --out $(AUTOMATION_GO_OUT)
+	@abigen --v2 --abi $(NOTES_ABI_FILE) --pkg $(NOTES_GO_PKG) --out $(NOTES_GO_OUT)
 
 run:
 	@go run ./cmd/server

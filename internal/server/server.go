@@ -18,6 +18,7 @@ import (
 	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
 	intermediatedpaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/IntermediatedPaymentProcessor"
 	multisig "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Multisig"
+	notescontract "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Notes"
 	paymentautomation "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentAutomation"
 	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
 	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
@@ -45,6 +46,7 @@ func Run() error {
 	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client)
 	ms := multisig.NewMultisig(client)
 	pa := paymentautomation.NewPaymentAutomation(client)
+	notes := notescontract.NewNotes(client)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -56,6 +58,7 @@ func Run() error {
 			PaymentProcessor:        pp,
 			PaymentProcessorStorage: pps,
 			SimplePaymentProcessor:  spp,
+			Notes:                   notes,
 			BaseUrl:                 url,
 		},
 	)
