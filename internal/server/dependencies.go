@@ -34,7 +34,7 @@ type dependencies struct {
 }
 
 func newDependencies(cfg *config.Config) (*dependencies, error) {
-	client, err := blockchain.NewClient(cfg.RPC)
+	client, err := blockchain.NewClient(cfg.RPC, cfg.SignerKey)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func newDependencies(cfg *config.Config) (*dependencies, error) {
 	addresses := cfg.Contracts.Addresses()
 
 	notifier := discord.NewClient(cfg.URLs.DiscordWebhook)
-	callbacks := callback.NewClient(cfg.URLs.Callback, os.Getenv("API_KEY"))
+	callbacks := callback.NewClient(cfg.URLs.Callback, os.Getenv("API_KEY"), cfg.Tokens)
 
 	return &dependencies{
 		client:    client,
@@ -80,6 +80,7 @@ func (d *dependencies) contractHandler(cfg *config.Config) *handler.ContractHand
 			Notes:                   d.notes,
 			BaseUrl:                 cfg.URLs.Checkout,
 			ExplorerURL:             cfg.URLs.Explorer,
+			Tokens:                  cfg.Tokens,
 			Callbacks:               d.callbacks,
 			Subgraph:                d.subgraph,
 		},

@@ -35,7 +35,7 @@ func SimulateAndBroadcast(ctx context.Context, instance *bind.BoundContract,
 		return nil, err
 	}
 
-	auth, err := blockchain.Auth(client.ChainId)
+	auth, err := client.Auth()
 
 	if err != nil {
 		return nil, err

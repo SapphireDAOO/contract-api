@@ -13,7 +13,7 @@ import (
 func (c *Client) SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) {
 
-	payload, err := buildRefundCallbackPayload(paymentToken, amount,
+	payload, err := c.buildRefundCallbackPayload(paymentToken, amount,
 		refundShare, transactionURL, transactionTimestamp)
 	if err != nil {
 		log.Printf("refund callback payload error for orderId %s: %v", orderId, err)
@@ -25,7 +25,7 @@ func (c *Client) SendRefundCallback(orderId string, paymentToken string, amount 
 
 func (c *Client) SendReleaseCallback(orderId, paymentToken, receiver string, releaseAmount *big.Int,
 	transactionURL string, transactionTimestamp int64) {
-	payload, err := buildReleaseCallbackPayload(paymentToken, receiver,
+	payload, err := c.buildReleaseCallbackPayload(paymentToken, receiver,
 		releaseAmount, transactionURL, transactionTimestamp)
 	if err != nil {
 		log.Printf("release callback payload error for orderId %s: %v", orderId, err)
@@ -36,7 +36,7 @@ func (c *Client) SendReleaseCallback(orderId, paymentToken, receiver string, rel
 }
 
 func (c *Client) SendPaymentReceivedCallback(orderId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
-	payload, err := buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
+	payload, err := c.buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
 		amount, transactionTimestamp)
 	if err != nil {
 		log.Printf("payment received callback payload error for orderId %s: %v", orderId, err)

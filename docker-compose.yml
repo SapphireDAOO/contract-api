@@ -9,3 +9,4 @@ services:
       - .env
     environment:
       - PRODUCTION=1
+      - NETWORK=testnet

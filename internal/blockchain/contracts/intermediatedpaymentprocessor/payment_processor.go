@@ -156,7 +156,7 @@ func (c *PaymentProcessor) CreateDispute(orderId *big.Int, marketplaceAddress co
 func (c *PaymentProcessor) HandleDispute(
 	orderId *big.Int, action blockchain.MarketplaceAction, sellersShare *big.Int,
 ) (*common.Hash, error) {
-	auth, err := blockchain.Auth(c.client.ChainId)
+	auth, err := c.client.Auth()
 
 	if sellersShare == nil {
 		sellersShare = big.NewInt(0)
@@ -205,7 +205,7 @@ func (c *PaymentProcessor) HandleDispute(
 }
 
 func (c *PaymentProcessor) Cancel(orderId *big.Int) (*common.Hash, error) {
-	auth, err := blockchain.Auth(c.client.ChainId)
+	auth, err := c.client.Auth()
 
 	if err != nil {
 		return nil, err
@@ -235,7 +235,7 @@ func (c *PaymentProcessor) Cancel(orderId *big.Int) (*common.Hash, error) {
 }
 
 func (c *PaymentProcessor) Refund(orderId *big.Int, refundShare *big.Int) (*common.Hash, error) {
-	auth, err := blockchain.Auth(c.client.ChainId)
+	auth, err := c.client.Auth()
 
 	if err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ type ReleaseResult struct {
 }
 
 func (c *PaymentProcessor) Release(orderId *big.Int) (*ReleaseResult, error) {
-	auth, err := blockchain.Auth(c.client.ChainId)
+	auth, err := c.client.Auth()
 	if err != nil {
 		return nil, err
 	}

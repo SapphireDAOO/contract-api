@@ -13,13 +13,15 @@ import (
 type Client struct {
 	baseURL string
 	apiKey  string
+	tokens  TokenLookup
 	http    *http.Client
 }
 
-func NewClient(baseURL, apiKey string) *Client {
+func NewClient(baseURL, apiKey string, tokens TokenLookup) *Client {
 	return &Client{
 		baseURL: baseURL,
 		apiKey:  apiKey,
+		tokens:  tokens,
 		http:    &http.Client{Timeout: 30 * time.Second},
 	}
 }

@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SapphireDAOO/contract-api/internal/auth"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/notes"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentprocessorstorage"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/callback"
+	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
 	"github.com/SapphireDAOO/contract-api/internal/invoice"
 	"github.com/SapphireDAOO/contract-api/internal/query"
@@ -32,6 +32,7 @@ func parseBigInt(field, value string) (*big.Int, error) {
 
 type ContractHandler struct {
 	ExplorerURL             string
+	Tokens                  config.Tokens
 	Callbacks               *callback.Client
 	Subgraph                *query.Client
 	PaymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
@@ -44,6 +45,7 @@ type ContractHandler struct {
 func NewContractHandler(c *ContractHandler) *ContractHandler {
 	return &ContractHandler{
 		ExplorerURL:             c.ExplorerURL,
+		Tokens:                  c.Tokens,
 		Callbacks:               c.Callbacks,
 		Subgraph:                c.Subgraph,
 		PaymentProcessor:        c.PaymentProcessor,
@@ -62,12 +64,16 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := invoice.ValidateCreateInvoiceParams(param); err != nil {
+	if err := invoice.ValidateCreateInvoiceParams(param, h.Tokens); err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
 	}
 
-	invoices := invoice.ConvertParam(param)
+	invoices, err := invoice.ConvertParam(param, h.Tokens)
+	if err != nil {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
+		return
+	}
 
 	if err := invoice.ValidateInvoices(invoices); err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
@@ -89,13 +95,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		id := invoices[0].InvoiceId
-		token, err := auth.GenerateToken(res.Orders[id].OrderId)
-		if err != nil {
-			httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "token generation failed")
-			return
-		}
-
-		res.Url = h.BaseUrl + token
+		res.Url = h.BaseUrl + invoice.EncodeIDString(res.Orders[id].OrderId)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -106,14 +106,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	token, err := auth.GenerateToken(*res.MetaInvoiceId)
-
-	if err != nil {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "token generation failed")
-		return
-	}
-
-	res.Url = h.BaseUrl + token
+	res.Url = h.BaseUrl + invoice.EncodeIDString(*res.MetaInvoiceId)
 	json.NewEncoder(w).Encode(res)
 }
 

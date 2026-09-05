@@ -82,7 +82,7 @@ func (c *Notes) GetNoteCount(ctx context.Context, invoiceId *big.Int) (*big.Int,
 }
 
 func (c *Notes) send(ctx context.Context, data []byte) (*common.Hash, error) {
-	auth, err := blockchain.Auth(c.client.ChainId)
+	auth, err := c.client.Auth()
 	if err != nil {
 		return nil, err
 	}

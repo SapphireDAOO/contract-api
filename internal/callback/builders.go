@@ -9,13 +9,13 @@ import (
 
 // get the paymnet token address and amount via event
 
-func buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, amount *big.Int,
+func (c *Client) buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, amount *big.Int,
 	transactionTimestamp int64) ([]byte, error) {
 	if amount == nil {
 		return nil, fmt.Errorf("invalid amount")
 	}
 
-	data, ok := tokenData(paymentToken)
+	symbol, decimals, ok := c.tokens.ByAddress(paymentToken)
 	if !ok {
 		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
 	}
@@ -23,9 +23,9 @@ func buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, am
 	currentDefaultReleaseTime := 10 * time.Minute
 	releaseAt := time.Now().Add(currentDefaultReleaseTime).UnixMilli()
 
-	amountText := formatTokenAmount(amount, data.Decimal)
+	amountText := formatTokenAmount(amount, decimals)
 	payload := paymentReceivedCallbackPayload{
-		Currency:             data.Symbol,
+		Currency:             symbol,
 		Amount:               amountText,
 		TransactionAmount:    amountText,
 		TransactionUrl:       transactionURL,
@@ -36,14 +36,14 @@ func buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, am
 	return json.Marshal(payload)
 }
 
-func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
+func (c *Client) buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) ([]byte, error) {
 
 	if amount == nil {
 		return nil, fmt.Errorf("invalid amount")
 	}
 
-	data, ok := tokenData(paymentToken)
+	symbol, decimals, ok := c.tokens.ByAddress(paymentToken)
 	if !ok {
 		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
 	}
@@ -57,8 +57,8 @@ func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 	}
 
 	payload := refundCallbackPayload{
-		Currency:             data.Symbol,
-		Amount:               formatTokenAmount(refundAmount, data.Decimal),
+		Currency:             symbol,
+		Amount:               formatTokenAmount(refundAmount, decimals),
 		TransactionTimestamp: transactionTimestamp,
 		TransactionUrl:       transactionURL,
 	}
@@ -66,21 +66,21 @@ func buildRefundCallbackPayload(paymentToken string, amount *big.Int,
 	return json.Marshal(payload)
 }
 
-func buildReleaseCallbackPayload(paymentToken, receiver string, releaseAmount *big.Int, transactionURL string,
+func (c *Client) buildReleaseCallbackPayload(paymentToken, receiver string, releaseAmount *big.Int, transactionURL string,
 	transactionTimestamp int64) ([]byte, error) {
 
 	if releaseAmount == nil {
 		return nil, fmt.Errorf("invalid amount")
 	}
 
-	data, ok := tokenData(paymentToken)
+	symbol, decimals, ok := c.tokens.ByAddress(paymentToken)
 	if !ok {
 		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
 	}
 
 	payload := releaseCallbackPayload{
-		Currency:             data.Symbol,
-		Amount:               formatTokenAmount(releaseAmount, data.Decimal),
+		Currency:             symbol,
+		Amount:               formatTokenAmount(releaseAmount, decimals),
 		Address:              receiver,
 		TransactionTimestamp: transactionTimestamp,
 		TransactionUrl:       transactionURL,

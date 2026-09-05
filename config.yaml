@@ -1,9 +1,11 @@
 # Which network section below to use. Override with the NETWORK env var.
-network: testnet
+network: ${NETWORK}
 
 networks:
   # Anvil/Hardhat on the host.
   local:
+    # Anvil's default account; the deployment above was made with it.
+    signerKey: "${LOCAL_CALLER}"
     rpc:
       http: "http://127.0.0.1:8545"
       ws: "ws://127.0.0.1:8545"
@@ -11,11 +13,23 @@ networks:
     urls:
       # A local chain has no block explorer; links fall back to the bare hash.
       explorer: ""
-      checkout: "http://localhost:3000/checkout/?data="
+      checkout: "http://localhost:3000/checkout/?id="
       dashboard: "http://localhost:3000/multisig/"
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
+    tokens:
+      # Symbols clients send in paymentTokens. The zero address is the native
+      # token; USDC and wBTC are the mocks from the local deployment.
+      ETH:
+        address: "0x0000000000000000000000000000000000000000"
+        decimals: 18
+      USDC:
+        address: "0x2d19afC50EaaCe1CE730ab2A9a5D87712b0d4bCc"
+        decimals: 6
+      wBTC:
+        address: "0xda21fE4Acf85E375bC9eE72C9b00D0aEF6C495C7"
+        decimals: 8
     contracts:
       paymentProcessor: "0xAA845a76bf1a7e27e5e06071e2e8C8a8F4355C20"
       paymentProcessorStorage: "0x9B486c746213EcD7A1BF449E01DeB43fC8BD3834"
@@ -26,17 +40,28 @@ networks:
 
   # Base Sepolia.
   testnet:
+    signerKey: "${PASS}"
     rpc:
       http: "${TEST_NET_RPC_URL}"
       ws: "${TEST_NET_WSS}"
       dialTimeout: 10s
     urls:
       explorer: "https://sepolia.basescan.org"
-      checkout: "https://sapphire-dao-website-six.vercel.app/checkout/?data="
+      checkout: "https://sapphire-dao-website-six.vercel.app/checkout/?id="
       dashboard: "https://sapphire-dao-website-six.vercel.app/multisig/"
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
+    tokens:
+      ETH:
+        address: "0x0000000000000000000000000000000000000000"
+        decimals: 18
+      USDC:
+        address: "0x41a196b1ff165419a1320f029e689a41f30c70b0"
+        decimals: 6
+      wBTC:
+        address: "0x8cdaf12598d71cad44e91fb1c05d565a383e3dba"
+        decimals: 8
     contracts:
       paymentProcessor: "0xBD1E22D0E01e941e0e730335C0D025e4a46c888a"
       paymentProcessorStorage: "0xAc7Df32b61Ba0b2F4646ee1505980b256dA8e582"
@@ -47,6 +72,7 @@ networks:
 
   # Not deployed yet.
   mainnet:
+    signerKey: "${PASS}"
     rpc:
       http: "${MAIN_NET_RPC_URL}"
       ws: "${MAIN_NET_WSS}"
@@ -58,6 +84,10 @@ networks:
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
+    tokens:
+      ETH:
+        address: "0x0000000000000000000000000000000000000000"
+        decimals: 18
     contracts:
       paymentProcessor: ""
       paymentProcessorStorage: ""

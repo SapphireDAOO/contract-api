@@ -38,7 +38,7 @@ func (c *PaymentAutomation) ProcessDueTasks(ctx context.Context) (*types.Receipt
 		return nil, errors.New("payment automation contract is not initialized")
 	}
 
-	auth, err := blockchain.Auth(c.client.ChainId)
+	auth, err := c.client.Auth()
 	if err != nil {
 		return nil, err
 	}

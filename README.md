@@ -54,7 +54,7 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
     "price": 8680000000,
     "escrowHoldPeriod": 604800,
     "currency": "USD",
-    "paymentTokens": ["0x0000000000000000000000000000000000000000"]
+    "paymentTokens": ["ETH", "USDC"]
   }
 ]
 ```
@@ -68,9 +68,17 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
 | `price`            | number   | ✅       | Invoice price in cents; scaled on the server using the `currency` precision.              |
 | `escrowHoldPeriod` | number   | ✅       | Duration in seconds for holding funds in escrow (e.g., `604800` = 7 days).                |
 | `currency`         | string   | ✅       | Pricing currency; sets the decimal precision applied to `price` (`USD` = 8 decimals).     |
-| `paymentTokens`    | string[] | ✅       | Token addresses the buyer may pay with. Must contain at least one entry.                  |
+| `paymentTokens`    | string[] | ✅       | Token **symbols** the buyer may pay with, e.g. `["ETH", "USDC"]`. At least one.            |
 
-**About `paymentTokens`**: the contract's `InvoiceCreationParam` takes an `address[]`, and it reverts with `NoPaymentTokens` on an empty list, so the API rejects an empty or missing list with `400`. The zero address `0x0000000000000000000000000000000000000000` denotes the **native token** and is a valid entry.
+**About `paymentTokens`**: callers name tokens by **symbol**, not address. Each symbol is resolved to the address deployed on the selected network using the `tokens` table in [`config.yaml`](config.yaml), so the same request body works against local, testnet and mainnet. Matching is case-insensitive (`usdc` resolves `USDC`).
+
+The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoPaymentTokens` on an empty list, so an empty or missing list is rejected with `400`. An unknown symbol is rejected with the list of configured ones:
+
+```json
+{ "error": "invoice 0: unknown payment token \"DOGE\" (known: ETH, USDC, wBTC)", "reason": "" }
+```
+
+`ETH` maps to the zero address, which is how the contracts denote the native token.
 
 #### **Response**
 
@@ -78,7 +86,7 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
 
 ```json
 {
-  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=<token>",
+  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
   "orders": {
     "550e8400-e29b-41d4-a716-446655440000": {
       "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
@@ -90,7 +98,7 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
 
 **Notes**:
 
-- The `url` prefix is `urls.checkout` for the selected network.
+- The `url` is `urls.checkout` for the selected network followed by the invoice id encoded as unpadded URL-safe base64 of its big-endian bytes — the same encoding the website uses, so it can decode the id straight from the link. For a single invoice that is the invoice's own id; for several it is the meta-invoice id.
 - `price` is converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
 - A single invoice triggers `createSingleInvoice`, emitting `InvoiceCreated`. Multiple invoices trigger `createMetaInvoice`, emitting `MetaInvoiceCreated`.
 - Only the intermediated platform operator (retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`) can call these functions.
@@ -129,7 +137,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices \
     "price": 8680000000,
     "escrowHoldPeriod": 604800,
     "currency": "USD",
-    "paymentTokens": ["0x0000000000000000000000000000000000000000"]
+    "paymentTokens": ["ETH", "USDC"]
   }
 ]'
 ```
@@ -465,10 +473,10 @@ curl -X POST https://pp-api.serveftp.com/notes \
 
 ## Configuration
 
-[`config.yaml`](config.yaml) holds one section per network. `network:` selects the default; the `NETWORK` environment variable overrides it. Only the selected section is validated, so a network that is not deployed yet cannot break startup.
+[`config.yaml`](config.yaml) holds one section per network. `network:` selects which one; it is itself an `${NETWORK}` reference, so the network is chosen by the environment — `.env` locally, and `NETWORK=testnet` in [`docker-compose.yml`](docker-compose.yml). Setting `NETWORK` always wins, and leaving it unset is an error rather than a silent default. Only the selected section is validated, so a network that is not deployed yet cannot break startup.
 
 ```yaml
-network: testnet
+network: ${NETWORK}
 
 networks:
   local:
@@ -482,6 +490,14 @@ networks:
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
+    signerKey: "${LOCAL_CALLER}"
+    tokens:
+      ETH:
+        address: "0x0000000000000000000000000000000000000000"
+        decimals: 18
+      USDC:
+        address: "0x2d19afC50EaaCe1CE730ab2A9a5D87712b0d4bCc"
+        decimals: 6
     contracts:
       paymentProcessor: "0x..."
       # ...
@@ -489,6 +505,8 @@ networks:
 
 - **`${VAR}` references** are resolved from the environment at load time. Endpoints whose URL embeds a credential (the RPC provider key, the Discord webhook) are written this way so the secret stays in `.env` and out of the repository. An unset variable fails startup naming the variable.
 - **`urls.explorer`** is a block explorer root with no trailing slash. When empty, transaction links fall back to the bare hash.
+- **`tokens`** is the one place a payment token is defined. `paymentTokens` in a create request names a symbol from this table, and callback payloads render an event's token address back to its symbol and decimals through the same table.
+- **`signerKey`** selects which key signs transactions, per network: `${LOCAL_CALLER}` on `local` and `${PASS}` on the deployed networks, so a local run cannot touch a deployed network's key. It is parsed once at startup, and a malformed key fails startup rather than the first transaction.
 - **`CONFIG_PATH`** points at a different config file.
 
 Run against a local chain with:
@@ -505,9 +523,9 @@ Values that are secrets rather than settings stay in `.env`:
 | -------------------------- | ---------------------------------------------------------- |
 | `KEY`                      | Value clients must send in `X-API-KEY`.                    |
 | `API_KEY`                  | Key this API sends when posting callbacks.                 |
-| `SECRET_KEY`               | Signs the checkout JWT.                                    |
 | `NOTES_SECRET_KEY`         | Encrypts note content. Unset means notes are stored plain. |
-| `PASS`                     | Private key of the signing account.                        |
+| `PASS`                     | Private key that signs transactions on the deployed networks. |
+| `LOCAL_CALLER`             | Private key that signs on `local` (anvil's default account). |
 | `PORT`                     | HTTP port; defaults to `8080`.                             |
 | `TEST_NET_RPC_URL`/`_WSS`  | Referenced by the `testnet` section.                       |
 | `END_POINT`, `URL`, `DISCORD_WEBHOOK_URL` | Subgraph, callback and Discord endpoints.   |

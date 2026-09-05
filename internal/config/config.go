@@ -5,6 +5,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"fmt"
 	"maps"
 	"net/url"
@@ -51,6 +52,55 @@ type URLs struct {
 	DiscordWebhook string `yaml:"discordWebhook"`
 }
 
+// Token is a payment token, named by its symbol in requests and resolved to
+// the address deployed on the selected network.
+type Token struct {
+	Address  string `yaml:"address"`
+	Decimals int    `yaml:"decimals"`
+}
+
+// Tokens maps a symbol to its token. Lookups are case-insensitive, so a caller
+// may send "usdc" for a token configured as "USDC".
+type Tokens map[string]Token
+
+// Address resolves a symbol to its deployed address.
+func (t Tokens) Address(symbol string) (common.Address, bool) {
+	token, ok := t.lookup(symbol)
+	if !ok {
+		return common.Address{}, false
+	}
+	return common.HexToAddress(token.Address), true
+}
+
+// ByAddress resolves a deployed address back to its symbol and decimals, for
+// rendering an amount that arrived in a chain event.
+func (t Tokens) ByAddress(address string) (string, int, bool) {
+	want := common.HexToAddress(address)
+	for symbol, token := range t {
+		if common.HexToAddress(token.Address) == want {
+			return symbol, token.Decimals, true
+		}
+	}
+	return "", 0, false
+}
+
+// Symbols lists the configured symbols, sorted, for error messages.
+func (t Tokens) Symbols() []string {
+	return slices.Sorted(maps.Keys(t))
+}
+
+func (t Tokens) lookup(symbol string) (Token, bool) {
+	if token, ok := t[symbol]; ok {
+		return token, true
+	}
+	for configured, token := range t {
+		if strings.EqualFold(configured, symbol) {
+			return token, true
+		}
+	}
+	return Token{}, false
+}
+
 // ContractAddresses holds the deployed address of each contract the API talks
 // to, as written in the config file.
 type ContractAddresses struct {
@@ -74,9 +124,13 @@ type Addresses struct {
 
 // Config is the resolved settings for the selected network.
 type Config struct {
-	Network   string
+	Network string
+	// SignerKey is the private key transactions are signed with, in hex. In the
+	// file it is an ${ENV_VAR} reference, so the key stays in the environment.
+	SignerKey string
 	RPC       RPC
 	URLs      URLs
+	Tokens    Tokens
 	Contracts ContractAddresses
 }
 
@@ -87,8 +141,10 @@ type file struct {
 }
 
 type network struct {
+	SignerKey string            `yaml:"signerKey"`
 	RPC       RPC               `yaml:"rpc"`
 	URLs      URLs              `yaml:"urls"`
+	Tokens    Tokens            `yaml:"tokens"`
 	Contracts ContractAddresses `yaml:"contracts"`
 }
 
@@ -116,6 +172,9 @@ func Load(path string) (*Config, error) {
 	name := parsed.Network
 	if override := os.Getenv(NetworkEnv); override != "" {
 		name = override
+	} else if name, err = expandEnv(name); err != nil {
+		// The file may select the network with an ${ENV_VAR} reference.
+		return nil, fmt.Errorf("config %s: network: %w", path, err)
 	}
 	if name == "" {
 		return nil, fmt.Errorf("config %s: no network selected: set the network key or %s", path, NetworkEnv)
@@ -131,6 +190,7 @@ func Load(path string) (*Config, error) {
 		key   string
 		value *string
 	}{
+		{"signerKey", &selected.SignerKey},
 		{"rpc.http", &selected.RPC.HTTP},
 		{"rpc.ws", &selected.RPC.WS},
 		{"urls.explorer", &selected.URLs.Explorer},
@@ -149,10 +209,16 @@ func Load(path string) (*Config, error) {
 		selected.RPC.DialTimeout = defaultDialTimeout
 	}
 
+	if err := validateSignerKey(selected.SignerKey); err != nil {
+		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
+	}
 	if err := selected.RPC.validate(); err != nil {
 		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
 	}
 	if err := selected.URLs.validate(); err != nil {
+		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
+	}
+	if err := selected.Tokens.validate(); err != nil {
 		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
 	}
 	if err := selected.Contracts.validate(); err != nil {
@@ -161,8 +227,10 @@ func Load(path string) (*Config, error) {
 
 	return &Config{
 		Network:   name,
+		SignerKey: selected.SignerKey,
 		RPC:       selected.RPC,
 		URLs:      selected.URLs,
+		Tokens:    selected.Tokens,
 		Contracts: selected.Contracts,
 	}, nil
 }
@@ -205,6 +273,22 @@ func expandEnv(raw string) (string, error) {
 // validate checks the URLs that must be present and the scheme of any that are
 // set. Everything except checkout is optional: a chain may have no explorer,
 // and an unset webhook simply disables Discord notifications.
+// validateSignerKey checks the shape of the key without ever including the key
+// material in an error: 32 bytes of hex, with or without the 0x prefix.
+func validateSignerKey(key string) error {
+	trimmed := strings.TrimPrefix(strings.TrimSpace(key), "0x")
+	if trimmed == "" {
+		return fmt.Errorf("signerKey is required")
+	}
+	if len(trimmed) != 64 {
+		return fmt.Errorf("signerKey must be 32 bytes of hex, got %d characters", len(trimmed))
+	}
+	if _, err := hex.DecodeString(trimmed); err != nil {
+		return fmt.Errorf("signerKey is not valid hex")
+	}
+	return nil
+}
+
 func (u URLs) validate() error {
 	for _, field := range []struct {
 		key      string
@@ -263,6 +347,26 @@ func (r RPC) validate() error {
 
 	if r.DialTimeout < 0 {
 		return fmt.Errorf("rpc.dialTimeout cannot be negative")
+	}
+	return nil
+}
+
+// validate checks the token table. The zero address is allowed: it is how the
+// contracts denote the native token.
+func (t Tokens) validate() error {
+	if len(t) == 0 {
+		return fmt.Errorf("tokens: at least one payment token is required")
+	}
+	for symbol, token := range t {
+		if strings.TrimSpace(symbol) == "" {
+			return fmt.Errorf("tokens: a symbol cannot be empty")
+		}
+		if !common.IsHexAddress(token.Address) {
+			return fmt.Errorf("tokens.%s.address %q is not a valid address", symbol, token.Address)
+		}
+		if token.Decimals < 0 || token.Decimals > 77 {
+			return fmt.Errorf("tokens.%s.decimals %d is out of range", symbol, token.Decimals)
+		}
 	}
 	return nil
 }
