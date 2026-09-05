@@ -82,14 +82,14 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 
-	marketplaceAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
+	intermediatedOperatorAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
 		return
 	}
 
 	if len(invoices) == 1 {
-		res, err := h.PaymentProcessor.CreateInvoice(invoices, *marketplaceAddress)
+		res, err := h.PaymentProcessor.CreateInvoice(invoices, *intermediatedOperatorAddress)
 		if err != nil {
 			httpx.WriteMappedRevertError(w, err, "error creating invoice")
 			return
@@ -100,13 +100,13 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := h.PaymentProcessor.CreateInvoices(invoices, *marketplaceAddress)
+	res, err := h.PaymentProcessor.CreateInvoices(invoices, *intermediatedOperatorAddress)
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "error creating meta invoice")
 		return
 	}
 
-	res.Url = h.BaseUrl + invoice.EncodeIDString(*res.MetaInvoiceId)
+	res.Url = h.BaseUrl + invoice.EncodeMetaIDString(*res.MetaInvoiceId)
 	json.NewEncoder(w).Encode(res)
 }
 
@@ -189,7 +189,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
-	marketplaceAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
+	intermediatedOperatorAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err,
 			"error fetching marketplace address")
@@ -202,7 +202,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.CreateDispute(orderId, *marketplaceAddress)
+	txHash, err := h.PaymentProcessor.CreateDispute(orderId, *intermediatedOperatorAddress)
 
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")

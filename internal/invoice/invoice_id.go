@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+// MetaPrefix marks a link as pointing at a meta invoice rather than a single
+// one, so the two identifiers cannot be confused.
+const MetaPrefix = "mt-"
+
 func EncodeID(invoiceID *big.Int) string {
 	if invoiceID == nil || invoiceID.Sign() < 0 {
 		return ""
@@ -34,8 +38,33 @@ func EncodeIDString(invoiceID string) string {
 	return EncodeID(id)
 }
 
+func EncodeMetaID(metaInvoiceID *big.Int) string {
+	encoded := EncodeID(metaInvoiceID)
+	if encoded == "" {
+		return ""
+	}
+
+	return MetaPrefix + encoded
+}
+
+func EncodeMetaIDString(metaInvoiceID string) string {
+	encoded := EncodeIDString(metaInvoiceID)
+	if encoded == "" {
+		return ""
+	}
+
+	return MetaPrefix + encoded
+}
+
+func IsMetaID(encoded string) bool {
+	return strings.HasPrefix(strings.TrimSpace(encoded), MetaPrefix)
+}
+
+// DecodeID reads either form, so a caller holding a link does not have to
+// strip the prefix first. Use IsMetaID to tell them apart.
 func DecodeID(encoded string) (*big.Int, error) {
-	trimmed := strings.TrimRight(strings.TrimSpace(encoded), "=")
+	trimmed := strings.TrimPrefix(strings.TrimSpace(encoded), MetaPrefix)
+	trimmed = strings.TrimRight(trimmed, "=")
 	if trimmed == "" {
 		return nil, fmt.Errorf("invoice id is empty")
 	}

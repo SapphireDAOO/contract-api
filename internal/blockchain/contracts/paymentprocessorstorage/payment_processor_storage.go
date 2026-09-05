@@ -34,12 +34,12 @@ func NewPaymentProcessorStorage(client *blockchain.Client, address common.Addres
 
 func (c *PaymentProcessorStorage) GetIntermediatedPlatformsOperator() (*common.Address, error) {
 	senderData := c.contract.PackGetIntermediatedPlatformsOperator()
-	marketplaceAddress, err := bind.Call(c.instance, &bind.CallOpts{Pending: true},
+	intermediatedOperatorAddress, err := bind.Call(c.instance, &bind.CallOpts{Pending: true},
 		senderData, c.contract.UnpackGetIntermediatedPlatformsOperator)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &marketplaceAddress, nil
+	return &intermediatedOperatorAddress, nil
 }

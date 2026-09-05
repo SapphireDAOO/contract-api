@@ -37,7 +37,7 @@ func NewPaymentprocessor(client *blockchain.Client, address common.Address,
 
 func (c *PaymentProcessor) CreateInvoice(
 	param []gen.IIntermediatedPaymentProcessorInvoiceCreationParam,
-	marketplaceAddress common.Address,
+	intermediatedOperatorAddress common.Address,
 ) (*InvoiceResponse, error) {
 
 	if len(param) != 1 {
@@ -50,7 +50,7 @@ func (c *PaymentProcessor) CreateInvoice(
 	data := c.contract.PackCreateSingleInvoice(param[0])
 
 	_, err := tx.
-		SimulateAndBroadcast(ctx, c.instance, c.client, marketplaceAddress, *c.address, data)
+		SimulateAndBroadcast(ctx, c.instance, c.client, intermediatedOperatorAddress, *c.address, data)
 
 	orders := make(map[string]struct {
 		Seller  string `json:"seller"`
@@ -82,7 +82,7 @@ func (c *PaymentProcessor) CreateInvoice(
 
 func (c *PaymentProcessor) CreateInvoices(
 	param []gen.IIntermediatedPaymentProcessorInvoiceCreationParam,
-	marketplaceAddress common.Address,
+	intermediatedOperatorAddress common.Address,
 ) (*InvoiceResponse, error) {
 	if len(param) < 2 {
 		return nil, errors.New("parameter has to be greater than one")
@@ -114,21 +114,19 @@ func (c *PaymentProcessor) CreateInvoices(
 	data := c.contract.PackCreateMetaInvoice(param)
 
 	response, err := tx.SimulateAndBroadcast(ctx,
-		c.instance, c.client, marketplaceAddress, *c.address, data)
+		c.instance, c.client, intermediatedOperatorAddress, *c.address, data)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if response.Result == nil {
-		logs := response.Receipt.Logs
-		if len(logs) <= len(param) || len(logs[len(param)].Topics) < 2 {
-			return nil, fmt.Errorf(
-				"meta invoice id not found in receipt logs for tx %s", response.Receipt.TxHash.Hex())
+		result, err := c.metaInvoiceIDFromLogs(response.Receipt)
+		if err != nil {
+			return nil, err
 		}
-		result := new(big.Int).SetBytes(logs[len(param)].Topics[1].Bytes()).String()
 		return &InvoiceResponse{
-			MetaInvoiceId: &result,
+			MetaInvoiceId: result,
 			Orders:        orders,
 		}, nil
 	}
@@ -138,13 +136,39 @@ func (c *PaymentProcessor) CreateInvoices(
 	}, nil
 }
 
-func (c *PaymentProcessor) CreateDispute(orderId *big.Int, marketplaceAddress common.Address) (*common.Hash, error) {
+// metaInvoiceIDFromLogs finds the MetaInvoiceCreated event by its signature.
+// Picking a log by position is not safe: each sub-invoice emits several logs,
+// and how many is the contract's business, not this code's.
+func (c *PaymentProcessor) metaInvoiceIDFromLogs(receipt *types.Receipt) (*string, error) {
+	if receipt == nil {
+		return nil, errors.New("no receipt returned for meta invoice creation")
+	}
+
+	for _, log := range receipt.Logs {
+		if log == nil || len(log.Topics) == 0 || log.Address != *c.address {
+			continue
+		}
+
+		event, err := c.contract.UnpackMetaInvoiceCreatedEvent(log)
+		if err != nil {
+			continue
+		}
+
+		id := event.MetaInvoiceId.String()
+		return &id, nil
+	}
+
+	return nil, fmt.Errorf(
+		"MetaInvoiceCreated event not found in receipt logs for tx %s", receipt.TxHash.Hex())
+}
+
+func (c *PaymentProcessor) CreateDispute(orderId *big.Int, intermediatedOperatorAddress common.Address) (*common.Hash, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	data := c.contract.PackCreateDispute(orderId)
 
-	response, err := tx.SimulateAndBroadcast(ctx, c.instance, c.client, marketplaceAddress, *c.address, data)
+	response, err := tx.SimulateAndBroadcast(ctx, c.instance, c.client, intermediatedOperatorAddress, *c.address, data)
 
 	if err != nil {
 		return nil, err

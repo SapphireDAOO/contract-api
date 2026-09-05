@@ -22,10 +22,10 @@ type Response struct {
 }
 
 func SimulateAndBroadcast(ctx context.Context, instance *bind.BoundContract,
-	client *blockchain.Client, marketplaceAddress, contractAddress common.Address,
+	client *blockchain.Client, intermediatedOperatorAddress, contractAddress common.Address,
 	data []byte) (*Response, error) {
 	msg := ethereum.CallMsg{
-		From: marketplaceAddress,
+		From: intermediatedOperatorAddress,
 		To:   &contractAddress,
 		Data: data,
 	}

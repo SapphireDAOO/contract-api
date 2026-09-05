@@ -98,7 +98,12 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 
 **Notes**:
 
-- The `url` is `urls.checkout` for the selected network followed by the invoice id encoded as unpadded URL-safe base64 of its big-endian bytes — the same encoding the website uses, so it can decode the id straight from the link. For a single invoice that is the invoice's own id; for several it is the meta-invoice id.
+- The `url` is `urls.checkout` for the selected network followed by the invoice id encoded as unpadded URL-safe base64 of its big-endian bytes — the same encoding the website uses, so it can decode the id straight from the link. For a single invoice that is the invoice's own id. For several it is the **meta-invoice** id, prefixed with `mt-` so the two kinds of identifier cannot be confused:
+
+  ```
+  single: .../checkout/?data=dJNOQid37cGYw04ceDk1kxjAME8ElIMK9yLm
+  meta:   .../checkout/?data=mt-dJNOQid37cGYw04ceDk1kxjAME8ElIMK9yLm
+  ```
 - `price` is converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
 - A single invoice triggers `createSingleInvoice`, emitting `InvoiceCreated`. Multiple invoices trigger `createMetaInvoice`, emitting `MetaInvoiceCreated`.
 - Only the intermediated platform operator (retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`) can call these functions.
