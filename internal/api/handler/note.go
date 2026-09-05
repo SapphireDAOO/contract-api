@@ -11,8 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/httpx"
+	"github.com/SapphireDAOO/contract-api/internal/note"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
 )
 
 const (
@@ -44,7 +46,7 @@ func (h *ContractHandler) HandleNote(w http.ResponseWriter, r *http.Request) {
 	var req noteRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteNoteError(w, http.StatusBadRequest, "Invalid request body")
+		writeNoteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -58,74 +60,74 @@ func (h *ContractHandler) HandleNote(w http.ResponseWriter, r *http.Request) {
 	case "decrypt":
 		h.decryptNotes(w, r, &req)
 	default:
-		utils.WriteNoteError(w, http.StatusBadRequest, "Unknown action")
+		writeNoteError(w, http.StatusBadRequest, "Unknown action")
 	}
 }
 
 func (h *ContractHandler) createNote(w http.ResponseWriter, r *http.Request, req *noteRequest) {
 	invoiceId, err := parseBigInt("invoiceId", req.InvoiceId)
 	if err != nil {
-		utils.WriteNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
+		writeNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
 		return
 	}
 
-	author, ok := utils.ParseAddress(req.Author)
+	author, ok := parseAddress(req.Author)
 	if !ok {
-		utils.WriteNoteError(w, http.StatusBadRequest, "Invalid author address")
+		writeNoteError(w, http.StatusBadRequest, "Invalid author address")
 		return
 	}
 
 	content := strings.TrimSpace(req.Content)
 
-	if err := utils.ValidateNoteContent(content); err != nil {
+	if err := note.ValidateNoteContent(content); err != nil {
 		status := http.StatusBadRequest
-		if errors.Is(err, utils.ErrNoteTooLong) {
+		if errors.Is(err, note.ErrNoteTooLong) {
 			status = http.StatusRequestEntityTooLarge
 		}
-		utils.WriteNoteError(w, status, err.Error())
+		writeNoteError(w, status, err.Error())
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), noteCallTimeout)
 	defer cancel()
 
-	encrypted, err := utils.ToEncryptedNoteBytes(content)
+	encrypted, err := note.ToEncryptedNoteBytes(content)
 	if err != nil {
-		utils.WriteNoteError(w, http.StatusInternalServerError, "Failed to encrypt note")
+		writeNoteError(w, http.StatusInternalServerError, "Failed to encrypt note")
 		return
 	}
 
 	txHash, err := h.Notes.CreateNote(ctx, invoiceId, author, encrypted, req.Share)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
-	utils.WriteNoteSuccess(w, map[string]any{"txHash": txHash.Hex()})
+	writeNoteSuccess(w, map[string]any{"txHash": txHash.Hex()})
 }
 
 func (h *ContractHandler) setNoteOpened(w http.ResponseWriter, r *http.Request, req *noteRequest) {
 	invoiceId, err := parseBigInt("invoiceId", req.InvoiceId)
 	if err != nil {
-		utils.WriteNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
+		writeNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
 		return
 	}
 
 	noteId, err := parseBigInt("noteId", req.NoteId)
 	if err != nil {
-		utils.WriteNoteError(w, http.StatusBadRequest, "noteId must be a base-10 integer")
+		writeNoteError(w, http.StatusBadRequest, "noteId must be a base-10 integer")
 		return
 	}
 
-	author, ok := utils.ParseAddress(req.Author)
+	author, ok := parseAddress(req.Author)
 	if !ok {
-		utils.WriteNoteError(w, http.StatusBadRequest, "Invalid author address")
+		writeNoteError(w, http.StatusBadRequest, "Invalid author address")
 		return
 	}
 
 	// Only opening is recorded on chain; closing is a client-side state.
 	if !req.Open {
-		utils.WriteNoteSuccess(w, map[string]any{})
+		writeNoteSuccess(w, map[string]any{})
 		return
 	}
 
@@ -134,48 +136,48 @@ func (h *ContractHandler) setNoteOpened(w http.ResponseWriter, r *http.Request, 
 
 	txHash, err := h.Notes.SetOpened(ctx, invoiceId, author, noteId)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
-	utils.WriteNoteSuccess(w, map[string]any{"txHash": txHash.Hex()})
+	writeNoteSuccess(w, map[string]any{"txHash": txHash.Hex()})
 }
 
 func (h *ContractHandler) encryptNote(w http.ResponseWriter, req *noteRequest) {
 	content := strings.TrimSpace(req.Content)
 
-	if err := utils.ValidateNoteContent(content); err != nil {
+	if err := note.ValidateNoteContent(content); err != nil {
 		status := http.StatusBadRequest
-		if errors.Is(err, utils.ErrNoteTooLong) {
+		if errors.Is(err, note.ErrNoteTooLong) {
 			status = http.StatusRequestEntityTooLarge
 		}
-		utils.WriteNoteError(w, status, err.Error())
+		writeNoteError(w, status, err.Error())
 		return
 	}
 
-	encrypted, err := utils.ToEncryptedNoteBytes(content)
+	encrypted, err := note.ToEncryptedNoteBytes(content)
 	if err != nil {
-		utils.WriteNoteError(w, http.StatusInternalServerError, "Failed to encrypt note")
+		writeNoteError(w, http.StatusInternalServerError, "Failed to encrypt note")
 		return
 	}
 
-	utils.WriteNoteSuccess(w, map[string]any{"payload": hexutil.Encode(encrypted)})
+	writeNoteSuccess(w, map[string]any{"payload": hexutil.Encode(encrypted)})
 }
 
 func (h *ContractHandler) decryptNotes(w http.ResponseWriter, r *http.Request, req *noteRequest) {
 	invoiceId, err := parseBigInt("invoiceId", req.InvoiceId)
 	if err != nil {
-		utils.WriteNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
+		writeNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
 		return
 	}
 
 	if len(req.NoteIds) == 0 {
-		utils.WriteNoteError(w, http.StatusBadRequest, "noteIds is required")
+		writeNoteError(w, http.StatusBadRequest, "noteIds is required")
 		return
 	}
 
 	if len(req.NoteIds) > maxDecryptBatch {
-		utils.WriteNoteError(w, http.StatusRequestEntityTooLarge, "Too many notes requested")
+		writeNoteError(w, http.StatusRequestEntityTooLarge, "Too many notes requested")
 		return
 	}
 
@@ -183,13 +185,13 @@ func (h *ContractHandler) decryptNotes(w http.ResponseWriter, r *http.Request, r
 	for _, raw := range req.NoteIds {
 		noteId, err := parseBigInt("noteId", raw)
 		if err != nil {
-			utils.WriteNoteError(w, http.StatusBadRequest, "noteId must be a base-10 integer")
+			writeNoteError(w, http.StatusBadRequest, "noteId must be a base-10 integer")
 			return
 		}
 		noteIds = append(noteIds, noteId)
 	}
 
-	viewer, hasViewer := utils.ParseAddress(req.Viewer)
+	viewer, hasViewer := parseAddress(req.Viewer)
 
 	ctx, cancel := context.WithTimeout(r.Context(), noteCallTimeout)
 	defer cancel()
@@ -205,16 +207,16 @@ func (h *ContractHandler) decryptNotes(w http.ResponseWriter, r *http.Request, r
 			result := noteResult{NoteId: noteId.String()}
 			notes[i] = result
 
-			note, err := h.Notes.GetNote(ctx, invoiceId, noteId)
+			stored, err := h.Notes.GetNote(ctx, invoiceId, noteId)
 			if err != nil {
 				return
 			}
 
-			if !note.Share && !(hasViewer && note.Author == viewer) {
+			if !stored.Share && !(hasViewer && stored.Author == viewer) {
 				return
 			}
 
-			content, err := utils.DecryptNoteBlob(note.Content)
+			content, err := note.DecryptNoteBlob(stored.Content)
 			if err != nil {
 				log.Printf("failed to decrypt note %s on invoice %s: %v",
 					noteId.String(), invoiceId.String(), err)
@@ -228,5 +230,34 @@ func (h *ContractHandler) decryptNotes(w http.ResponseWriter, r *http.Request, r
 
 	wg.Wait()
 
-	utils.WriteNoteSuccess(w, map[string]any{"notes": notes})
+	writeNoteSuccess(w, map[string]any{"notes": notes})
+}
+
+func writeNoteError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"error":   message,
+	})
+}
+
+func writeNoteSuccess(w http.ResponseWriter, body map[string]any) {
+	body["success"] = true
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(body)
+}
+
+func parseAddress(value string) (common.Address, bool) {
+	trimmed := strings.TrimSpace(value)
+	if !common.IsHexAddress(trimmed) {
+		return common.Address{}, false
+	}
+
+	address := common.HexToAddress(trimmed)
+	if address == (common.Address{}) {
+		return common.Address{}, false
+	}
+
+	return address, true
 }

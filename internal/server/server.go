@@ -12,16 +12,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/api/handler"
+	"github.com/SapphireDAOO/contract-api/internal/api/routes"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/multisig"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/notes"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentautomation"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentprocessorstorage"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
+	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/joho/godotenv"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/api/routes"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
-	intermediatedpaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/IntermediatedPaymentProcessor"
-	multisig "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Multisig"
-	notescontract "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Notes"
-	paymentautomation "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentAutomation"
-	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
-	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
 )
 
 const (
@@ -31,22 +32,34 @@ const (
 )
 
 func Run() error {
-	url, err := checkoutURL()
+	if err := loadEnv(); err != nil {
+		return err
+	}
+
+	cfg, err := config.Load(config.Path())
+	if err != nil {
+		return err
+	}
+	addresses := cfg.Contracts.Addresses()
+	log.Printf("Using %s network", cfg.Network)
+
+	url := checkoutURL()
+
+	client, err := blockchain.NewClient(cfg.RPC)
 	if err != nil {
 		return err
 	}
 
-	client, err := blockchain.NewClient()
-	if err != nil {
-		return err
-	}
-
-	pp := intermediatedpaymentprocessor.NewPaymentprocessor(client)
-	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client)
-	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client)
-	ms := multisig.NewMultisig(client)
-	pa := paymentautomation.NewPaymentAutomation(client)
-	notes := notescontract.NewNotes(client)
+	pp := intermediatedpaymentprocessor.NewPaymentprocessor(client, addresses.PaymentProcessor)
+	pps := paymentprocessorstorage.NewPaymentProcessorStorage(client, addresses.PaymentProcessorStorage)
+	spp := simplepaymentprocessor.NewSimplePaymentProcessor(client, addresses.SimplePaymentProcessor)
+	ms := multisig.NewMultisig(client, addresses.Multisig, multisig.Peers{
+		PaymentProcessor:        addresses.PaymentProcessor,
+		SimplePaymentProcessor:  addresses.SimplePaymentProcessor,
+		PaymentProcessorStorage: addresses.PaymentProcessorStorage,
+	})
+	pa := paymentautomation.NewPaymentAutomation(client, addresses.PaymentAutomation)
+	notes := notes.NewNotes(client, addresses.Notes)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -93,14 +106,23 @@ func Run() error {
 	return nil
 }
 
-func checkoutURL() (string, error) {
+// loadEnv reads .env for local runs. In production the environment is supplied
+// by the container, so there is no file to read.
+func loadEnv() error {
 	if _, ok := os.LookupEnv("PRODUCTION"); ok {
-		return WEB_URL, nil
+		return nil
 	}
 	if err := godotenv.Load(); err != nil {
-		return "", fmt.Errorf("error loading .env file: %w", err)
+		return fmt.Errorf("error loading .env file: %w", err)
 	}
-	return BASE_URL, nil
+	return nil
+}
+
+func checkoutURL() string {
+	if _, ok := os.LookupEnv("PRODUCTION"); ok {
+		return WEB_URL
+	}
+	return BASE_URL
 }
 
 func startListeners(

@@ -10,14 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orgs/SapphireDAOO/contract-api/internal/blockchain"
-
-	intermediatedpaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/IntermediatedPaymentProcessor"
-	notes "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/Notes"
-	paymentprocessorstorage "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/PaymentProcessorStorage"
-	simplepaymentprocessor "github.com/orgs/SapphireDAOO/contract-api/internal/blockchain/contracts/SimplePaymentProcessor"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/callback"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
+	"github.com/SapphireDAOO/contract-api/internal/auth"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/notes"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentprocessorstorage"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
+	"github.com/SapphireDAOO/contract-api/internal/callback"
+	"github.com/SapphireDAOO/contract-api/internal/httpx"
+	"github.com/SapphireDAOO/contract-api/internal/invoice"
 )
 
 const TX_URL string = "https://sepolia.basescan.org/tx/"
@@ -49,22 +50,22 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	var param []utils.CreateInvoiceParam
+	var param []invoice.CreateInvoiceParam
 
 	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
-	if err := utils.ValidateCreateInvoiceParams(param); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
+	if err := invoice.ValidateCreateInvoiceParams(param); err != nil {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
 	}
 
-	invoices := utils.ConvertParam(param)
+	invoices := invoice.ConvertParam(param)
 
-	if err := utils.ValidateInvoices(invoices); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
+	if err := invoice.ValidateInvoices(invoices); err != nil {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
 	}
 
@@ -72,20 +73,20 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
 		return
 	}
 
 	if len(invoices) == 1 {
 		res, err := h.PaymentProcessor.CreateInvoice(invoices, *marketplaceAddress)
 		if err != nil {
-			utils.WriteMappedRevertError(w, err, "error creating invoice")
+			httpx.WriteMappedRevertError(w, err, "error creating invoice")
 			return
 		}
 		id := invoices[0].InvoiceId
-		token, err := utils.GenerateToken(res.Orders[id].OrderId)
+		token, err := auth.GenerateToken(res.Orders[id].OrderId)
 		if err != nil {
-			utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "token generation failed")
+			httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "token generation failed")
 			return
 		}
 
@@ -96,14 +97,14 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 	res, err := h.PaymentProcessor.CreateInvoices(invoices, *marketplaceAddress)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "error creating meta invoice")
+		httpx.WriteMappedRevertError(w, err, "error creating meta invoice")
 		return
 	}
 
-	token, err := utils.GenerateToken(*res.MetaInvoiceId)
+	token, err := auth.GenerateToken(*res.MetaInvoiceId)
 
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "token generation failed")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "token generation failed")
 		return
 	}
 
@@ -117,19 +118,19 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	orderId, err := parseBigInt("orderId", input.OrderId)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	txHash, err := h.PaymentProcessor.Cancel(orderId)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
@@ -147,36 +148,36 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	if input.OrderId == "" || input.RefundShare == "" {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "orderId and refundShare is required")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "orderId and refundShare is required")
 		return
 	}
 
 	orderId, err := parseBigInt("orderId", input.OrderId)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	refundShare, err := parseBigInt("refundShare", input.RefundShare)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	if refundShare.Sign() == 0 {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("share can not be zero"), "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("share can not be zero"), "invalid request body")
 		return
 	}
 
 	transactionTimestamp := time.Now().UTC().UnixMilli()
 	txHash, err := h.PaymentProcessor.Refund(orderId, refundShare)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
@@ -204,27 +205,27 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err,
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err,
 			"error fetching marketplace address")
 		return
 	}
 
 	orderId, err := parseBigInt("orderId", input.OrderId)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	txHash, err := h.PaymentProcessor.CreateDispute(orderId, *marketplaceAddress)
 
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
@@ -241,19 +242,19 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	orderId, err := parseBigInt("orderId", input.OrderId)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	res, err := h.PaymentProcessor.Release(orderId)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
@@ -277,13 +278,13 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
 	orderId, err := parseBigInt("orderId", input.OrderId)
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
@@ -291,14 +292,14 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	if strings.TrimSpace(input.SellerShare) != "" {
 		sellerShare, err = parseBigInt("sellerShare", input.SellerShare)
 		if err != nil {
-			utils.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
+			httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 			return
 		}
 	}
 
 	txHash, err := h.PaymentProcessor.HandleDispute(orderId, input.Resolution, sellerShare)
 	if err != nil {
-		utils.WriteMappedRevertError(w, err, "Error sending transaction")
+		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 

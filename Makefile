@@ -1,32 +1,32 @@
-INTERMEDIATED_ABI_FOLDER = internal/blockchain/gen/IntermediatedPaymentProcessor
+INTERMEDIATED_ABI_FOLDER = internal/blockchain/gen/intermediatedpaymentprocessor
 INTERMEDIATED_ABI_FILE   = $(INTERMEDIATED_ABI_FOLDER)/IntermediatedPaymentProcessor.json
-INTERMEDIATED_GO_OUT     = $(INTERMEDIATED_ABI_FOLDER)/IntermediatedPaymentProcessor.go
-INTERMEDIATED_GO_PKG     = intermediatedprocessor
+INTERMEDIATED_GO_OUT     = $(INTERMEDIATED_ABI_FOLDER)/intermediated_payment_processor.go
+INTERMEDIATED_GO_PKG     = intermediatedpaymentprocessor
 
-STORAGE_ABI_FOLDER  = internal/blockchain/gen/PaymentProcessorStorage
+STORAGE_ABI_FOLDER  = internal/blockchain/gen/paymentprocessorstorage
 STORAGE_ABI_FILE    = $(STORAGE_ABI_FOLDER)/PaymentProcessorStorage.json
-STORAGE_GO_OUT      = $(STORAGE_ABI_FOLDER)/PaymentProcessorStorage.go
-STORAGE_GO_PKG      = processorstorage
+STORAGE_GO_OUT      = $(STORAGE_ABI_FOLDER)/payment_processor_storage.go
+STORAGE_GO_PKG      = paymentprocessorstorage
 
-SIMPLE_ABI_FOLDER  = internal/blockchain/gen/SimplePaymentProcessor
+SIMPLE_ABI_FOLDER  = internal/blockchain/gen/simplepaymentprocessor
 SIMPLE_ABI_FILE    = $(SIMPLE_ABI_FOLDER)/SimplePaymentProcessor.json
-SIMPLE_GO_OUT      = $(SIMPLE_ABI_FOLDER)/SimplePaymentProcessor.go
-SIMPLE_GO_PKG      = simpleprocessor
+SIMPLE_GO_OUT      = $(SIMPLE_ABI_FOLDER)/simple_payment_processor.go
+SIMPLE_GO_PKG      = simplepaymentprocessor
 
-ERC20_ABI_FOLDER  = internal/blockchain/gen/ERC20
+ERC20_ABI_FOLDER  = internal/blockchain/gen/erc20
 ERC20_ABI_FILE    = $(ERC20_ABI_FOLDER)/ERC20.json
-ERC20_GO_OUT      = $(ERC20_ABI_FOLDER)/ERC20.go
+ERC20_GO_OUT      = $(ERC20_ABI_FOLDER)/erc20.go
 ERC20_GO_PKG      = erc20
 
-AUTOMATION_ABI_FOLDER  = internal/blockchain/gen/PaymentAutomation
+AUTOMATION_ABI_FOLDER  = internal/blockchain/gen/paymentautomation
 AUTOMATION_ABI_FILE    = $(AUTOMATION_ABI_FOLDER)/PaymentAutomation.json
-AUTOMATION_GO_OUT      = $(AUTOMATION_ABI_FOLDER)/PaymentAutomation.go
+AUTOMATION_GO_OUT      = $(AUTOMATION_ABI_FOLDER)/payment_automation.go
 AUTOMATION_GO_PKG      = paymentautomation
 
-NOTES_ABI_FOLDER  = internal/blockchain/gen/Notes
+NOTES_ABI_FOLDER  = internal/blockchain/gen/notes
 NOTES_ABI_FILE    = $(NOTES_ABI_FOLDER)/Notes.json
-NOTES_GO_OUT      = $(NOTES_ABI_FOLDER)/Notes.go
-NOTES_GO_PKG      = notescontract
+NOTES_GO_OUT      = $(NOTES_ABI_FOLDER)/notes.go
+NOTES_GO_PKG      = notes
 
 .PHONY: clean gen run
 

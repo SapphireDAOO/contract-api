@@ -2,12 +2,10 @@ package blockchain
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
-	"os"
-	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -17,25 +15,18 @@ type Client struct {
 	ChainId *big.Int
 }
 
-func NewClient() (*Client, error) {
-	httpURL := os.Getenv("TEST_NET_RPC_URL")
-	wssURL := os.Getenv("TEST_NET_WSS")
-
-	if httpURL == "" || wssURL == "" {
-		return nil, errors.New("TEST_NET_RPC_URL and TEST_NET_WSS are not set")
-	}
-
-	httpClient, err := ethclient.Dial(httpURL)
+func NewClient(rpc config.RPC) (*Client, error) {
+	httpClient, err := ethclient.Dial(rpc.HTTP)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RPC: %w", err)
 	}
 
-	wsClient, err := ethclient.Dial(wssURL)
+	wsClient, err := ethclient.Dial(rpc.WS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to WSS: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), rpc.DialTimeout)
 	defer cancel()
 
 	chainId, err := httpClient.ChainID(ctx)

@@ -1,0 +1,45 @@
+# Which network section below to use. Override with the NETWORK env var.
+network: testnet
+
+networks:
+  # Anvil/Hardhat on the host.
+  local:
+    rpc:
+      http: "http://127.0.0.1:8545"
+      ws: "ws://127.0.0.1:8545"
+      dialTimeout: 10s
+    contracts:
+      paymentProcessor: "0xAA845a76bf1a7e27e5e06071e2e8C8a8F4355C20"
+      paymentProcessorStorage: "0x9B486c746213EcD7A1BF449E01DeB43fC8BD3834"
+      simplePaymentProcessor: "0xC3bDDA2D7f231Dc48960ED61B649f971afd28010"
+      multisig: "0x05c405ef0dbBfB3005bBcd35E0b1911052731A0E"
+      paymentAutomation: "0x60C7b1D8b2a61aF9466a08DFC8350094d5BabfEa"
+      notes: "0x8C08B086d13F50C032f6DaB86785E7a78D437Fd1"
+
+  # Base Sepolia.
+  testnet:
+    rpc:
+      http: "${TEST_NET_RPC_URL}"
+      ws: "${TEST_NET_WSS}"
+      dialTimeout: 10s
+    contracts:
+      paymentProcessor: "0xBD1E22D0E01e941e0e730335C0D025e4a46c888a"
+      paymentProcessorStorage: "0xAc7Df32b61Ba0b2F4646ee1505980b256dA8e582"
+      simplePaymentProcessor: "0xa74083E440532C2E7d3D82Ca5EE1b4d944d5154B"
+      multisig: "0xF859791dde7C3a121506f3f0747A067e3B70c86A"
+      paymentAutomation: "0xcd7F1e411f7ed9792f61a5F3181bc354f8E26845"
+      notes: "0x092722fF05A2Fe1dFeA4b8C3E6CEE3dc868D7be2"
+
+  # Not deployed yet.
+  mainnet:
+    rpc:
+      http: "${MAIN_NET_RPC_URL}"
+      ws: "${MAIN_NET_WSS}"
+      dialTimeout: 10s
+    contracts:
+      paymentProcessor: ""
+      paymentProcessorStorage: ""
+      simplePaymentProcessor: ""
+      multisig: ""
+      paymentAutomation: ""
+      notes: ""

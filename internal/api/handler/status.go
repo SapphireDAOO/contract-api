@@ -4,13 +4,13 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/orgs/SapphireDAOO/contract-api/internal/utils"
+	"github.com/SapphireDAOO/contract-api/internal/httpx"
 )
 
 func (h *ContractHandler) HandleSettlement(w http.ResponseWriter, r *http.Request) {
 	exp, err := h.SimplePaymentProcessor.IsSettlementExpired()
 	if err != nil {
-		utils.WriteHTTPErrorWithStatus(w,
+		httpx.WriteHTTPErrorWithStatus(w,
 			http.StatusInternalServerError,
 			err,
 			"failed to determine settlement status",
@@ -19,7 +19,7 @@ func (h *ContractHandler) HandleSettlement(w http.ResponseWriter, r *http.Reques
 	}
 
 	if exp {
-		utils.WriteHTTPErrorWithStatus(w,
+		httpx.WriteHTTPErrorWithStatus(w,
 			http.StatusBadRequest,
 			errors.New("settlement window has expired"),
 			"settlement time passed",

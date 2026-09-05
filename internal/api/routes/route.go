@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	middleware "github.com/orgs/SapphireDAOO/contract-api/internal"
-	"github.com/orgs/SapphireDAOO/contract-api/internal/api/handler"
+	"github.com/SapphireDAOO/contract-api/internal/api/handler"
+	"github.com/SapphireDAOO/contract-api/internal/api/middleware"
 )
 
 type Router struct {
