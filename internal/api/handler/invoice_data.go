@@ -10,7 +10,7 @@ import (
 )
 
 func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	orderId := r.PathValue("orderId")
+	orderId := r.PathValue("invoiceId")
 	if orderId == "" {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("empty invoice id in path"), "Missing invoiceId parameter")
 		return

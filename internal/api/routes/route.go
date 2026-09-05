@@ -24,11 +24,12 @@ func (r *Router) GET(path string, handler http.HandlerFunc) {
 	r.mux.Handle(pattern, handler)
 }
 
-func Route(h *handler.ContractHandler) *http.ServeMux {
-	router := Router{mux: http.NewServeMux()}
-	contractHandler := handler.NewContractHandler(h)
+const v1 = "/v1"
 
-	router.GET("/", func(w http.ResponseWriter, r *http.Request) {
+func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
+	router := Router{mux: http.NewServeMux()}
+
+	router.GET("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]string{
 			"status": "ok",
 			"time":   time.Now().Format(time.RFC3339),
@@ -37,15 +38,16 @@ func Route(h *handler.ContractHandler) *http.ServeMux {
 		json.NewEncoder(w).Encode(response)
 	})
 
-	router.POST("/create", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
-	router.POST("/release", middleware.AccessControlMiddleWare(contractHandler.Release))
-	router.POST("/createDispute", middleware.AccessControlMiddleWare(contractHandler.CreateDispute))
-	router.POST("/handleDispute", middleware.AccessControlMiddleWare(contractHandler.HandleDispute))
-	router.POST("/cancel", middleware.AccessControlMiddleWare(contractHandler.Cancel))
-	router.POST("/refund", middleware.AccessControlMiddleWare(contractHandler.Refund))
+	router.POST(v1+"/invoices", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
+	router.GET(v1+"/invoices/{invoiceId}", contractHandler.GetInvoiceData)
+	router.POST(v1+"/invoices/{invoiceId}/release", middleware.AccessControlMiddleWare(contractHandler.Release))
+	router.POST(v1+"/invoices/{invoiceId}/cancel", middleware.AccessControlMiddleWare(contractHandler.Cancel))
+	router.POST(v1+"/invoices/{invoiceId}/refund", middleware.AccessControlMiddleWare(contractHandler.Refund))
+	router.POST(v1+"/invoices/{invoiceId}/disputes", middleware.AccessControlMiddleWare(contractHandler.CreateDispute))
+	router.POST(v1+"/invoices/{invoiceId}/disputes/resolution", middleware.AccessControlMiddleWare(contractHandler.HandleDispute))
+	router.GET(v1+"/settlements/status", contractHandler.HandleSettlement)
+
 	router.POST("/notes", middleware.AccessControlMiddleWare(contractHandler.HandleNote))
-	router.GET("/invoices/{orderId}", contractHandler.GetInvoiceData)
-	router.GET("/settlement/status", contractHandler.HandleSettlement)
 
 	return router.mux
 }

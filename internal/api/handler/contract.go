@@ -118,16 +118,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		OrderId string `json:"orderId"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
-		return
-	}
-
-	orderId, err := parseBigInt("orderId", input.OrderId)
+	orderId, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
@@ -148,7 +139,6 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId     string `json:"orderId"`
 		RefundShare string `json:"refundShare"`
 	}
 
@@ -157,12 +147,13 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.OrderId == "" || input.RefundShare == "" {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "orderId and refundShare is required")
+	invoiceID := r.PathValue("invoiceId")
+	if input.RefundShare == "" {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, nil, "refundShare is required")
 		return
 	}
 
-	orderId, err := parseBigInt("orderId", input.OrderId)
+	orderId, err := parseBigInt("invoiceId", invoiceID)
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
@@ -191,9 +182,9 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	data, err := h.PaymentProcessor.GetInvoiceData(orderId)
 	if err != nil {
 		// The refund transaction already succeeded; only the callback is skipped.
-		log.Printf("refund callback skipped for orderId %s: fetching invoice data failed: %v", input.OrderId, err)
+		log.Printf("refund callback skipped for invoice %s: fetching invoice data failed: %v", invoiceID, err)
 	} else {
-		go h.Callbacks.SendRefundCallback(input.OrderId,
+		go h.Callbacks.SendRefundCallback(invoiceID,
 			data.PaymentToken.String(), data.AmountPaid, refundShare, transactionURL, transactionTimestamp)
 	}
 
@@ -205,15 +196,6 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		OrderId string `json:"orderId"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
-		return
-	}
-
 	marketplaceAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err,
@@ -221,7 +203,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	orderId, err := parseBigInt("orderId", input.OrderId)
+	orderId, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
@@ -242,16 +224,9 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		OrderId string `json:"orderId"`
-	}
+	invoiceID := r.PathValue("invoiceId")
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
-		return
-	}
-
-	orderId, err := parseBigInt("orderId", input.OrderId)
+	orderId, err := parseBigInt("invoiceId", invoiceID)
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
@@ -264,7 +239,7 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	}
 
 	transactionURL := h.txURL(res.TxHash.Hex())
-	go h.Callbacks.SendReleaseCallback(input.OrderId, res.PaymentToken.Hex(), res.Seller.Hex(),
+	go h.Callbacks.SendReleaseCallback(invoiceID, res.PaymentToken.Hex(), res.Seller.Hex(),
 		res.SellerAmount, transactionURL, res.BlockTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -276,7 +251,6 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		OrderId     string                       `json:"orderId"`
 		Resolution  blockchain.MarketplaceAction `json:"resolution"`
 		SellerShare string                       `json:"sellerShare"`
 	}
@@ -286,7 +260,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	orderId, err := parseBigInt("orderId", input.OrderId)
+	orderId, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return

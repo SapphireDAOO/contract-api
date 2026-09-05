@@ -1,25 +1,48 @@
 # Sapphire Contract API – REST Endpoints
 
-This API provides HTTP endpoints for interacting with the Sapphire DAO's `IntermediatedPaymentProcessor` smart contract on the Ethereum Sepolia testnet at address `0x90F3F9816a637A8f30576Deecd6B09D825EB94C2`. It supports invoice creation, cancellation, refunding, dispute creation, dispute resolution, and fund release for secure, decentralized transactions in a marketplace.
+This API provides HTTP endpoints for interacting with the Sapphire DAO's `IntermediatedPaymentProcessor`, `SimplePaymentProcessor` and `Notes` smart contracts on **Base Sepolia**. It supports invoice creation, cancellation, refunding, dispute creation, dispute resolution, fund release, and invoice notes.
+
+Contract addresses and endpoints are not compiled in — they come from [`config.yaml`](config.yaml), which holds one section per network (`local`, `testnet`, `mainnet`). See [Configuration](#configuration).
 
 **Base URL**: `https://pp-api.serveftp.com/`
 
 ## Endpoints
 
-- [POST `/create`](#endpoint-create)
-- [POST `/release`](#endpoint-release)
-- [POST `/createDispute`](#endpoint-createdispute)
-- [POST `/handleDispute`](#endpoint-handledispute)
-- [POST `/cancel`](#endpoint-cancel)
-- [POST `/refund`](#endpoint-refund)
-- [POST `/notes`](#endpoint-notes)
+| Method | Path                                            | Description                          |
+| ------ | ----------------------------------------------- | ------------------------------------ |
+| GET    | [`/`](#endpoint-health)                          | Health check                         |
+| POST   | [`/v1/invoices`](#endpoint-create-invoices)      | Create one or more invoices          |
+| GET    | [`/v1/invoices/{invoiceId}`](#endpoint-get-invoice) | Read invoice data from the subgraph |
+| POST   | [`/v1/invoices/{invoiceId}/release`](#endpoint-release) | Release escrowed funds       |
+| POST   | [`/v1/invoices/{invoiceId}/cancel`](#endpoint-cancel) | Cancel an unpaid invoice       |
+| POST   | [`/v1/invoices/{invoiceId}/refund`](#endpoint-refund) | Refund a paid invoice          |
+| POST   | [`/v1/invoices/{invoiceId}/disputes`](#endpoint-create-dispute) | Open a dispute       |
+| POST   | [`/v1/invoices/{invoiceId}/disputes/resolution`](#endpoint-resolve-dispute) | Resolve a dispute |
+| GET    | [`/v1/settlements/status`](#endpoint-settlement-status) | Simple processor settlement window |
+| POST   | [`/notes`](#endpoint-notes)                      | Invoice notes (all actions)          |
+
+The invoice id is a path segment on every invoice operation, so the request body carries only what is specific to that operation. `release`, `cancel` and `disputes` take no body at all.
+
+Every endpoint except `GET /` requires an `X-API-KEY` header, enforced by `AccessControlMiddleWare`.
 
 ---
 
-### Endpoint: `/create`
+### Endpoint: Health
 
-- **Method**: POST
-- **Description**: Creates one or more on-chain invoices using the `IntermediatedPaymentProcessor` contract's `createSingleInvoice` (for one invoice) or `createMetaInvoice` (for multiple invoices) functions. Invoices are stored in the contract's `invoice` or `metaInvoice` mappings with unique IDs.
+- **Method**: GET `/`
+
+Returns `200` with the current time. Any other unrouted path returns `404`.
+
+```json
+{ "status": "ok", "time": "2026-09-05T10:48:12Z" }
+```
+
+---
+
+### Endpoint: Create invoices
+
+- **Method**: POST `/v1/invoices`
+- **Description**: Creates one or more on-chain invoices using the `IntermediatedPaymentProcessor` contract's `createSingleInvoice` (for one invoice) or `createMetaInvoice` (for multiple) functions.
 
 #### **Request Body**
 
@@ -28,296 +51,263 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Interm
   {
     "orderId": "550e8400-e29b-41d4-a716-446655440000",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": "8680000000",
-    "escrowHoldPeriod": "604800"
+    "price": 8680000000,
+    "escrowHoldPeriod": 604800,
+    "currency": "USD",
+    "paymentTokens": ["0x0000000000000000000000000000000000000000"]
   }
 ]
 ```
 
 #### Field Details
 
-| Field              | Type   | Required | Description                                                                  |
-| ------------------ | ------ | -------- | ---------------------------------------------------------------------------- |
-| `orderId`          | string | ✅       | Unique client-side identifier for the invoice (e.g., a UUID or any string).  |
-| `seller`           | string | ✅       | Ethereum address of the seller (e.g., `0xabc123...`).                        |
-| `price`            | string | ✅       | Invoice price in USD with 8 decimal places (e.g., `"100000000"` = $1.00).    |
-| `escrowHoldPeriod` | string | ✅       | Duration in seconds for holding funds in escrow (e.g., `"604800"` = 7 days). |
+| Field              | Type     | Required | Description                                                                              |
+| ------------------ | -------- | -------- | ---------------------------------------------------------------------------------------- |
+| `orderId`          | string   | ✅       | Unique client-side identifier for the invoice (e.g., a UUID or any string).              |
+| `seller`           | string   | ✅       | Ethereum address of the seller. Must not be the zero address.                            |
+| `price`            | number   | ✅       | Invoice price in cents; scaled on the server using the `currency` precision.              |
+| `escrowHoldPeriod` | number   | ✅       | Duration in seconds for holding funds in escrow (e.g., `604800` = 7 days).                |
+| `currency`         | string   | ✅       | Pricing currency; sets the decimal precision applied to `price` (`USD` = 8 decimals).     |
+| `paymentTokens`    | string[] | ✅       | Token addresses the buyer may pay with. Must contain at least one entry.                  |
+
+**About `paymentTokens`**: the contract's `InvoiceCreationParam` takes an `address[]`, and it reverts with `NoPaymentTokens` on an empty list, so the API rejects an empty or missing list with `400`. The zero address `0x0000000000000000000000000000000000000000` denotes the **native token** and is a valid entry.
 
 #### **Response**
 
-**Success (200)**:
+**Success (200)** — the same shape for one invoice or many:
 
-- For a single invoice:
-  ```json
-  {
-    "url": "https://pp-api.serveftp.com/<token>",
-    "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-  }
-  ```
-- For multiple invoices:
-  ```json
-  {
-    "url": "https://pp-api.serveftp.com/<token>",
-    "metaInvoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
-    "orders": {
-      "550e8400-e29b-41d4-a716-446655440000": {
-        "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
-        "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-      },
-      "6ba7b810-9dad-11d1-80b4-00c04fd430c8": {
-        "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
-        "orderId": "59808737901387817475691215581034097896123425895641016234844280890"
-      }
+```json
+{
+  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=<token>",
+  "orders": {
+    "550e8400-e29b-41d4-a716-446655440000": {
+      "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
+      "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
     }
   }
-  ```
+}
+```
 
 **Notes**:
 
-- The `price` is converted to token amounts using Chainlink price feeds via the contract’s `getTokenValueFromUsd` function.
-- A single invoice triggers `createSingleInvoice`, emitting an `InvoiceCreated` event. Multiple invoices trigger `createMetaInvoice`, emitting a `MetaInvoiceCreated` event.
-- Only the `marketplace` address (retrieved via `PaymentProcessorStorage.GetMarketplaceAddress`) can call these functions.
-- The `orderId` in the request (client-provided `requestId`) is hashed to a `uint216` using `utils.OrderIDToUint216` for on-chain storage, resulting in a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`).
-- The response uses `requestId` for the client-provided ID and `orderId` for the generated on-chain ID.
+- The `url` prefix is `urls.checkout` for the selected network.
+- `price` is converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
+- A single invoice triggers `createSingleInvoice`, emitting `InvoiceCreated`. Multiple invoices trigger `createMetaInvoice`, emitting `MetaInvoiceCreated`.
+- Only the intermediated platform operator (retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`) can call these functions.
+- The client-provided `orderId` is hashed to a `uint216` by `invoice.OrderIDToUint216` for on-chain storage, producing the numeric `orderId` in the response. That numeric id is the `{invoiceId}` used by every other endpoint.
 
 **Error Responses**:
 
-**Error (400)**:
+**Error (400)** — malformed JSON, or failed validation such as an invalid seller address, a non-positive price, or a missing `paymentTokens` entry:
 
 ```json
 {
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
+  "error": "invoice 0: at least one payment token is required",
+  "reason": "<validation error>"
 }
 ```
 
-- Returned for malformed JSON or incorrect field types.
-
-**Error (400)**:
-
-```json
-{
-  "error": "no invoice parameters provided",
-  "reason": "invoice array is empty"
-}
-```
-
-- Returned if the invoice array is empty.
-
-**Error (400)**:
-
-```json
-{
-  "error": "<validation error>",
-  "reason": "<specific validation error, e.g., missing required field>"
-}
-```
-
-- Returned if invoice parameters fail validation (e.g., invalid seller address, missing `escrowHoldPeriod`).
-
-**Error (500)**:
-
-```json
-{
-  "error": "error fetching marketplace address",
-  "reason": "<blockchain error message>"
-}
-```
-
-- Returned if fetching the marketplace address fails.
-
-**Error (500)**:
+**Error (500)** — fetching the operator address failed, or the transaction reverted:
 
 ```json
 {
   "error": "error creating invoice",
-  "reason": "<blockchain error message, e.g., The price cannot be zero>"
+  "reason": "An invoice with this identifier already exists."
 }
 ```
-
-- Returned if the blockchain transaction fails (e.g., `InvoiceAlreadyExists`, `PriceCannotBeZero`, `NotAuthorized`).
 
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/create \
+curl -X POST https://pp-api.serveftp.com/v1/invoices \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '[
   {
     "orderId": "550e8400-e29b-41d4-a716-446655440000",
     "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": "8680000000",
-    "escrowHoldPeriod": "604800"
+    "price": 8680000000,
+    "escrowHoldPeriod": 604800,
+    "currency": "USD",
+    "paymentTokens": ["0x0000000000000000000000000000000000000000"]
   }
 ]'
 ```
 
 ---
 
-### Endpoint: `/release`
+### Endpoint: Get invoice
 
-- **Method**: POST
-- **Description**: Releases escrow funds for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `release` function, distributing funds to the seller and platform.
+- **Method**: GET `/v1/invoices/{invoiceId}`
+- **Description**: Reads invoice data from the subgraph (`urls.subgraph`) rather than from the chain directly.
 
-#### **Request Body**
+**Success (200)**: the invoice record as stored in the subgraph.
+
+**Error (500)**:
 
 ```json
 {
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
+  "error": "failed to fetch invoice data",
+  "reason": "<subgraph error message>"
 }
 ```
 
-#### Field Details
+**Example**:
 
-| Field     | Type   | Required | Description                                     |
-| --------- | ------ | -------- | ----------------------------------------------- |
-| `orderId` | string | ✅       | On-chain order ID (e.g., `598087379013878...`). |
+```bash
+curl https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889 \
+-H "X-API-KEY: YOUR_API_KEY_HERE"
+```
 
-**Response**:
+---
+
+### Endpoint: Release
+
+- **Method**: POST `/v1/invoices/{invoiceId}/release`
+- **Description**: Releases escrow funds for an invoice using the contract's `release` function, distributing funds to the seller and platform. **No request body.**
 
 **Success (200)**:
 
 ```json
 {
   "status": "success",
-  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.basescan.org/tx/0x123456..."
 }
 ```
 
-**Error (400)**:
-
-```json
-{
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
-}
-```
-
-- Returned for malformed JSON or incorrect field types.
+**Error (400)**: `invoiceId` in the path is not a base-10 integer.
 
 **Error (500)**:
 
 ```json
 {
   "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., The invoice is not in a valid state for this action>"
+  "reason": "The invoice is not in a valid state for this action."
 }
 ```
-
-- Returned if the blockchain transaction fails (e.g., `InvalidInvoiceState`, `NotAuthorized`).
 
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/release \
--H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-}'
+curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/release \
+-H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
 ---
 
-### Endpoint: `/createDispute`
+### Endpoint: Cancel
 
-- **Method**: POST
-- **Description**: Initiates a dispute for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `createDispute` function, setting the invoice state to `DISPUTED`.
-
-#### **Request Body**
-
-```json
-{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-}
-```
-
-#### Field Details
-
-| Field     | Type   | Required | Description                                     |
-| --------- | ------ | -------- | ----------------------------------------------- |
-| `orderId` | string | ✅       | On-chain order ID (e.g., `598087379013878...`). |
-
-**Response**:
+- **Method**: POST `/v1/invoices/{invoiceId}/cancel`
+- **Description**: Cancels an invoice using the contract's `cancelInvoice` function, setting its state to `CANCELED`. Can only be called before payment. **No request body.**
 
 **Success (200)**:
 
 ```json
 {
   "status": "success",
-  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.basescan.org/tx/0x123456..."
+}
+```
+
+**Error (500)**: transaction reverted (e.g., `InvalidInvoiceState`, `NotAuthorized`).
+
+**Example**:
+
+```bash
+curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/cancel \
+-H "X-API-KEY: YOUR_API_KEY_HERE"
+```
+
+---
+
+### Endpoint: Refund
+
+- **Method**: POST `/v1/invoices/{invoiceId}/refund`
+- **Description**: Issues a refund for an invoice using the contract's `refund` function, withdrawing funds from escrow to the buyer.
+
+#### **Request Body**
+
+```json
+{ "refundShare": "5000" }
+```
+
+| Field         | Type   | Required | Description                                                            |
+| ------------- | ------ | -------- | ---------------------------------------------------------------------- |
+| `refundShare` | string | ✅       | Refund share in basis points (e.g., `"10000"` = 100%, `"5000"` = 50%). |
+
+**Success (200)**:
+
+```json
+{
+  "status": "success",
+  "transactionUrl": "https://sepolia.basescan.org/tx/0x123456..."
 }
 ```
 
 **Error (400)**:
 
 ```json
-{
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
-}
+{ "error": "refundShare is required", "reason": "" }
 ```
 
-- Returned for malformed JSON or incorrect field types.
+- Also returned when `refundShare` is zero (`"share can not be zero"`).
 
-**Error (500)**:
-
-```json
-{
-  "error": "error fetching marketplace address",
-  "reason": "<blockchain error message>"
-}
-```
-
-- Returned if fetching the marketplace address fails.
-
-**Error (500)**:
-
-```json
-{
-  "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., The invoice is not in a valid state for this action>"
-}
-```
-
-- Returned if the blockchain transaction fails (e.g., `InvalidInvoiceState`, `NotAuthorized`).
+**Error (500)**: transaction reverted (e.g., `InsufficientBalance`, `InvalidInvoiceState`).
 
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/createDispute \
+curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/refund \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-}'
+-d '{ "refundShare": "5000" }'
 ```
 
 ---
 
-### Endpoint: `/handleDispute`
+### Endpoint: Create dispute
 
-- **Method**: POST
-- **Description**: Resolves a dispute for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `resolveDispute` or `handleDispute` functions, updating the invoice state and distributing funds if applicable.
+- **Method**: POST `/v1/invoices/{invoiceId}/disputes`
+- **Description**: Opens a dispute for an invoice using the contract's `createDispute` function, setting the invoice state to `DISPUTED`. **No request body.**
+
+**Success (200)**:
+
+```json
+{
+  "status": "success",
+  "transactionUrl": "https://sepolia.basescan.org/tx/0x123456..."
+}
+```
+
+**Error (500)**: fetching the operator address failed, or the transaction reverted.
+
+**Example**:
+
+```bash
+curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes \
+-H "X-API-KEY: YOUR_API_KEY_HERE"
+```
+
+---
+
+### Endpoint: Resolve dispute
+
+- **Method**: POST `/v1/invoices/{invoiceId}/disputes/resolution`
+- **Description**: Resolves an open dispute using the contract's `resolveDispute` or `handleDispute` functions, updating the invoice state and distributing funds if applicable.
 
 #### **Request Body**
 
 ```json
 {
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
   "resolution": 2,
   "sellerShare": "9000"
 }
 ```
 
-#### Field Details
-
 | Field         | Type    | Required                                    | Description                                                              |
 | ------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
-| `orderId`     | string  | ✅                                          | On-chain order ID (e.g., `598087379013878...`).                          |
 | `resolution`  | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
-| `sellerShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller’s share in basis points (e.g., `"10000"` = 100%, `"9000"` = 90%). |
+| `sellerShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in basis points (e.g., `"10000"` = 100%, `"9000"` = 90%). |
 
 #### MarketplaceAction Enum (`resolution`)
 
@@ -334,202 +324,48 @@ curl -X POST https://pp-api.serveftp.com/createDispute \
 - For `DismissDispute`, emits `DisputeDismissed` without fund distribution.
 - For `ResolveDispute`, emits `DisputeResolved` and sets the state to `DISPUTE_RESOLVED`.
 
-**Response**:
-
 **Success (200)**:
 
 ```json
 {
   "status": "success",
-  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
+  "transactionUrl": "https://sepolia.basescan.org/tx/0x123456..."
 }
 ```
 
-**Error (400)**:
-
-```json
-{
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
-}
-```
-
-- Returned for malformed JSON or incorrect field types.
-
-**Error (500)**:
-
-```json
-{
-  "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., The provided dispute resolution is invalid>"
-}
-```
-
-- Returned if the blockchain transaction fails (e.g., `InvalidDisputeResolution`, `InvalidInvoiceState`).
+**Error (500)**: transaction reverted (e.g., `InvalidDisputeResolution`, `InvalidInvoiceState`).
 
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/handleDispute \
+curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes/resolution \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
-  "resolution": 2,
-  "sellerShare": "9000"
-}'
+-d '{ "resolution": 2, "sellerShare": "9000" }'
 ```
 
 ---
 
-### Endpoint: `/cancel`
+### Endpoint: Settlement status
 
-- **Method**: POST
-- **Description**: Cancels a specific invoice using the `IntermediatedPaymentProcessor` contract’s `cancelInvoice` function, setting the invoice state to `CANCELED`. Can only be called before payment.
+- **Method**: GET `/v1/settlements/status`
+- **Description**: Reports whether the `SimplePaymentProcessor` settlement window is still open.
 
-#### **Request Body**
-
-```json
-{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-}
-```
-
-#### Field Details
-
-| Field     | Type   | Required | Description                                     |
-| --------- | ------ | -------- | ----------------------------------------------- |
-| `orderId` | string | ✅       | On-chain order ID (e.g., `598087379013878...`). |
-
-**Response**:
-
-**Success (200)**:
+- **200** with an empty body: the window is open.
+- **400**: the window has passed.
 
 ```json
-{
-  "status": "success",
-  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
-}
-```
-
-**Error (400)**:
-
-```json
-{
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
-}
-```
-
-- Returned for malformed JSON or incorrect field types.
-
-**Error (500)**:
-
-```json
-{
-  "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., The invoice is not in a valid state for this action>"
-}
-```
-
-- Returned if the blockchain transaction fails (e.g., `InvalidInvoiceState`, `NotAuthorized`).
-
-**Example**:
-
-```bash
-curl -X POST https://pp-api.serveftp.com/cancel \
--H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
-}'
-```
-
----
-
-### Endpoint: `/refund`
-
-- **Method**: POST
-- **Description**: Issues a refund for a specific invoice using the `IntermediatedPaymentProcessor` contract’s `refund` function, withdrawing funds from escrow to the buyer.
-
-#### **Request Body**
-
-```json
-{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
-  "refundShare": "5000"
-}
-```
-
-#### Field Details
-
-| Field         | Type   | Required | Description                                                            |
-| ------------- | ------ | -------- | ---------------------------------------------------------------------- |
-| `orderId`     | string | ✅       | On-chain order ID (e.g., `598087379013878...`).                        |
-| `refundShare` | string | ✅       | Refund share in basis points (e.g., `"10000"` = 100%, `"5000"` = 50%). |
-
-**Response**:
-
-**Success (200)**:
-
-```json
-{
-  "status": "success",
-  "transactionUrl": "https://sepolia.etherscan.io/tx/0x123456..."
-}
-```
-
-**Error (400)**:
-
-```json
-{
-  "error": "invalid request body",
-  "reason": "<decoding error message>"
-}
-```
-
-- Returned for malformed JSON or incorrect field types.
-
-**Error (400)**:
-
-```json
-{
-  "error": "invalid request body",
-  "reason": "share can not be zero"
-}
-```
-
-- Returned if `refundShare` is zero.
-
-**Error (500)**:
-
-```json
-{
-  "error": "Error sending transaction",
-  "reason": "<blockchain error message, e.g., The account balance is insufficient to perform this action>"
-}
-```
-
-- Returned if the blockchain transaction fails (e.g., `InsufficientBalance`, `InvalidInvoiceState`).
-
-**Example**:
-
-```bash
-curl -X POST https://pp-api.serveftp.com/refund \
--H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{
-  "orderId": "59808737901387817475691215581034097896123425895641016234844280889",
-  "refundShare": "5000"
-}'
+{ "error": "settlement time passed", "reason": "settlement window has expired" }
 ```
 
 ---
 
 ### Endpoint: `/notes`
 
-- **Method**: POST
-- **Description**: Reads and writes invoice notes on the `Notes` contract (`0x092722fF05A2Fe1dFeA4b8C3E6CEE3dc868D7be2`). Notes are encrypted with a server-held key before they reach the chain, so the ciphertext is public but the content is not. A single endpoint serves four actions, selected by the `action` field.
+- **Method**: POST `/notes`
+- **Description**: Reads and writes invoice notes on the `Notes` contract. Notes are encrypted with a server-held key before they reach the chain, so the ciphertext is public but the content is not. A single endpoint serves four actions, selected by the `action` field.
+
+> This endpoint keeps its action-dispatching shape, and its unversioned path, so the website can forward a request body unchanged.
 
 #### Actions
 
@@ -561,7 +397,7 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 | Field       | Type     | Required                    | Description                                                             |
 | ----------- | -------- | --------------------------- | ----------------------------------------------------------------------- |
 | `action`    | string   | ✅                          | `create`, `setOpened`, `encrypt` or `decrypt`.                          |
-| `invoiceId` | string   | ✅ except `encrypt`         | On-chain order ID.                                                      |
+| `invoiceId` | string   | ✅ except `encrypt`         | On-chain invoice ID.                                                    |
 | `author`    | string   | ✅ for `create`/`setOpened` | Address the note is attributed to; must be a party on the invoice.      |
 | `content`   | string   | ✅ for `create`/`encrypt`   | Note text, at most 20 characters.                                       |
 | `share`     | boolean  | ❌                          | `true` publishes the note to both parties; private otherwise.           |
@@ -575,19 +411,13 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 **Success (200)** — `create` and `setOpened`:
 
 ```json
-{
-  "success": true,
-  "txHash": "0x123456..."
-}
+{ "success": true, "txHash": "0x123456..." }
 ```
 
 **Success (200)** — `encrypt`:
 
 ```json
-{
-  "success": true,
-  "payload": "0x4a6f..."
-}
+{ "success": true, "payload": "0x4a6f..." }
 ```
 
 **Success (200)** — `decrypt`. `content` is `null` for a note the caller may not read, or one that could not be read back:
@@ -605,10 +435,7 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 **Error (400 / 413)**:
 
 ```json
-{
-  "success": false,
-  "error": "Invalid author address"
-}
+{ "success": false, "error": "Invalid author address" }
 ```
 
 - `400` for a malformed body, an unknown action, or a missing required field.
@@ -636,17 +463,68 @@ curl -X POST https://pp-api.serveftp.com/notes \
 
 ---
 
+## Configuration
+
+[`config.yaml`](config.yaml) holds one section per network. `network:` selects the default; the `NETWORK` environment variable overrides it. Only the selected section is validated, so a network that is not deployed yet cannot break startup.
+
+```yaml
+network: testnet
+
+networks:
+  local:
+    rpc:
+      http: "http://127.0.0.1:8545"
+      ws: "ws://127.0.0.1:8545"
+      dialTimeout: 10s
+    urls:
+      explorer: ""                       # a local chain has no explorer
+      checkout: "http://localhost:3000/checkout/?data="
+      subgraph: "${END_POINT}"
+      callback: "${URL}"
+      discordWebhook: "${DISCORD_WEBHOOK_URL}"
+    contracts:
+      paymentProcessor: "0x..."
+      # ...
+```
+
+- **`${VAR}` references** are resolved from the environment at load time. Endpoints whose URL embeds a credential (the RPC provider key, the Discord webhook) are written this way so the secret stays in `.env` and out of the repository. An unset variable fails startup naming the variable.
+- **`urls.explorer`** is a block explorer root with no trailing slash. When empty, transaction links fall back to the bare hash.
+- **`CONFIG_PATH`** points at a different config file.
+
+Run against a local chain with:
+
+```bash
+NETWORK=local go run ./cmd/server
+```
+
+### Environment variables
+
+Values that are secrets rather than settings stay in `.env`:
+
+| Variable                   | Purpose                                                    |
+| -------------------------- | ---------------------------------------------------------- |
+| `KEY`                      | Value clients must send in `X-API-KEY`.                    |
+| `API_KEY`                  | Key this API sends when posting callbacks.                 |
+| `SECRET_KEY`               | Signs the checkout JWT.                                    |
+| `NOTES_SECRET_KEY`         | Encrypts note content. Unset means notes are stored plain. |
+| `PASS`                     | Private key of the signing account.                        |
+| `PORT`                     | HTTP port; defaults to `8080`.                             |
+| `TEST_NET_RPC_URL`/`_WSS`  | Referenced by the `testnet` section.                       |
+| `END_POINT`, `URL`, `DISCORD_WEBHOOK_URL` | Subgraph, callback and Discord endpoints.   |
+| `PRODUCTION`               | When set, `.env` is not read; the container supplies the environment. |
+| `AUTOMATION_POLL_INTERVAL` | How often to poll for due automation tasks.                |
+
+---
+
 ## Notes
 
-- All endpoints require an `X-API-KEY` header for authentication, enforced by `AccessControlMiddleWare`.
-- The `IntermediatedPaymentProcessor` contract is deployed on the Ethereum Sepolia testnet and uses Solady libraries (`SafeTransferLib`, `SafeCastLib`, `FixedPointMathLib`) for secure token transfers, type casting, and fixed-point arithmetic.
+- All endpoints except `GET /` require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`.
 - Invoice states are: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
-- The contract uses Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting ETH and ERC20 tokens.
-- The `marketplace` address, retrieved via `PaymentProcessorStorage.GetMarketplaceAddress`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
-- Transaction hashes are linked to `https://sepolia.etherscan.io/tx/`.
-- The `IIntermediatedPaymentProcessorInvoiceCreationParam` struct in Go ensures type safety for `orderId` (string), `seller` (Ethereum address), `price` (big.Int), and `escrowHoldPeriod` (big.Int).
-- The `orderId` in the request (client-provided `requestId`) is hashed to a `uint216` using `utils.OrderIDToUint216` for on-chain storage, resulting in a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`).
-- Blockchain errors are mapped to human-readable messages via `utils.RevertErrorDescriptions`, including:
+- The contracts use Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting the native token and ERC20 tokens.
+- The intermediated platform operator, retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
+- Transaction links are built from `urls.explorer` for the selected network — `https://sepolia.basescan.org` on Base Sepolia.
+- The client-provided `orderId` is hashed to a `uint216` by `invoice.OrderIDToUint216` for on-chain storage, producing a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`). That value is the `{invoiceId}` path segment.
+- Blockchain reverts are mapped to human-readable messages by `revert.Descriptions`, and to status codes by `revert.StatusCodes`:
   - `The buyer and seller addresses cannot be the same.`
   - `The account balance is insufficient to perform this action.`
   - `The provided dispute resolution is invalid.`
