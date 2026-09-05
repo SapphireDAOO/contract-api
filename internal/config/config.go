@@ -36,6 +36,21 @@ type RPC struct {
 	DialTimeout time.Duration `yaml:"dialTimeout"`
 }
 
+type URLs struct {
+	// Explorer is a block explorer root. Empty on chains without one.
+	Explorer string `yaml:"explorer"`
+	// Checkout is the payment page, ending in its data query parameter.
+	Checkout string `yaml:"checkout"`
+	// Dashboard is the multisig UI linked from Discord notifications.
+	Dashboard string `yaml:"dashboard"`
+	// Subgraph answers invoice queries.
+	Subgraph string `yaml:"subgraph"`
+	// Callback is the endpoint that payment events are posted to.
+	Callback string `yaml:"callback"`
+	// DiscordWebhook receives contract notifications. Empty disables them.
+	DiscordWebhook string `yaml:"discordWebhook"`
+}
+
 // ContractAddresses holds the deployed address of each contract the API talks
 // to, as written in the config file.
 type ContractAddresses struct {
@@ -61,6 +76,7 @@ type Addresses struct {
 type Config struct {
 	Network   string
 	RPC       RPC
+	URLs      URLs
 	Contracts ContractAddresses
 }
 
@@ -72,6 +88,7 @@ type file struct {
 
 type network struct {
 	RPC       RPC               `yaml:"rpc"`
+	URLs      URLs              `yaml:"urls"`
 	Contracts ContractAddresses `yaml:"contracts"`
 }
 
@@ -110,11 +127,22 @@ func Load(path string) (*Config, error) {
 			path, name, strings.Join(slices.Sorted(maps.Keys(parsed.Networks)), ", "))
 	}
 
-	if selected.RPC.HTTP, err = expandEnv(selected.RPC.HTTP); err != nil {
-		return nil, fmt.Errorf("config %s: networks.%s.rpc.http: %w", path, name, err)
-	}
-	if selected.RPC.WS, err = expandEnv(selected.RPC.WS); err != nil {
-		return nil, fmt.Errorf("config %s: networks.%s.rpc.ws: %w", path, name, err)
+	for _, field := range []struct {
+		key   string
+		value *string
+	}{
+		{"rpc.http", &selected.RPC.HTTP},
+		{"rpc.ws", &selected.RPC.WS},
+		{"urls.explorer", &selected.URLs.Explorer},
+		{"urls.checkout", &selected.URLs.Checkout},
+		{"urls.dashboard", &selected.URLs.Dashboard},
+		{"urls.subgraph", &selected.URLs.Subgraph},
+		{"urls.callback", &selected.URLs.Callback},
+		{"urls.discordWebhook", &selected.URLs.DiscordWebhook},
+	} {
+		if *field.value, err = expandEnv(*field.value); err != nil {
+			return nil, fmt.Errorf("config %s: networks.%s.%s: %w", path, name, field.key, err)
+		}
 	}
 
 	if selected.RPC.DialTimeout == 0 {
@@ -124,6 +152,9 @@ func Load(path string) (*Config, error) {
 	if err := selected.RPC.validate(); err != nil {
 		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
 	}
+	if err := selected.URLs.validate(); err != nil {
+		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
+	}
 	if err := selected.Contracts.validate(); err != nil {
 		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
 	}
@@ -131,6 +162,7 @@ func Load(path string) (*Config, error) {
 	return &Config{
 		Network:   name,
 		RPC:       selected.RPC,
+		URLs:      selected.URLs,
 		Contracts: selected.Contracts,
 	}, nil
 }
@@ -168,6 +200,43 @@ func expandEnv(raw string) (string, error) {
 		return "", fmt.Errorf("environment variables not set: %s", strings.Join(missing, ", "))
 	}
 	return expanded, nil
+}
+
+// validate checks the URLs that must be present and the scheme of any that are
+// set. Everything except checkout is optional: a chain may have no explorer,
+// and an unset webhook simply disables Discord notifications.
+func (u URLs) validate() error {
+	for _, field := range []struct {
+		key      string
+		raw      string
+		required bool
+	}{
+		{"checkout", u.Checkout, true},
+		{"explorer", u.Explorer, false},
+		{"dashboard", u.Dashboard, false},
+		{"subgraph", u.Subgraph, false},
+		{"callback", u.Callback, false},
+		{"discordWebhook", u.DiscordWebhook, false},
+	} {
+		if field.raw == "" {
+			if field.required {
+				return fmt.Errorf("urls.%s is required", field.key)
+			}
+			continue
+		}
+		parsed, err := url.Parse(field.raw)
+		if err != nil {
+			return fmt.Errorf("urls.%s is not a valid URL: %w", field.key, err)
+		}
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return fmt.Errorf("urls.%s must use http/https, got %q", field.key, parsed.Scheme)
+		}
+	}
+
+	if strings.HasSuffix(u.Explorer, "/") {
+		return fmt.Errorf("urls.explorer must not end in a slash")
+	}
+	return nil
 }
 
 func (r RPC) validate() error {

@@ -11,6 +11,7 @@ import (
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/intermediatedpaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/tx"
+	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/SapphireDAOO/contract-api/internal/invoice"
 	"github.com/SapphireDAOO/contract-api/internal/revert"
 	"github.com/ethereum/go-ethereum"
@@ -19,15 +20,18 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func NewPaymentprocessor(client *blockchain.Client, address common.Address) *PaymentProcessor {
+func NewPaymentprocessor(client *blockchain.Client, address common.Address,
+	explorerURL string, callbacks *callback.Client) *PaymentProcessor {
 	contract := gen.NewIntermediatedpaymentprocessor()
 	instance := contract.Instance(client.HTTP, address)
 
 	return &PaymentProcessor{
-		address:  &address,
-		instance: instance,
-		contract: contract,
-		client:   client,
+		address:     &address,
+		instance:    instance,
+		contract:    contract,
+		client:      client,
+		explorerURL: explorerURL,
+		callbacks:   callbacks,
 	}
 }
 

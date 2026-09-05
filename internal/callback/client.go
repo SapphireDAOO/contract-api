@@ -4,29 +4,37 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
 
-func Cb(payload []byte, orderId, action string) (*http.Response, error) {
-	baseUrl := os.Getenv("URL")
-	if baseUrl == "" {
-		return nil, fmt.Errorf("URL env var not set")
+// Client posts payment events to the marketplace callback endpoint. It is
+// built once at startup from the configured URL and API key.
+type Client struct {
+	baseURL string
+	apiKey  string
+	http    *http.Client
+}
+
+func NewClient(baseURL, apiKey string) *Client {
+	return &Client{
+		baseURL: baseURL,
+		apiKey:  apiKey,
+		http:    &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+func (c *Client) post(payload []byte, orderId, action string) (*http.Response, error) {
+	if c == nil || c.baseURL == "" {
+		return nil, fmt.Errorf("callback URL is not configured")
+	}
+	if c.apiKey == "" {
+		return nil, fmt.Errorf("callback API key is not configured")
 	}
 
-	key := os.Getenv("API_KEY")
-	if key == "" {
-		return nil, fmt.Errorf("API_KEY env var not set")
-	}
-
-	url, err := buildCallbackURL(baseUrl, orderId, action)
+	url, err := buildCallbackURL(c.baseURL, orderId, action)
 	if err != nil {
 		return nil, err
-	}
-
-	client := &http.Client{
-		Timeout: 30 * time.Second,
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
@@ -35,9 +43,9 @@ func Cb(payload []byte, orderId, action string) (*http.Response, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("APIKey", key)
+	req.Header.Set("APIKey", c.apiKey)
 
-	res, err := client.Do(req)
+	res, err := c.http.Do(req)
 	if err != nil {
 		return nil, err
 	}

@@ -3,15 +3,19 @@ package multisig
 import (
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/multisig"
+	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type Multisig struct {
-	address  *common.Address
-	instance *bind.BoundContract
-	contract *gen.Multisig
-	client   *blockchain.Client
+	explorerURL  string
+	dashboardURL string
+	notifier     *discord.Client
+	address      *common.Address
+	instance     *bind.BoundContract
+	contract     *gen.Multisig
+	client       *blockchain.Client
 	// known are the contracts decodeAction resolves calldata against.
 	known []knownContract
 }

@@ -110,7 +110,7 @@ func (c *Multisig) decodeAction(target common.Address, data []byte) *action {
 				}
 				decoded.Args = append(decoded.Args, argValue{
 					Name:  humanize(name),
-					Value: formatArg(value),
+					Value: c.formatArg(value),
 				})
 			}
 			return decoded
@@ -140,10 +140,10 @@ func humanize(identifier string) string {
 	return b.String()
 }
 
-func formatArg(value any) string {
+func (c *Multisig) formatArg(value any) string {
 	switch v := value.(type) {
 	case common.Address:
-		return addressLink(v)
+		return c.addressLink(v)
 	case *big.Int:
 		return v.String()
 	case [32]byte:

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
+func (c *Client) SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) {
 
 	payload, err := buildRefundCallbackPayload(paymentToken, amount,
@@ -20,10 +20,10 @@ func SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
 		return
 	}
 
-	sendCallbackWithRetry(payload, orderId, refundCallbackAction)
+	c.sendCallbackWithRetry(payload, orderId, refundCallbackAction)
 }
 
-func SendReleaseCallback(orderId, paymentToken, receiver string, releaseAmount *big.Int,
+func (c *Client) SendReleaseCallback(orderId, paymentToken, receiver string, releaseAmount *big.Int,
 	transactionURL string, transactionTimestamp int64) {
 	payload, err := buildReleaseCallbackPayload(paymentToken, receiver,
 		releaseAmount, transactionURL, transactionTimestamp)
@@ -32,10 +32,10 @@ func SendReleaseCallback(orderId, paymentToken, receiver string, releaseAmount *
 		return
 	}
 
-	sendCallbackWithRetry(payload, orderId, releaseCallbackAction)
+	c.sendCallbackWithRetry(payload, orderId, releaseCallbackAction)
 }
 
-func SendPaymentReceivedCallback(orderId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
+func (c *Client) SendPaymentReceivedCallback(orderId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
 	payload, err := buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
 		amount, transactionTimestamp)
 	if err != nil {
@@ -43,12 +43,12 @@ func SendPaymentReceivedCallback(orderId, transactionURL, paymentToken string, a
 		return
 	}
 
-	sendCallbackWithRetry(payload, orderId, paymentReceivedCallbackAction)
+	c.sendCallbackWithRetry(payload, orderId, paymentReceivedCallbackAction)
 }
 
-func sendCallbackWithRetry(payload []byte, orderId, action string) {
+func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 	for attempt := 1; attempt <= callbackRetryAttempts; attempt++ {
-		res, err := Cb(payload, orderId, action)
+		res, err := c.post(payload, orderId, action)
 		if err != nil {
 			if attempt < callbackRetryAttempts {
 				log.Printf("callback attempt %d/%d failed for orderId %s action %s: %v",

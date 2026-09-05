@@ -5,14 +5,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
-
-const txURL = "https://sepolia.basescan.org/tx/"
 
 func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
 	for {
@@ -89,10 +86,9 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 				}
 			}
 
-			transactionURL := txURL + vLog.TxHash.Hex()
-			go callback.
-				SendPaymentReceivedCallback(event.InvoiceId.String(), transactionURL, event.PaymentToken.Hex(),
-					event.Amount, transactionTimestamp)
+			transactionURL := c.txURL(vLog.TxHash.Hex())
+			go c.callbacks.SendPaymentReceivedCallback(event.InvoiceId.String(), transactionURL, event.PaymentToken.Hex(),
+				event.Amount, transactionTimestamp)
 		}
 	}
 }
@@ -156,10 +152,18 @@ func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 				}
 			}
 
-			transactionURL := txURL + vLog.TxHash.Hex()
-			go callback.
-				SendReleaseCallback(event.InvoiceId.String(), event.Currency.Hex(),
-					event.Receiver.Hex(), event.SellerAmount, transactionURL, transactionTimestamp)
+			transactionURL := c.txURL(vLog.TxHash.Hex())
+			go c.callbacks.SendReleaseCallback(event.InvoiceId.String(), event.Currency.Hex(),
+				event.Receiver.Hex(), event.SellerAmount, transactionURL, transactionTimestamp)
 		}
 	}
+}
+
+// txURL links a transaction on the configured explorer. Chains without one
+// (a local node) fall back to the bare hash.
+func (c *PaymentProcessor) txURL(txHash string) string {
+	if c.explorerURL == "" {
+		return txHash
+	}
+	return c.explorerURL + "/tx/" + txHash
 }

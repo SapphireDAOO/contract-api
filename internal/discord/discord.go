@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -68,14 +67,24 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 var warnMissingWebhookOnce sync.Once
 
-func SendEmbed(embed Embed) {
-	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
-	if webhookURL == "" {
+// Client posts notifications to a Discord webhook. It is built once at
+// startup; a client with no webhook URL quietly discards notifications.
+type Client struct {
+	webhookURL string
+}
+
+func NewClient(webhookURL string) *Client {
+	return &Client{webhookURL: webhookURL}
+}
+
+func (c *Client) SendEmbed(embed Embed) {
+	if c == nil || c.webhookURL == "" {
 		warnMissingWebhookOnce.Do(func() {
-			log.Println("DISCORD_WEBHOOK_URL not set; Discord notifications disabled")
+			log.Println("urls.discordWebhook not set; Discord notifications disabled")
 		})
 		return
 	}
+	webhookURL := c.webhookURL
 
 	if embed.Timestamp == "" {
 		embed.Timestamp = time.Now().UTC().Format(time.RFC3339)

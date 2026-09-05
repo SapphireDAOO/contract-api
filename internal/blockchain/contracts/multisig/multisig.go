@@ -3,6 +3,8 @@ package multisig
 import (
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/multisig"
+	"github.com/SapphireDAOO/contract-api/internal/config"
+	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -14,15 +16,19 @@ type Peers struct {
 	PaymentProcessorStorage common.Address
 }
 
-func NewMultisig(client *blockchain.Client, address common.Address, peers Peers) *Multisig {
+func NewMultisig(client *blockchain.Client, address common.Address, peers Peers,
+	urls config.URLs, notifier *discord.Client) *Multisig {
 	contract := gen.NewMultisig()
 	instance := contract.Instance(client.HTTP, address)
 
 	return &Multisig{
-		address:  &address,
-		instance: instance,
-		contract: contract,
-		client:   client,
-		known:    buildKnownContracts(address, peers),
+		address:      &address,
+		instance:     instance,
+		contract:     contract,
+		client:       client,
+		known:        buildKnownContracts(address, peers),
+		explorerURL:  urls.Explorer,
+		dashboardURL: urls.Dashboard,
+		notifier:     notifier,
 	}
 }

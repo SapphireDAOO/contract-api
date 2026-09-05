@@ -16,9 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-const explorerURL = "https://sepolia.basescan.org"
-const dashboardURL = "https://sapphire-dao-website-git-feat-metric-data-bh-ead.vercel.app/multisig/"
-
 var (
 	transactionProposedTopic = crypto.Keccak256Hash([]byte("TransactionProposed(bytes32,address,uint256,bytes,uint256,address)"))
 	approvalAddedTopic       = crypto.Keccak256Hash([]byte("ApprovalAdded(bytes32,address,uint256)"))
@@ -92,7 +89,7 @@ func (c *Multisig) ListenToEvents(ctx context.Context) {
 			}
 
 			log.Printf("Multisig event: %s (%s)", embed.Title, vLog.TxHash.Hex())
-			go discord.SendEmbed(*embed)
+			go c.notifier.SendEmbed(*embed)
 		}
 	}
 }
@@ -103,7 +100,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 	}
 
 	base := discord.Embed{
-		URL:    explorerURL + "/tx/" + vLog.TxHash.Hex(),
+		URL:    c.link("/tx/", vLog.TxHash.Hex()),
 		Footer: &discord.Footer{Text: "Multisig " + shortHex(c.address.Hex()) + " • Base Sepolia"},
 	}
 	var lines []string
@@ -119,7 +116,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		base.Color = discord.ColorBlue
 		lines = append(lines,
 			fmt.Sprintf("%s proposed %s on %s.",
-				addressLink(event.Proposer), actionName(act), c.targetName(act, event.Target)))
+				c.addressLink(event.Proposer), actionName(act), c.targetName(act, event.Target)))
 		lines = append(lines, actionArgLines(act)...)
 		if event.Value != nil && event.Value.Sign() > 0 {
 			lines = append(lines, fmt.Sprintf("It sends **%s** along with the call.", formatEth(event.Value)))
@@ -136,7 +133,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		base.Color = discord.ColorYellow
 		lines = append(lines,
 			fmt.Sprintf("%s approved %s — **%s** so far.",
-				addressLink(event.Approver), actionName(act), plural(event.ApprovalCount, "approval")),
+				c.addressLink(event.Approver), actionName(act), plural(event.ApprovalCount, "approval")),
 			proposalLine(event.TxHash),
 		)
 
@@ -164,7 +161,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		base.Color = discord.ColorGreen
 		lines = append(lines,
 			fmt.Sprintf("%s executed %s. The change is now live on-chain.",
-				addressLink(event.Executor), actionName(act)))
+				c.addressLink(event.Executor), actionName(act)))
 		lines = append(lines, actionArgLines(act)...)
 		lines = append(lines, proposalLine(event.TxHash))
 
@@ -190,7 +187,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		base.Title = "➕ Signer added"
 		base.Color = discord.ColorPurple
 		lines = append(lines,
-			fmt.Sprintf("%s is now a signer on the multisig.", addressLink(event.Signer)))
+			fmt.Sprintf("%s is now a signer on the multisig.", c.addressLink(event.Signer)))
 
 	case signerRemovedTopic:
 		event, err := c.contract.UnpackSignerRemovedEvent(vLog)
@@ -200,7 +197,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		base.Title = "➖ Signer removed"
 		base.Color = discord.ColorPurple
 		lines = append(lines,
-			fmt.Sprintf("%s was removed as a signer on the multisig.", addressLink(event.Signer)))
+			fmt.Sprintf("%s was removed as a signer on the multisig.", c.addressLink(event.Signer)))
 
 	case thresholdUpdatedTopic:
 		event, err := c.contract.UnpackThresholdUpdatedEvent(vLog)
@@ -217,7 +214,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		return nil, nil
 	}
 
-	lines = append(lines, fmt.Sprintf("[Open Multisig](%s) • [View on Basescan](%s)", dashboardURL, base.URL))
+	lines = append(lines, fmt.Sprintf("[Open Multisig](%s) • [View on Basescan](%s)", c.dashboardURL, base.URL))
 	// Blank lines between sections keep the message easy to scan; decoded
 	// parameter bullets (actionArgLines) stay grouped as one block.
 	base.Description = strings.Join(lines, "\n\n")
@@ -263,13 +260,13 @@ func actionName(act *action) string {
 func (c *Multisig) targetName(act *action, target common.Address) string {
 	for _, kc := range c.known {
 		if kc.address == target {
-			return fmt.Sprintf("the %s (%s)", kc.name, addressLink(target))
+			return fmt.Sprintf("the %s (%s)", kc.name, c.addressLink(target))
 		}
 	}
 	if act != nil {
-		return fmt.Sprintf("the %s (%s)", act.Contract, addressLink(target))
+		return fmt.Sprintf("the %s (%s)", act.Contract, c.addressLink(target))
 	}
-	return addressLink(target)
+	return c.addressLink(target)
 }
 
 // actionArgLines renders the decoded parameters as a single block,
@@ -291,8 +288,17 @@ func proposalLine(txHash [32]byte) string {
 	return fmt.Sprintf("Transaction id: `%s`", shortHex(common.Hash(txHash).Hex()))
 }
 
-func addressLink(addr common.Address) string {
-	return fmt.Sprintf("[`%s`](%s/address/%s)", shortHex(addr.Hex()), explorerURL, addr.Hex())
+func (c *Multisig) addressLink(addr common.Address) string {
+	return fmt.Sprintf("[`%s`](%s)", shortHex(addr.Hex()), c.link("/address/", addr.Hex()))
+}
+
+// link builds an explorer URL for a path such as "/tx/" or "/address/".
+// Chains without an explorer fall back to the bare value.
+func (c *Multisig) link(path, value string) string {
+	if c.explorerURL == "" {
+		return value
+	}
+	return c.explorerURL + path + value
 }
 
 // shortHex shortens a hex string to the 0x1234…abcd form.

@@ -14,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-const explorerURL = "https://sepolia.basescan.org"
-
 var (
 	pausedTopic          = crypto.Keccak256Hash([]byte("Paused(address)"))
 	unpausedTopic        = crypto.Keccak256Hash([]byte("Unpaused(address)"))
@@ -85,7 +83,7 @@ func (c *PaymentProcessorStorage) ListenToPauseEvents(ctx context.Context) {
 			}
 
 			log.Printf("Payment Processor Storage event: %s (%s)", embed.Title, vLog.TxHash.Hex())
-			go discord.SendEmbed(*embed)
+			go c.notifier.SendEmbed(*embed)
 		}
 	}
 }
@@ -96,7 +94,7 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 	}
 
 	base := discord.Embed{
-		URL:    explorerURL + "/tx/" + vLog.TxHash.Hex(),
+		URL:    c.link("/tx/", vLog.TxHash.Hex()),
 		Footer: &discord.Footer{Text: "Payment Processor Storage " + shortHex(c.address.Hex()) + " • Base Sepolia"},
 	}
 	var lines []string
@@ -111,7 +109,7 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 		base.Color = discord.ColorRed
 		lines = append(lines,
 			fmt.Sprintf("%s paused the Payment Processor Storage. Payment processing is halted until it is unpaused.",
-				addressLink(event.Account)))
+				c.addressLink(event.Account)))
 
 	case unpausedTopic:
 		event, err := c.contract.UnpackUnpausedEvent(vLog)
@@ -122,7 +120,7 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 		base.Color = discord.ColorGreen
 		lines = append(lines,
 			fmt.Sprintf("%s unpaused the Payment Processor Storage. Payment processing has resumed.",
-				addressLink(event.Account)))
+				c.addressLink(event.Account)))
 
 	case emergencyPausedTopic:
 		event, err := c.contract.UnpackEmergencyPausedEvent(vLog)
@@ -133,7 +131,7 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 		base.Color = discord.ColorRed
 		lines = append(lines,
 			fmt.Sprintf("%s triggered an **emergency pause** on the Payment Processor Storage.",
-				addressLink(event.Account)))
+				c.addressLink(event.Account)))
 		if event.Expiry != nil {
 			lines = append(lines,
 				fmt.Sprintf("It elapses <t:%d:F> (<t:%d:R>).", event.Expiry.Int64(), event.Expiry.Int64()))
@@ -149,8 +147,8 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 	return &base, nil
 }
 
-func addressLink(addr common.Address) string {
-	return fmt.Sprintf("[`%s`](%s/address/%s)", shortHex(addr.Hex()), explorerURL, addr.Hex())
+func (c *PaymentProcessorStorage) addressLink(addr common.Address) string {
+	return fmt.Sprintf("[`%s`](%s)", shortHex(addr.Hex()), c.link("/address/", addr.Hex()))
 }
 
 // shortHex shortens a hex string to the 0x1234…abcd form.
@@ -159,4 +157,13 @@ func shortHex(s string) string {
 		return s
 	}
 	return s[:6] + "…" + s[len(s)-4:]
+}
+
+// link builds an explorer URL for a path such as "/tx/" or "/address/".
+// Chains without an explorer fall back to the bare value.
+func (c *PaymentProcessorStorage) link(path, value string) string {
+	if c.explorerURL == "" {
+		return value
+	}
+	return c.explorerURL + path + value
 }

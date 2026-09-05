@@ -21,7 +21,7 @@ func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request)
 		err  error
 	)
 
-	data, err = query.GetInvoiceData(orderId)
+	data, err = h.Subgraph.GetInvoiceData(orderId)
 
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "failed to fetch invoice data")

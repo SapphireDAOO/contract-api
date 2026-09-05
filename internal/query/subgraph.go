@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 )
 
-func GetUserInvoiceData(address string, first, skip int) (*Data, error) {
+func (c *Client) GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 	if address == "" {
 		return nil, fmt.Errorf("address cannot be empty")
 	}
@@ -24,7 +23,7 @@ func GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 		},
 	}
 
-	body, err := handleRequest(payload)
+	body, err := c.handleRequest(payload)
 
 	if err != nil {
 		return nil, err
@@ -41,7 +40,7 @@ func GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 	return &userData, nil
 }
 
-func GetInvoiceData(id string) (*SmartInvoice, error) {
+func (c *Client) GetInvoiceData(id string) (*SmartInvoice, error) {
 	if id == "" {
 		return nil, fmt.Errorf("id cannot be empty")
 	}
@@ -53,7 +52,7 @@ func GetInvoiceData(id string) (*SmartInvoice, error) {
 		},
 	}
 
-	body, err := handleRequest(payload)
+	body, err := c.handleRequest(payload)
 
 	if err != nil {
 		return nil, err
@@ -72,17 +71,17 @@ func GetInvoiceData(id string) (*SmartInvoice, error) {
 	return &response.Data.SmartInvoice, err
 }
 
-func handleRequest(payload map[string]any) ([]byte, error) {
+func (c *Client) handleRequest(payload map[string]any) ([]byte, error) {
 	jsonData, err := json.Marshal(payload)
 
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint := os.Getenv("END_POINT")
-	if endpoint == "" {
-		return nil, fmt.Errorf("END_POINT env var not set")
+	if c == nil || c.endpoint == "" {
+		return nil, fmt.Errorf("subgraph URL is not configured")
 	}
+	endpoint := c.endpoint
 
 	client := http.Client{Timeout: 10 * time.Second}
 
@@ -109,4 +108,14 @@ func handleRequest(payload map[string]any) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+// Client queries the subgraph. It is built once at startup from the
+// configured endpoint.
+type Client struct {
+	endpoint string
+}
+
+func NewClient(endpoint string) *Client {
+	return &Client{endpoint: endpoint}
 }

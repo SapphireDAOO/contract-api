@@ -3,6 +3,7 @@ package intermediatedpaymentprocessor
 import (
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/intermediatedpaymentprocessor"
+	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -17,8 +18,10 @@ type InvoiceResponse struct {
 }
 
 type PaymentProcessor struct {
-	address  *common.Address
-	instance *bind.BoundContract
-	contract *gen.Intermediatedpaymentprocessor
-	client   *blockchain.Client
+	explorerURL string
+	callbacks   *callback.Client
+	address     *common.Address
+	instance    *bind.BoundContract
+	contract    *gen.Intermediatedpaymentprocessor
+	client      *blockchain.Client
 }

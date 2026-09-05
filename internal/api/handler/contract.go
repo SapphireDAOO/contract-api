@@ -19,9 +19,8 @@ import (
 	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
 	"github.com/SapphireDAOO/contract-api/internal/invoice"
+	"github.com/SapphireDAOO/contract-api/internal/query"
 )
-
-const TX_URL string = "https://sepolia.basescan.org/tx/"
 
 func parseBigInt(field, value string) (*big.Int, error) {
 	n, ok := new(big.Int).SetString(strings.TrimSpace(value), 10)
@@ -32,6 +31,9 @@ func parseBigInt(field, value string) (*big.Int, error) {
 }
 
 type ContractHandler struct {
+	ExplorerURL             string
+	Callbacks               *callback.Client
+	Subgraph                *query.Client
 	PaymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
 	PaymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
 	SimplePaymentProcessor  *simplepaymentprocessor.SimplePaymentProcessor
@@ -41,6 +43,9 @@ type ContractHandler struct {
 
 func NewContractHandler(c *ContractHandler) *ContractHandler {
 	return &ContractHandler{
+		ExplorerURL:             c.ExplorerURL,
+		Callbacks:               c.Callbacks,
+		Subgraph:                c.Subgraph,
 		PaymentProcessor:        c.PaymentProcessor,
 		PaymentProcessorStorage: c.PaymentProcessorStorage,
 		SimplePaymentProcessor:  c.SimplePaymentProcessor,
@@ -71,7 +76,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 
-	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
+	marketplaceAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, nil, "error fetching marketplace address: "+err.Error())
 		return
@@ -137,7 +142,7 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
-		"transactionUrl": TX_URL + txHash.Hex(),
+		"transactionUrl": h.txURL(txHash.Hex()),
 	})
 }
 
@@ -181,14 +186,14 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transactionURL := TX_URL + txHash.Hex()
+	transactionURL := h.txURL(txHash.Hex())
 
 	data, err := h.PaymentProcessor.GetInvoiceData(orderId)
 	if err != nil {
 		// The refund transaction already succeeded; only the callback is skipped.
 		log.Printf("refund callback skipped for orderId %s: fetching invoice data failed: %v", input.OrderId, err)
 	} else {
-		go callback.SendRefundCallback(input.OrderId,
+		go h.Callbacks.SendRefundCallback(input.OrderId,
 			data.PaymentToken.String(), data.AmountPaid, refundShare, transactionURL, transactionTimestamp)
 	}
 
@@ -209,7 +214,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	marketplaceAddress, err := h.PaymentProcessorStorage.GetMarketplaceAddress()
+	marketplaceAddress, err := h.PaymentProcessorStorage.GetIntermediatedPlatformsOperator()
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err,
 			"error fetching marketplace address")
@@ -232,7 +237,7 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
-		"transactionUrl": TX_URL + txHash.Hex(),
+		"transactionUrl": h.txURL(txHash.Hex()),
 	})
 }
 
@@ -258,10 +263,9 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transactionURL := TX_URL + res.TxHash.Hex()
-	go callback.
-		SendReleaseCallback(input.OrderId, res.PaymentToken.Hex(), res.Seller.Hex(),
-			res.SellerAmount, transactionURL, res.BlockTimestamp)
+	transactionURL := h.txURL(res.TxHash.Hex())
+	go h.Callbacks.SendReleaseCallback(input.OrderId, res.PaymentToken.Hex(), res.Seller.Hex(),
+		res.SellerAmount, transactionURL, res.BlockTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -306,6 +310,15 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
-		"transactionUrl": TX_URL + txHash.Hex(),
+		"transactionUrl": h.txURL(txHash.Hex()),
 	})
+}
+
+// txURL links a transaction on the configured explorer. Chains without one
+// (a local node) fall back to the bare hash.
+func (h *ContractHandler) txURL(txHash string) string {
+	if h.ExplorerURL == "" {
+		return txHash
+	}
+	return h.ExplorerURL + "/tx/" + txHash
 }
