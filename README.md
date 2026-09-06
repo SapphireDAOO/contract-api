@@ -19,6 +19,7 @@ Contract addresses and endpoints are not compiled in — they come from [`config
 | POST   | [`/v1/invoices/{invoiceId}/disputes`](#endpoint-create-dispute) | Open a dispute       |
 | POST   | [`/v1/invoices/{invoiceId}/disputes/resolution`](#endpoint-resolve-dispute) | Resolve a dispute |
 | GET    | [`/v1/settlements/status`](#endpoint-settlement-status) | Simple processor settlement window |
+| GET    | [`/v1/exchangeRate`](#endpoint-exchange-rates)    | How much of a token one USD buys     |
 | POST   | [`/notes`](#endpoint-notes)                      | Invoice notes (all actions)          |
 
 The invoice id is a path segment on every invoice operation, so the request body carries only what is specific to that operation. `release`, `cancel` and `disputes` take no body at all.
@@ -86,7 +87,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 
 ```json
 {
-  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?data=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
+  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?id=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
   "orders": {
     "550e8400-e29b-41d4-a716-446655440000": {
       "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
@@ -101,8 +102,8 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 - The `url` is `urls.checkout` for the selected network followed by the invoice id encoded as unpadded URL-safe base64 of its big-endian bytes — the same encoding the website uses, so it can decode the id straight from the link. For a single invoice that is the invoice's own id. For several it is the **meta-invoice** id, prefixed with `mt-` so the two kinds of identifier cannot be confused:
 
   ```
-  single: .../checkout/?data=dJNOQid37cGYw04ceDk1kxjAME8ElIMK9yLm
-  meta:   .../checkout/?data=mt-dJNOQid37cGYw04ceDk1kxjAME8ElIMK9yLm
+  single: .../checkout/?id=dJNOQid37cGYw04ceDk1kxjAME8ElIMK9yLm
+  meta:   .../checkout/?id=mt-dJNOQid37cGYw04ceDk1kxjAME8ElIMK9yLm
   ```
 - `price` is converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
 - A single invoice triggers `createSingleInvoice`, emitting `InvoiceCreated`. Multiple invoices trigger `createMetaInvoice`, emitting `MetaInvoiceCreated`.
@@ -373,6 +374,45 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 
 ---
 
+### Endpoint: Exchange rates
+
+- **Method**: GET `/v1/exchangeRate?From=USD&to=wBTC&to=ETH`
+- **Description**: Reports how much of each requested token one USD buys, inverting the `OracleManager` contract's `getUsdPerToken`. The oracle address comes from `contracts.oracleManager` for the selected network.
+
+| Query  | Required | Description                                                                                     |
+| ------ | -------- | ----------------------------------------------------------------------------------------------- |
+| `from` | ❌       | Must be `USD`, the only currency the oracle prices against. Defaults to `USD`. `From` also works. |
+| `to`   | ✅       | Token symbols from the network's `tokens` table. Repeated, comma-separated, or bracketed.        |
+
+`to` accepts `to=wBTC&to=ETH`, `to=ETH,wBTC`, and `to=[ETH, wBTC]`.
+
+**Success (200)** — the rate is *from* USD, so each value is how much of that token one USD buys:
+
+```json
+{ "from": "USD", "to": { "ETH": 0.000510204081632653, "wBTC": 0.00001111 } }
+```
+
+- Values are JSON numbers carrying the full precision of the token's own decimals, so an 18-decimal token keeps all 18.
+- A token the oracle cannot price falls back to a rate of `1`, treating it as a dollar-pegged token. The response does not distinguish that from a quoted rate.
+- The conversion truncates, as any fixed-point division must: at $90,000 wBTC resolves to `0.00001111`, not a repeating `0.0000111111…`, because the token has 8 decimals.
+
+**Error (400)** — an unknown symbol, a `from` other than `USD`, or a missing `to`:
+
+```json
+{ "error": "unknown token BTC (known: ETH, USDC, wBTC)", "reason": "unknown token BTC" }
+```
+
+**Error (502)** — the oracle call failed for a reason other than a missing feed (a stale price, or the sequencer being down). **503** — `contracts.oracleManager` is not configured for this network, so rates are disabled.
+
+**Example**:
+
+```bash
+curl "https://pp-api.serveftp.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
+-H "X-API-KEY: YOUR_API_KEY_HERE"
+```
+
+---
+
 ### Endpoint: `/notes`
 
 - **Method**: POST `/notes`
@@ -491,7 +531,7 @@ networks:
       dialTimeout: 10s
     urls:
       explorer: ""                       # a local chain has no explorer
-      checkout: "http://localhost:3000/checkout/?data="
+      checkout: "http://localhost:3000/checkout/?id="
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
@@ -505,6 +545,7 @@ networks:
         decimals: 6
     contracts:
       paymentProcessor: "0x..."
+      oracleManager: "0x..."   # optional; without it /v1/exchangeRate is 503
       # ...
 ```
 
@@ -532,7 +573,10 @@ Values that are secrets rather than settings stay in `.env`:
 | `PASS`                     | Private key that signs transactions on the deployed networks. |
 | `LOCAL_CALLER`             | Private key that signs on `local` (anvil's default account). |
 | `PORT`                     | HTTP port; defaults to `8080`.                             |
-| `TEST_NET_RPC_URL`/`_WSS`  | Referenced by the `testnet` section.                       |
+| `TEST_NET_RPC_URL`, `TEST_NET_WSS` | Referenced by the `testnet` section.               |
+| `MAIN_NET_RPC_URL`, `MAIN_NET_WSS` | Referenced by the `mainnet` section.               |
+| `NETWORK`                  | Selects the network section. Required — `network:` in the file is a `${NETWORK}` reference. |
+| `CONFIG_PATH`              | Path to the config file. Defaults to `config.yaml`.        |
 | `END_POINT`, `URL`, `DISCORD_WEBHOOK_URL` | Subgraph, callback and Discord endpoints.   |
 | `PRODUCTION`               | When set, `.env` is not read; the container supplies the environment. |
 | `AUTOMATION_POLL_INTERVAL` | How often to poll for due automation tasks.                |

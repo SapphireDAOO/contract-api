@@ -2,20 +2,20 @@
 //
 // The file holds one section per network; Load resolves exactly one of them,
 // so sections for networks that are not deployed yet cannot break startup.
+//
+// Load is the only entry point: every section is parsed, expanded and
+// validated through it.
 package config
 
 import (
-	"encoding/hex"
 	"fmt"
 	"maps"
-	"net/url"
 	"os"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 const (
@@ -29,104 +29,9 @@ const (
 	defaultDialTimeout = 10 * time.Second
 )
 
-// RPC describes how to reach the chain. A URL may carry a provider API key, so
-// values can be written as ${ENV_VAR} references and resolved at load time.
-type RPC struct {
-	HTTP        string        `yaml:"http"`
-	WS          string        `yaml:"ws"`
-	DialTimeout time.Duration `yaml:"dialTimeout"`
-}
-
-type URLs struct {
-	// Explorer is a block explorer root. Empty on chains without one.
-	Explorer string `yaml:"explorer"`
-	// Checkout is the payment page, ending in its data query parameter.
-	Checkout string `yaml:"checkout"`
-	// Dashboard is the multisig UI linked from Discord notifications.
-	Dashboard string `yaml:"dashboard"`
-	// Subgraph answers invoice queries.
-	Subgraph string `yaml:"subgraph"`
-	// Callback is the endpoint that payment events are posted to.
-	Callback string `yaml:"callback"`
-	// DiscordWebhook receives contract notifications. Empty disables them.
-	DiscordWebhook string `yaml:"discordWebhook"`
-}
-
-// Token is a payment token, named by its symbol in requests and resolved to
-// the address deployed on the selected network.
-type Token struct {
-	Address  string `yaml:"address"`
-	Decimals int    `yaml:"decimals"`
-}
-
-// Tokens maps a symbol to its token. Lookups are case-insensitive, so a caller
-// may send "usdc" for a token configured as "USDC".
-type Tokens map[string]Token
-
-// Address resolves a symbol to its deployed address.
-func (t Tokens) Address(symbol string) (common.Address, bool) {
-	token, ok := t.lookup(symbol)
-	if !ok {
-		return common.Address{}, false
-	}
-	return common.HexToAddress(token.Address), true
-}
-
-// ByAddress resolves a deployed address back to its symbol and decimals, for
-// rendering an amount that arrived in a chain event.
-func (t Tokens) ByAddress(address string) (string, int, bool) {
-	want := common.HexToAddress(address)
-	for symbol, token := range t {
-		if common.HexToAddress(token.Address) == want {
-			return symbol, token.Decimals, true
-		}
-	}
-	return "", 0, false
-}
-
-// Symbols lists the configured symbols, sorted, for error messages.
-func (t Tokens) Symbols() []string {
-	return slices.Sorted(maps.Keys(t))
-}
-
-func (t Tokens) lookup(symbol string) (Token, bool) {
-	if token, ok := t[symbol]; ok {
-		return token, true
-	}
-	for configured, token := range t {
-		if strings.EqualFold(configured, symbol) {
-			return token, true
-		}
-	}
-	return Token{}, false
-}
-
-// ContractAddresses holds the deployed address of each contract the API talks
-// to, as written in the config file.
-type ContractAddresses struct {
-	PaymentProcessor        string `yaml:"paymentProcessor"`
-	PaymentProcessorStorage string `yaml:"paymentProcessorStorage"`
-	SimplePaymentProcessor  string `yaml:"simplePaymentProcessor"`
-	Multisig                string `yaml:"multisig"`
-	PaymentAutomation       string `yaml:"paymentAutomation"`
-	Notes                   string `yaml:"notes"`
-}
-
-// Addresses is ContractAddresses parsed into the type the contracts take.
-type Addresses struct {
-	PaymentProcessor        common.Address
-	PaymentProcessorStorage common.Address
-	SimplePaymentProcessor  common.Address
-	Multisig                common.Address
-	PaymentAutomation       common.Address
-	Notes                   common.Address
-}
-
 // Config is the resolved settings for the selected network.
 type Config struct {
-	Network string
-	// SignerKey is the private key transactions are signed with, in hex. In the
-	// file it is an ${ENV_VAR} reference, so the key stays in the environment.
+	Network   string
 	SignerKey string
 	RPC       RPC
 	URLs      URLs
@@ -159,23 +64,21 @@ func Path() string {
 // Load reads path and resolves the selected network: NETWORK if set, otherwise
 // the file's own network key. Only that section is expanded and validated.
 func Load(path string) (*Config, error) {
-	raw, err := os.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading config %s: %w", path, err)
 	}
 
 	var parsed file
-	if err := yaml.Unmarshal(raw, &parsed); err != nil {
+	if err := yaml.Unmarshal([]byte(os.ExpandEnv(string(data))), &parsed); err != nil {
 		return nil, fmt.Errorf("parsing config %s: %w", path, err)
 	}
 
 	name := parsed.Network
 	if override := os.Getenv(NetworkEnv); override != "" {
 		name = override
-	} else if name, err = expandEnv(name); err != nil {
-		// The file may select the network with an ${ENV_VAR} reference.
-		return nil, fmt.Errorf("config %s: network: %w", path, err)
 	}
+
 	if name == "" {
 		return nil, fmt.Errorf("config %s: no network selected: set the network key or %s", path, NetworkEnv)
 	}
@@ -184,25 +87,6 @@ func Load(path string) (*Config, error) {
 	if !ok {
 		return nil, fmt.Errorf("config %s: network %q is not defined (available: %s)",
 			path, name, strings.Join(slices.Sorted(maps.Keys(parsed.Networks)), ", "))
-	}
-
-	for _, field := range []struct {
-		key   string
-		value *string
-	}{
-		{"signerKey", &selected.SignerKey},
-		{"rpc.http", &selected.RPC.HTTP},
-		{"rpc.ws", &selected.RPC.WS},
-		{"urls.explorer", &selected.URLs.Explorer},
-		{"urls.checkout", &selected.URLs.Checkout},
-		{"urls.dashboard", &selected.URLs.Dashboard},
-		{"urls.subgraph", &selected.URLs.Subgraph},
-		{"urls.callback", &selected.URLs.Callback},
-		{"urls.discordWebhook", &selected.URLs.DiscordWebhook},
-	} {
-		if *field.value, err = expandEnv(*field.value); err != nil {
-			return nil, fmt.Errorf("config %s: networks.%s.%s: %w", path, name, field.key, err)
-		}
 	}
 
 	if selected.RPC.DialTimeout == 0 {
@@ -233,165 +117,4 @@ func Load(path string) (*Config, error) {
 		Tokens:    selected.Tokens,
 		Contracts: selected.Contracts,
 	}, nil
-}
-
-// Addresses parses the configured addresses. Load has already checked that
-// every one of them is a valid, non-zero address.
-func (c ContractAddresses) Addresses() Addresses {
-	return Addresses{
-		PaymentProcessor:        common.HexToAddress(c.PaymentProcessor),
-		PaymentProcessorStorage: common.HexToAddress(c.PaymentProcessorStorage),
-		SimplePaymentProcessor:  common.HexToAddress(c.SimplePaymentProcessor),
-		Multisig:                common.HexToAddress(c.Multisig),
-		PaymentAutomation:       common.HexToAddress(c.PaymentAutomation),
-		Notes:                   common.HexToAddress(c.Notes),
-	}
-}
-
-// expandEnv resolves ${VAR} references, reporting every variable that is unset
-// rather than silently substituting an empty string.
-func expandEnv(raw string) (string, error) {
-	var missing []string
-
-	expanded := os.Expand(raw, func(key string) string {
-		value, ok := os.LookupEnv(key)
-		if !ok || value == "" {
-			if !slices.Contains(missing, key) {
-				missing = append(missing, key)
-			}
-			return ""
-		}
-		return value
-	})
-
-	if len(missing) > 0 {
-		return "", fmt.Errorf("environment variables not set: %s", strings.Join(missing, ", "))
-	}
-	return expanded, nil
-}
-
-// validate checks the URLs that must be present and the scheme of any that are
-// set. Everything except checkout is optional: a chain may have no explorer,
-// and an unset webhook simply disables Discord notifications.
-// validateSignerKey checks the shape of the key without ever including the key
-// material in an error: 32 bytes of hex, with or without the 0x prefix.
-func validateSignerKey(key string) error {
-	trimmed := strings.TrimPrefix(strings.TrimSpace(key), "0x")
-	if trimmed == "" {
-		return fmt.Errorf("signerKey is required")
-	}
-	if len(trimmed) != 64 {
-		return fmt.Errorf("signerKey must be 32 bytes of hex, got %d characters", len(trimmed))
-	}
-	if _, err := hex.DecodeString(trimmed); err != nil {
-		return fmt.Errorf("signerKey is not valid hex")
-	}
-	return nil
-}
-
-func (u URLs) validate() error {
-	for _, field := range []struct {
-		key      string
-		raw      string
-		required bool
-	}{
-		{"checkout", u.Checkout, true},
-		{"explorer", u.Explorer, false},
-		{"dashboard", u.Dashboard, false},
-		{"subgraph", u.Subgraph, false},
-		{"callback", u.Callback, false},
-		{"discordWebhook", u.DiscordWebhook, false},
-	} {
-		if field.raw == "" {
-			if field.required {
-				return fmt.Errorf("urls.%s is required", field.key)
-			}
-			continue
-		}
-		parsed, err := url.Parse(field.raw)
-		if err != nil {
-			return fmt.Errorf("urls.%s is not a valid URL: %w", field.key, err)
-		}
-		if parsed.Scheme != "http" && parsed.Scheme != "https" {
-			return fmt.Errorf("urls.%s must use http/https, got %q", field.key, parsed.Scheme)
-		}
-	}
-
-	if strings.HasSuffix(u.Explorer, "/") {
-		return fmt.Errorf("urls.explorer must not end in a slash")
-	}
-	return nil
-}
-
-func (r RPC) validate() error {
-	for _, field := range []struct {
-		key     string
-		raw     string
-		schemes []string
-	}{
-		{"http", r.HTTP, []string{"http", "https"}},
-		{"ws", r.WS, []string{"ws", "wss"}},
-	} {
-		if field.raw == "" {
-			return fmt.Errorf("rpc.%s is required", field.key)
-		}
-		parsed, err := url.Parse(field.raw)
-		if err != nil {
-			return fmt.Errorf("rpc.%s is not a valid URL: %w", field.key, err)
-		}
-		if !slices.Contains(field.schemes, parsed.Scheme) {
-			return fmt.Errorf("rpc.%s must use one of %s, got %q",
-				field.key, strings.Join(field.schemes, "/"), parsed.Scheme)
-		}
-	}
-
-	if r.DialTimeout < 0 {
-		return fmt.Errorf("rpc.dialTimeout cannot be negative")
-	}
-	return nil
-}
-
-// validate checks the token table. The zero address is allowed: it is how the
-// contracts denote the native token.
-func (t Tokens) validate() error {
-	if len(t) == 0 {
-		return fmt.Errorf("tokens: at least one payment token is required")
-	}
-	for symbol, token := range t {
-		if strings.TrimSpace(symbol) == "" {
-			return fmt.Errorf("tokens: a symbol cannot be empty")
-		}
-		if !common.IsHexAddress(token.Address) {
-			return fmt.Errorf("tokens.%s.address %q is not a valid address", symbol, token.Address)
-		}
-		if token.Decimals < 0 || token.Decimals > 77 {
-			return fmt.Errorf("tokens.%s.decimals %d is out of range", symbol, token.Decimals)
-		}
-	}
-	return nil
-}
-
-func (c ContractAddresses) validate() error {
-	for _, field := range []struct {
-		key     string
-		address string
-	}{
-		{"paymentProcessor", c.PaymentProcessor},
-		{"paymentProcessorStorage", c.PaymentProcessorStorage},
-		{"simplePaymentProcessor", c.SimplePaymentProcessor},
-		{"multisig", c.Multisig},
-		{"paymentAutomation", c.PaymentAutomation},
-		{"notes", c.Notes},
-	} {
-		if field.address == "" {
-			return fmt.Errorf("contracts.%s is required", field.key)
-		}
-		if !common.IsHexAddress(field.address) {
-			return fmt.Errorf("contracts.%s %q is not a valid address", field.key, field.address)
-		}
-		if common.HexToAddress(field.address) == (common.Address{}) {
-			return fmt.Errorf("contracts.%s cannot be the zero address", field.key)
-		}
-	}
-	return nil
 }

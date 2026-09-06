@@ -22,7 +22,18 @@ var Descriptions = map[string]string{
 	"0xea8e4eb5": "The caller is not authorized to perform this action.",
 	"0x2c669f0a": "The price cannot be zero.",
 	"0xdb8db569": "The price specified is too low.",
+
+	// OracleManager
+	UnsupportedToken: "The oracle has no price feed for this token.",
+	"0x00bfc921":     "The oracle reported an invalid price.",
+	"0x032b3d00":     "The sequencer is down; prices are unavailable.",
+	"0x19abf40e":     "The oracle price is stale.",
+	"0x1087e109":     "The oracle price feed is stale.",
 }
+
+// UnsupportedToken is OracleManager's UnsupportedToken() selector, which
+// getUsdPerToken reverts with for a token it has no feed for.
+const UnsupportedToken = "0x6a172882"
 
 var StatusCodes = map[string]int{
 	"The buyer and seller addresses cannot be the same.":          http.StatusBadRequest,
@@ -40,16 +51,31 @@ var StatusCodes = map[string]int{
 	"The price specified is too low.":                             http.StatusBadRequest,
 }
 
+// Selector returns the four-byte custom error selector a call reverted with,
+// or "" when the error is not a contract revert.
+func Selector(err error) string {
+	if err == nil {
+		return ""
+	}
+	if data, ok := ethclient.RevertErrorData(err); ok && len(data) >= 4 {
+		return "0x" + hex.EncodeToString(data[:4])
+	}
+	return ""
+}
+
+// Is reports whether err is the given custom error selector.
+func Is(err error, selector string) bool {
+	return Selector(err) == selector
+}
+
 // Reason maps a contract revert to its human-readable description, falling
 // back to the error's own message.
 func Reason(err error) string {
 	if err == nil {
 		return ""
 	}
-	if data, ok := ethclient.RevertErrorData(err); ok && len(data) >= 4 {
-		if reason, ok := Descriptions["0x"+hex.EncodeToString(data[:4])]; ok {
-			return reason
-		}
+	if reason, ok := Descriptions[Selector(err)]; ok {
+		return reason
 	}
 	return err.Error()
 }

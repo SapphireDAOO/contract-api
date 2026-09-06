@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	github.com/ethereum/go-ethereum v1.15.11
 	github.com/joho/godotenv v1.5.1
-	gopkg.in/yaml.v3 v3.0.1
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
 
 require (

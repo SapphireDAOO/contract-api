@@ -1,13 +1,17 @@
 package server
 
 import (
+	"log"
 	"os"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/SapphireDAOO/contract-api/internal/api/handler"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/multisig"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/notes"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/oraclemanager"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentautomation"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentprocessorstorage"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
@@ -25,6 +29,7 @@ type dependencies struct {
 	callbacks *callback.Client
 	subgraph  *query.Client
 
+	oracle                  *oraclemanager.OracleManager
 	paymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
 	paymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
 	simplePaymentProcessor  *simplepaymentprocessor.SimplePaymentProcessor
@@ -44,7 +49,7 @@ func newDependencies(cfg *config.Config) (*dependencies, error) {
 	notifier := discord.NewClient(cfg.URLs.DiscordWebhook)
 	callbacks := callback.NewClient(cfg.URLs.Callback, os.Getenv("API_KEY"), cfg.Tokens)
 
-	return &dependencies{
+	deps := &dependencies{
 		client:    client,
 		notifier:  notifier,
 		callbacks: callbacks,
@@ -68,7 +73,15 @@ func newDependencies(cfg *config.Config) (*dependencies, error) {
 		paymentAutomation: paymentautomation.NewPaymentAutomation(
 			client, addresses.PaymentAutomation),
 		notes: notes.NewNotes(client, addresses.Notes),
-	}, nil
+	}
+
+	if (addresses.OracleManager != common.Address{}) {
+		deps.oracle = oraclemanager.NewOracleManager(client, addresses.OracleManager)
+	} else {
+		log.Print("Exchange rates disabled: contracts.oracleManager is not configured")
+	}
+
+	return deps, nil
 }
 
 func (d *dependencies) contractHandler(cfg *config.Config) *handler.ContractHandler {
@@ -77,6 +90,7 @@ func (d *dependencies) contractHandler(cfg *config.Config) *handler.ContractHand
 			PaymentProcessor:        d.paymentProcessor,
 			PaymentProcessorStorage: d.paymentProcessorStorage,
 			SimplePaymentProcessor:  d.simplePaymentProcessor,
+			Oracle:                  d.oracle,
 			Notes:                   d.notes,
 			BaseUrl:                 cfg.URLs.Checkout,
 			ExplorerURL:             cfg.URLs.Explorer,

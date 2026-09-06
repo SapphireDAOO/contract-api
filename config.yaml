@@ -37,6 +37,7 @@ networks:
       multisig: "0x05c405ef0dbBfB3005bBcd35E0b1911052731A0E"
       paymentAutomation: "0x60C7b1D8b2a61aF9466a08DFC8350094d5BabfEa"
       notes: "0x8C08B086d13F50C032f6DaB86785E7a78D437Fd1"
+      oracleManager: "0x457181a280b98Ba8ACc9C262d7a78e5ED2670E60"
 
   # Base Sepolia.
   testnet:
@@ -79,7 +80,7 @@ networks:
       dialTimeout: 10s
     urls:
       explorer: "https://basescan.org"
-      checkout: "https://sapphire-dao-website-six.vercel.app/checkout/?data="
+      checkout: "https://sapphire-dao-website-six.vercel.app/checkout/?id="
       dashboard: "https://sapphire-dao-website-six.vercel.app/multisig/"
       subgraph: "${END_POINT}"
       callback: "${URL}"
