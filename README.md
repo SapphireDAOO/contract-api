@@ -4,6 +4,8 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Interm
 
 Contract addresses and endpoints are not compiled in — they come from [`config.yaml`](config.yaml), which holds one section per network (`local`, `testnet`, `mainnet`). See [Configuration](#configuration).
 
+Platform fees are collected through one-time stealth addresses issued by the [fee-receiver sidecar](services/fee-receiver/README.md), a separate process this API calls over gRPC. It reads the same `config.yaml`, so contract addresses cannot drift between the two.
+
 **Base URL**: `https://sapphiredaotesting.com/`
 
 ## Endpoints
@@ -20,11 +22,13 @@ Contract addresses and endpoints are not compiled in — they come from [`config
 | POST   | [`/v1/invoices/{invoiceId}/disputes/resolution`](#endpoint-resolve-dispute) | Resolve a dispute |
 | GET    | [`/v1/settlements/status`](#endpoint-settlement-status) | Simple processor settlement window |
 | GET    | [`/v1/exchangeRate`](#endpoint-exchange-rates)    | How much of a token one USD buys     |
+| POST   | [`/v1/fee-receivers`](#endpoint-create-fee-receivers) | Derive and approve stealth fee receivers |
+| POST   | [`/v1/fee-receivers/authorization`](#endpoint-authorize-fee-receivers) | Sign the fee authorization |
 | POST   | [`/notes`](#endpoint-notes)                      | Invoice notes (all actions)          |
 
 The invoice id is a path segment on every invoice operation, so the request body carries only what is specific to that operation. `release`, `cancel` and `disputes` take no body at all.
 
-Every endpoint except `GET /` requires an `X-API-KEY` header, enforced by `AccessControlMiddleWare`.
+Every endpoint requires an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the two [fee receiver](#endpoint-create-fee-receivers) endpoints.
 
 ---
 
@@ -413,6 +417,125 @@ curl "https://sapphiredaotesting.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
 
 ---
 
+### Endpoint: Create fee receivers
+
+- **Method**: POST `/v1/fee-receivers`
+- **Description**: Derives one-time [EIP-5564](https://eips.ethereum.org/EIPS/eip-5564) stealth addresses to collect platform fees, upgrades each to an EIP-7702 delegator, and approves the sweeper to move the fee token out of them later.
+
+The work is done by the [fee-receiver sidecar](services/fee-receiver/README.md), reached over gRPC at `services.feeReceiver`. This API forwards the request and translates the sidecar's gRPC status into an HTTP one.
+
+**No `X-API-KEY`.** Both fee receiver endpoints are unauthenticated, unlike the rest of the API. Each call to this one sends a relayer-sponsored transaction per receiver, so whatever fronts the API is what limits who can spend that gas.
+
+Fee receivers are issued in **two steps**, and the split is the point. This call spends gas but hands back only the *ephemeral public keys* — never the addresses. Those keys are the only way to recover the addresses, so **store them before doing anything else**: they cannot be re-derived, and the gas is spent whether or not they are kept.
+
+#### **Request Body**
+
+```json
+{ "processor": "intermediated", "quantity": 3, "paymentToken": "USDC" }
+```
+
+| Field          | Type    | Required | Description                                                                                   |
+| -------------- | ------- | -------- | --------------------------------------------------------------------------------------------- |
+| `processor`    | string  | ✅       | `simple` or `intermediated` — which processor will verify the authorization.                   |
+| `quantity`     | integer | ❌       | How many receivers to derive, `1`–`5`. Defaults to `1`. A meta invoice needs one per sub-invoice. |
+| `paymentToken` | string  | ❌       | Token **symbol** the fee is collected in, e.g. `"USDC"`. Omit for a native-token payment.       |
+
+**About `paymentToken`**: as with `paymentTokens` on invoice creation, callers name the token by symbol and it is resolved through the `tokens` table for the selected network. Omitting it — or naming `ETH`, which maps to the zero address — means the payment is native, and the sidecar approves the chain's wrapped native token (`contracts.wrappedNative`) instead.
+
+#### **Response**
+
+**Success (200)** — one key per receiver, in the order they were derived:
+
+```json
+{
+  "status": "success",
+  "ephemeralPublicKeys": [
+    "0x02f7a1c3b45d6e89f0123456789abcdef0123456789abcdef0123456789abcdef01"
+  ]
+}
+```
+
+**Example**:
+
+```bash
+curl -X POST https://sapphiredaotesting.com/v1/fee-receivers \
+-H "Content-Type: application/json" \
+-d '{ "processor": "intermediated", "quantity": 1, "paymentToken": "USDC" }'
+```
+
+---
+
+### Endpoint: Authorize fee receivers
+
+- **Method**: POST `/v1/fee-receivers/authorization`
+- **Description**: Turns the stored ephemeral public keys back into fee receiver addresses and returns the fee signer's signature over them, to pass on-chain as the processor's `_feeReceiver(s)` / `_data` arguments.
+
+Re-deriving is what makes it safe to accept these keys back from a client: a key can only ever resolve to an address the platform's spending and viewing keys control, never to one the caller chose.
+
+#### **Request Body**
+
+```json
+{
+  "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "processor": "intermediated",
+  "kind": "meta",
+  "paymentToken": "USDC",
+  "ephemeralPublicKeys": ["0x02f7a1c3...", "0x03b8d2e4..."]
+}
+```
+
+| Field                 | Type     | Required | Description                                                                           |
+| --------------------- | -------- | -------- | --------------------------------------------------------------------------------------- |
+| `invoiceId`           | string   | ✅       | The on-chain invoice id, base-10. For `kind: "meta"`, the meta-invoice id.               |
+| `processor`           | string   | ✅       | `simple` or `intermediated`. Must match the processor the invoice lives on.              |
+| `kind`                | string   | ❌       | `single` (default) or `meta`. `meta` requires `processor: "intermediated"`.              |
+| `ephemeralPublicKeys` | string[] | ✅       | The keys from the previous call, **in sub-invoice order**. At most 5.                    |
+| `paymentToken`        | string   | ❌       | Token symbol, as above.                                                                  |
+
+**About `kind`**: it is never inferred from how many keys you send. A meta invoice signs one digest over the whole address array, and a meta invoice holding a single sub-invoice still needs that array form — so a `single` request must carry exactly one key, and a meta invoice must say so explicitly.
+
+#### **Response**
+
+**Success (200)** — `feeReceivers` is index-aligned with the meta-invoice's `subInvoiceIds`, and the one `signature` covers the whole array:
+
+```json
+{
+  "status": "success",
+  "feeReceivers": ["0x9ba1...", "0x4cd2..."],
+  "signature": "0x7f3e..."
+}
+```
+
+**Example**:
+
+```bash
+curl -X POST https://sapphiredaotesting.com/v1/fee-receivers/authorization \
+-H "Content-Type: application/json" \
+-d '{
+  "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "processor": "intermediated",
+  "kind": "single",
+  "ephemeralPublicKeys": ["0x02f7a1c3..."]
+}'
+```
+
+#### Errors (both endpoints)
+
+| Status | Meaning                                                                                                         |
+| ------ | ----------------------------------------------------------------------------------------------------------------- |
+| `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`; no keys) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with several keys). |
+| `502`  | The sidecar failed internally — a chain error, or one of its keys is unset. Its own message is generic by design.  |
+| `503`  | `services.feeReceiver` is not configured for this network, or the relayer has no native balance to sponsor the delegations. |
+| `504`  | The sidecar did not answer within its 25s call budget.                                                            |
+
+A rejection from the sidecar keeps the sidecar's own wording in `reason`:
+
+```json
+{ "error": "error creating fee receivers", "reason": "quantity must be between 1 and 5" }
+```
+
+---
+
 ### Endpoint: `/notes`
 
 - **Method**: POST `/notes`
@@ -526,8 +649,10 @@ network: ${NETWORK}
 networks:
   local:
     rpc:
-      http: "http://127.0.0.1:8545"
-      ws: "ws://127.0.0.1:8545"
+      # A reference, not a literal: a container cannot reach the host's node on
+      # 127.0.0.1, so compose overrides these with host.docker.internal.
+      http: "${LOCAL_RPC_URL}"
+      ws: "${LOCAL_WSS}"
       dialTimeout: 10s
     urls:
       explorer: ""                       # a local chain has no explorer
@@ -546,13 +671,20 @@ networks:
     contracts:
       paymentProcessor: "0x..."
       oracleManager: "0x..."   # optional; without it /v1/exchangeRate is 503
+      sweeper: "${SWEEPER_CONTRACT}"   # read by the sidecar, not by this API
+      wrappedNative: "0x4200000000000000000000000000000000000006"
       # ...
+    services:
+      # host:port of the fee-receiver sidecar; empty disables /v1/fee-receivers
+      feeReceiver: "${FEE_RECEIVER_ADDRESS}"
 ```
 
 - **`${VAR}` references** are resolved from the environment at load time. Endpoints whose URL embeds a credential (the RPC provider key, the Discord webhook) are written this way so the secret stays in `.env` and out of the repository. An unset variable fails startup naming the variable.
 - **`urls.explorer`** is a block explorer root with no trailing slash. When empty, transaction links fall back to the bare hash.
 - **`tokens`** is the one place a payment token is defined. `paymentTokens` in a create request names a symbol from this table, and callback payloads render an event's token address back to its symbol and decimals through the same table.
 - **`signerKey`** selects which key signs transactions, per network: `${LOCAL_CALLER}` on `local` and `${PASS}` on the deployed networks, so a local run cannot touch a deployed network's key. It is parsed once at startup, and a malformed key fails startup rather than the first transaction.
+- **`services.feeReceiver`** is the fee-receiver sidecar as `host:port` — a gRPC target, not a URL. Leaving it empty disables `/v1/fee-receivers` with a `503` and a line in the startup log, the same way an unset `oracleManager` disables exchange rates. The connection is plaintext and expects a loopback sidecar; it holds the platform's stealth keys and must not be exposed off-host.
+- **`contracts.sweeper`** and **`contracts.wrappedNative`** are read only by the sidecar — the Go API ignores them. `sweeper` is the contract each fee receiver approves for the fee token; `wrappedNative` is what a native-token payment is approved in. Either may be empty, and the sidecar warns at startup then fails the calls that need them.
 - **`CONFIG_PATH`** points at a different config file.
 
 Run against a local chain with:
@@ -573,6 +705,7 @@ Values that are secrets rather than settings stay in `.env`:
 | `PASS`                     | Private key that signs transactions on the deployed networks. |
 | `LOCAL_CALLER`             | Private key that signs on `local` (anvil's default account). |
 | `PORT`                     | HTTP port; defaults to `8080`.                             |
+| `LOCAL_RPC_URL`, `LOCAL_WSS` | Referenced by the `local` section. `127.0.0.1` on the host; compose overrides them with `host.docker.internal` so a container can reach the host's node. |
 | `TEST_NET_RPC_URL`, `TEST_NET_WSS` | Referenced by the `testnet` section.               |
 | `MAIN_NET_RPC_URL`, `MAIN_NET_WSS` | Referenced by the `mainnet` section.               |
 | `NETWORK`                  | Selects the network section. Required — `network:` in the file is a `${NETWORK}` reference. |
@@ -580,12 +713,19 @@ Values that are secrets rather than settings stay in `.env`:
 | `END_POINT`, `URL`, `DISCORD_WEBHOOK_URL` | Subgraph, callback and Discord endpoints.   |
 | `PRODUCTION`               | When set, `.env` is not read; the container supplies the environment. |
 | `AUTOMATION_POLL_INTERVAL` | How often to poll for due automation tasks.                |
+| `FEE_RECEIVER_ADDRESS`     | `host:port` of the fee-receiver sidecar. Unset disables `/v1/fee-receivers`. |
+| `SWEEPER_CONTRACT`         | Sweeper address, referenced by `contracts.sweeper`.        |
+| `SPONSOR`                  | Sidecar: relayer key that sponsors the delegations and signs the fee authorization. |
+| `SPENDING`, `VIEWING`      | Sidecar: EIP-5564 keys the stealth addresses are derived from. |
+| `META_STEALTH_ADDRESS`     | Sidecar: stealth meta-address URI new receivers derive from. |
+
+The last four are read by the sidecar rather than by this API, but live in the same repo-root `.env` — it loads that file explicitly, since it runs from its own directory.
 
 ---
 
 ## Notes
 
-- All endpoints except `GET /` require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`.
+- All endpoints require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the two fee receiver endpoints.
 - Invoice states are: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
 - The contracts use Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting the native token and ERC20 tokens.
 - The intermediated platform operator, retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
