@@ -18,16 +18,18 @@ import (
 	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/SapphireDAOO/contract-api/internal/discord"
+	"github.com/SapphireDAOO/contract-api/internal/feereceiver"
 	"github.com/SapphireDAOO/contract-api/internal/query"
 )
 
 // dependencies are the long-lived collaborators, built once at startup from
 // the resolved config and shared by the HTTP handlers and the listeners.
 type dependencies struct {
-	client    *blockchain.Client
-	notifier  *discord.Client
-	callbacks *callback.Client
-	subgraph  *query.Client
+	client      *blockchain.Client
+	notifier    *discord.Client
+	callbacks   *callback.Client
+	subgraph    *query.Client
+	feeReceiver *feereceiver.Client
 
 	oracle                  *oraclemanager.OracleManager
 	paymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
@@ -75,6 +77,16 @@ func newDependencies(cfg *config.Config) (*dependencies, error) {
 		notes: notes.NewNotes(client, addresses.Notes),
 	}
 
+	if cfg.Services.FeeReceiver != "" {
+		feeReceiverClient, err := feereceiver.NewClient(cfg.Services.FeeReceiver)
+		if err != nil {
+			return nil, err
+		}
+		deps.feeReceiver = feeReceiverClient
+	} else {
+		log.Print("Fee receivers disabled: services.feeReceiver is not configured")
+	}
+
 	if (addresses.OracleManager != common.Address{}) {
 		deps.oracle = oraclemanager.NewOracleManager(client, addresses.OracleManager)
 	} else {
@@ -97,6 +109,16 @@ func (d *dependencies) contractHandler(cfg *config.Config) *handler.ContractHand
 			Tokens:                  cfg.Tokens,
 			Callbacks:               d.callbacks,
 			Subgraph:                d.subgraph,
+			FeeReceiver:             d.feeReceiver,
+			ChainID:                 d.client.ChainId,
 		},
 	)
+}
+
+func (d *dependencies) close() {
+	if d.feeReceiver != nil {
+		if err := d.feeReceiver.Close(); err != nil {
+			log.Printf("fee receiver connection close error: %v", err)
+		}
+	}
 }

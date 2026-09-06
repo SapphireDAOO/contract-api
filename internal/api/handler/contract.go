@@ -18,6 +18,7 @@ import (
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/SapphireDAOO/contract-api/internal/config"
+	"github.com/SapphireDAOO/contract-api/internal/feereceiver"
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
 	"github.com/SapphireDAOO/contract-api/internal/invoice"
 	"github.com/SapphireDAOO/contract-api/internal/query"
@@ -31,6 +32,18 @@ func parseBigInt(field, value string) (*big.Int, error) {
 	return n, nil
 }
 
+// feeReceiverReady reports whether the sidecar is wired up, answering 503 when
+// it is not — the same way an unconfigured oracle disables exchange rates.
+func (h *ContractHandler) feeReceiverReady(w http.ResponseWriter) bool {
+	if h.FeeReceiver == nil || h.ChainID == nil {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
+			errors.New("fee receiver service is not configured"),
+			"fee receivers are unavailable")
+		return false
+	}
+	return true
+}
+
 type ContractHandler struct {
 	ExplorerURL             string
 	Tokens                  config.Tokens
@@ -42,6 +55,12 @@ type ContractHandler struct {
 	Oracle                  *oraclemanager.OracleManager
 	Notes                   *notes.Notes
 	BaseUrl                 string
+	// FeeReceiver is nil when services.feeReceiver is not configured, which
+	// disables the fee receiver endpoints.
+	FeeReceiver *feereceiver.Client
+	// ChainID is sent with every fee receiver call so the sidecar refuses a
+	// request meant for another network.
+	ChainID *big.Int
 }
 
 func NewContractHandler(c *ContractHandler) *ContractHandler {
@@ -56,6 +75,8 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 		Oracle:                  c.Oracle,
 		Notes:                   c.Notes,
 		BaseUrl:                 c.BaseUrl,
+		FeeReceiver:             c.FeeReceiver,
+		ChainID:                 c.ChainID,
 	}
 }
 

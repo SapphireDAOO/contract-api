@@ -28,6 +28,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
+	defer deps.close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
