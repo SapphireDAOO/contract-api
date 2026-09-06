@@ -5,6 +5,10 @@
 .git
 .gitignore
 
+# Bun installs inside the image; host modules are built for the wrong platform
+# and would overwrite the ones the builder stage produced.
+**/node_modules
+
 # Local build output and tooling artifacts.
 tmp/
 api-test

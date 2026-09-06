@@ -1,4 +1,21 @@
 services:
+  feereceiver:
+    build:
+      context: .
+      dockerfile: services/fee-receiver/Dockerfile
+    container_name: feereceiver
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - GRPC_ADDRESS=0.0.0.0:50051
+      - NETWORK=${NETWORK}
+      - PRODUCTION=${PRODUCTION}
+      - LOCAL_RPC_URL=http://host.docker.internal:8545
+      - LOCAL_WSS=ws://host.docker.internal:8545
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   myapp:
     build: .
     container_name: myapp
@@ -8,5 +25,13 @@ services:
     env_file:
       - .env
     environment:
-      - PRODUCTION=1
-      - NETWORK=testnet
+      - NETWORK=${NETWORK}
+      - PRODUCTION=${PRODUCTION}
+      - FEE_RECEIVER_ADDRESS=feereceiver:50051
+      # The chain runs on the host; 127.0.0.1 here would be this container.
+      - LOCAL_RPC_URL=http://host.docker.internal:8545
+      - LOCAL_WSS=ws://host.docker.internal:8545
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - feereceiver
