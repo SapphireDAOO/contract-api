@@ -4,7 +4,7 @@ This API provides HTTP endpoints for interacting with the Sapphire DAO's `Interm
 
 Contract addresses and endpoints are not compiled in — they come from [`config.yaml`](config.yaml), which holds one section per network (`local`, `testnet`, `mainnet`). See [Configuration](#configuration).
 
-**Base URL**: `https://pp-api.serveftp.com/`
+**Base URL**: `https://sapphiredaotesting.com/`
 
 ## Endpoints
 
@@ -133,7 +133,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/v1/invoices \
+curl -X POST https://sapphiredaotesting.com/v1/invoices \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '[
@@ -169,7 +169,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices \
 **Example**:
 
 ```bash
-curl https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889 \
+curl https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889 \
 -H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
@@ -203,7 +203,7 @@ curl https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/release \
+curl -X POST https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/release \
 -H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
@@ -228,7 +228,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/cancel \
+curl -X POST https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/cancel \
 -H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
@@ -271,7 +271,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/refund \
+curl -X POST https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/refund \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{ "refundShare": "5000" }'
@@ -298,7 +298,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes \
+curl -X POST https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes \
 -H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
@@ -352,7 +352,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes/resolution \
+curl -X POST https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes/resolution \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{ "resolution": 2, "sellerShare": "9000" }'
@@ -382,9 +382,9 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 | Query  | Required | Description                                                                                     |
 | ------ | -------- | ----------------------------------------------------------------------------------------------- |
 | `from` | ❌       | Must be `USD`, the only currency the oracle prices against. Defaults to `USD`. `From` also works. |
-| `to`   | ✅       | Token symbols from the network's `tokens` table. Repeated, comma-separated, or bracketed.        |
+| `to`   | ✅       | A token symbol from the network's `tokens` table. Repeat the parameter for several.              |
 
-`to` accepts `to=wBTC&to=ETH`, `to=ETH,wBTC`, and `to=[ETH, wBTC]`.
+Each token is its own `to` parameter: `to=wBTC&to=ETH`. A comma-separated list is not split.
 
 **Success (200)** — the rate is *from* USD, so each value is how much of that token one USD buys:
 
@@ -407,7 +407,7 @@ curl -X POST https://pp-api.serveftp.com/v1/invoices/598087379013878174756912155
 **Example**:
 
 ```bash
-curl "https://pp-api.serveftp.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
+curl "https://sapphiredaotesting.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
 -H "X-API-KEY: YOUR_API_KEY_HERE"
 ```
 
@@ -503,7 +503,7 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 **Example**:
 
 ```bash
-curl -X POST https://pp-api.serveftp.com/notes \
+curl -X POST https://sapphiredaotesting.com/notes \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{

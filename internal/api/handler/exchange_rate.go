@@ -37,7 +37,7 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 	symbols := query["to"]
 	if len(symbols) == 0 {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest,
-			errors.New("no token requested"), "to is required, e.g. to=ETH,USDC")
+			errors.New("no token requested"), "to is required, e.g. to=ETH&to=USDC")
 		return
 	}
 
