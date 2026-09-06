@@ -1,0 +1,25 @@
+{
+  "name": "fee-receiver",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts",
+    "typecheck": "tsc --noEmit",
+    "gen": "make -C ../.. proto-gen"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.14.1",
+    "@grpc/grpc-js": "^1.14.4",
+    "@metamask/smart-accounts-kit": "^2.0.0",
+    "@scopelift/stealth-address-sdk": "1.0.0-beta.5",
+    "ts-proto": "^2.12.1",
+    "viem": "^2.56.3"
+  }
+}

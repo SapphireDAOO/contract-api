@@ -33,7 +33,7 @@ NOTES_ABI_FILE    = $(NOTES_ABI_FOLDER)/Notes.json
 NOTES_GO_OUT      = $(NOTES_ABI_FOLDER)/notes.go
 NOTES_GO_PKG      = notes
 
-.PHONY: clean gen run
+.PHONY: clean gen run proto-gen proto-gen-go
 
 clean:
 	@rm -f $(ORACLE_GO_OUT) $(INTERMEDIATED_GO_OUT) $(STORAGE_GO_OUT) $(SIMPLE_GO_OUT) $(ERC20_GO_OUT) $(AUTOMATION_GO_OUT) $(NOTES_GO_OUT)
@@ -49,3 +49,19 @@ gen:
 
 run:
 	@go run ./cmd/server
+
+
+proto-gen:
+	@protoc \
+	--plugin=protoc-gen-ts_proto=./services/fee-receiver/node_modules/.bin/protoc-gen-ts_proto \
+	--ts_proto_out=services/fee-receiver/generated \
+	--ts_proto_opt=outputServices=grpc-js,esModuleInterop=true,useOptionals=messages \
+	--proto_path=proto \
+	proto/fee_receiver.proto
+
+proto-gen-go:
+	@protoc \
+	--go_out=. --go_opt=module=github.com/SapphireDAOO/contract-api \
+	--go-grpc_out=. --go-grpc_opt=module=github.com/SapphireDAOO/contract-api \
+	--proto_path=proto \
+	proto/fee_receiver.proto

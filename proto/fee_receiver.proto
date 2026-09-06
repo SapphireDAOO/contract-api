@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package feereceiver.v1;
+
+option go_package = "github.com/SapphireDAOO/contract-api/proto/feereceiverpb;feereceiverpb";
+
+// Which payment processor the invoice lives on. The zero value is unspecified
+// so an omitted field is rejected rather than silently meaning SIMPLE.
+enum ProcessorKind {
+  PROCESSOR_KIND_UNSPECIFIED   = 0;
+  PROCESSOR_KIND_SIMPLE        = 1;
+  PROCESSOR_KIND_INTERMEDIATED = 2;
+}
+
+// Which FeeAuthorizationLib overload the processor verifies the authorization
+// against. A meta invoice signs over the whole receiver array at once, so a
+// meta holding a single sub-invoice is still not a SINGLE.
+enum InvoiceKind {
+  INVOICE_KIND_UNSPECIFIED = 0;
+  INVOICE_KIND_SINGLE      = 1;
+  INVOICE_KIND_META        = 2;
+}
+
+message PrepareAddressRequest {
+  // How many receivers to derive: one per sub-invoice for a meta invoice,
+  // otherwise one.
+  int32         quantity       = 1;
+  ProcessorKind processor_kind = 2;
+  // Must match the network this service is configured for.
+  uint64        chain_id       = 3;
+  // The fee token the sweeper is approved for. Empty or the zero address means
+  // the payment is native, so the chain's wrapped native token is used.
+  string        payment_token  = 4;
+}
+
+message PrepareAddressResponse {
+  repeated string ephemeral_public_key = 1;
+}
+
+message VerifyAddressesRequest {
+  // The keys returned by Generateaddresses, in sub-invoice order.
+  repeated string ephemeral_public_key = 1;
+  ProcessorKind   processor_kind       = 2;
+  InvoiceKind     invoice_kind         = 3;
+  uint64          chain_id             = 4;
+  // uint216 on-chain, so it travels as a decimal string rather than a uint64.
+  string          invoice_id           = 5;
+  string          payment_token        = 6;
+}
+
+message VerifyAddressesResponse {
+  repeated string addresses = 1;
+  // One signature covers every receiver, so this is singular even for a meta
+  // invoice: the digest is taken over the whole address array at once.
+  string          signature = 2;
+}
+
+service FeeReceiver {
+  // Derives one-time stealth fee receivers, 7702-delegates each to the relayer
+  // and approves the sweeper for the fee token. Returns the ephemeral public
+  // keys to store; the addresses themselves come back from Send.
+  rpc Generateaddresses(PrepareAddressRequest) returns (PrepareAddressResponse);
+
+  // Re-derives the receivers from their stored ephemeral keys, confirms the
+  // approvals are in place, and returns the addresses with the fee signer's
+  // authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
+  rpc Send(VerifyAddressesRequest) returns (VerifyAddressesResponse);
+}

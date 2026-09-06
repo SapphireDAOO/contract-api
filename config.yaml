@@ -7,8 +7,8 @@ networks:
     # Anvil's default account; the deployment above was made with it.
     signerKey: "${LOCAL_CALLER}"
     rpc:
-      http: "http://127.0.0.1:8545"
-      ws: "ws://127.0.0.1:8545"
+      http: "${LOCAL_RPC_URL}"
+      ws: "${LOCAL_WSS}"
       dialTimeout: 10s
     urls:
       # A local chain has no block explorer; links fall back to the bare hash.
@@ -38,6 +38,10 @@ networks:
       paymentAutomation: "0x60C7b1D8b2a61aF9466a08DFC8350094d5BabfEa"
       notes: "0x8C08B086d13F50C032f6DaB86785E7a78D437Fd1"
       oracleManager: "0x457181a280b98Ba8ACc9C262d7a78e5ED2670E60"
+      sweeper: "0xcA32aB54b0503649b47d6b46c9ab5f285BbE5D0B"
+      wrappedNative: "0x4a1E2AB38b64a82ef43fe3fD5921E915BfA4920c"
+    services:
+      feeReceiver: "${FEE_RECEIVER_ADDRESS}"
 
   # Base Sepolia.
   testnet:
@@ -70,6 +74,10 @@ networks:
       multisig: "0xF859791dde7C3a121506f3f0747A067e3B70c86A"
       paymentAutomation: "0xcd7F1e411f7ed9792f61a5F3181bc354f8E26845"
       notes: "0x092722fF05A2Fe1dFeA4b8C3E6CEE3dc868D7be2"
+      sweeper: "0x732106c5cEBdD28B752F8e288413237c14f5e378"
+      wrappedNative: "0x4200000000000000000000000000000000000006"
+    services:
+      feeReceiver: "${FEE_RECEIVER_ADDRESS}"
 
   # Not deployed yet.
   mainnet:
@@ -96,3 +104,7 @@ networks:
       multisig: ""
       paymentAutomation: ""
       notes: ""
+      sweeper: "${SWEEPER_CONTRACT}"
+      wrappedNative: "0x4200000000000000000000000000000000000006"
+    services:
+      feeReceiver: "${FEE_RECEIVER_ADDRESS}"
