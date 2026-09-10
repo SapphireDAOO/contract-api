@@ -53,6 +53,21 @@
   },
   {
     "type": "function",
+    "name": "getUsdPerTokenBatch",
+    "inputs": [
+      {
+        "name": "_paymentTokens",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "outputs": [
+      { "name": "prices", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "isSupportedToken",
     "inputs": [
       { "name": "_token", "type": "address", "internalType": "address" }

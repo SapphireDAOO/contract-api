@@ -2,6 +2,7 @@ package oraclemanager
 
 import (
 	"errors"
+	"fmt"
 
 	"math/big"
 
@@ -37,13 +38,25 @@ func (c *OracleManager) Address() common.Address {
 	return *c.address
 }
 
-func (c *OracleManager) UsdPerToken(token common.Address) (*big.Int, error) {
+func (c *OracleManager) UsdPerTokenBatch(tokens []common.Address) ([]*big.Int, error) {
 	if c == nil || c.instance == nil {
 		return nil, errors.New("oracle manager contract is not initialized")
 	}
+	if len(tokens) == 0 {
+		return nil, nil
+	}
 
-	data := c.contract.PackGetUsdPerToken(token)
-	return bind.Call(c.instance, &bind.CallOpts{Pending: false}, data, c.contract.UnpackGetUsdPerToken)
+	data := c.contract.PackGetUsdPerTokenBatch(tokens)
+
+	prices, err := bind.Call(c.instance, &bind.CallOpts{Pending: false}, data, c.contract.UnpackGetUsdPerTokenBatch)
+	if err != nil {
+		return nil, err
+	}
+	if len(prices) != len(tokens) {
+		return nil, fmt.Errorf("oracle returned %d prices for %d tokens", len(prices), len(tokens))
+	}
+
+	return prices, nil
 }
 
 func (c *OracleManager) Decimals() (uint8, error) {

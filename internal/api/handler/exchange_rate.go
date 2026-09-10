@@ -3,13 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"math/big"
 	"net/http"
 	"strings"
 
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
-	"github.com/SapphireDAOO/contract-api/internal/revert"
 	"github.com/SapphireDAOO/contract-api/internal/units"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Chainlink USD feed convention, and is reported in the response so a client
@@ -17,8 +16,6 @@ const priceDecimals = 8
 
 // usdCurrency is the only currency the oracle prices against.
 const usdCurrency = "USD"
-
-var defaultUsdPerToken = new(big.Int).Exp(big.NewInt(10), big.NewInt(priceDecimals), nil)
 
 func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
@@ -41,15 +38,7 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.Oracle == nil {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
-			errors.New("oracle unavailable"), "exchange rates are unavailable")
-		return
-	}
-
-	// json.Number keeps the exact digits: encoding a float64 here would
-	// round an 18-decimal rate.
-	rates := make(map[string]json.Number, len(symbols))
+	addresses := make([]common.Address, 0, len(symbols))
 	for _, symbol := range symbols {
 		address, ok := h.Tokens.Address(symbol)
 		if !ok {
@@ -58,25 +47,37 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 				"unknown token "+symbol+" (known: "+strings.Join(h.Tokens.Symbols(), ", ")+")")
 			return
 		}
+		addresses = append(addresses, address)
+	}
 
-		price, err := h.Oracle.UsdPerToken(address)
-		if err != nil {
-			if !revert.Is(err, revert.UnsupportedToken) {
-				httpx.WriteHTTPErrorWithStatus(w, http.StatusBadGateway, err,
-					"failed to read the price of "+symbol)
-				return
-			}
-			price = defaultUsdPerToken
-		}
+	if h.Oracle == nil {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
+			errors.New("oracle unavailable"), "exchange rates are unavailable")
+		return
+	}
 
-		if price.Sign() <= 0 {
+	// One call prices every token asked for. The contract reverts the whole
+	// batch if any of them has no feed, which surfaces as a 400 rather than a
+	// rate the caller cannot trust.
+	prices, err := h.Oracle.UsdPerTokenBatch(addresses)
+	if err != nil {
+		httpx.WriteMappedRevertError(w, err, "failed to read token prices")
+		return
+	}
+
+	// json.Number keeps the exact digits: encoding a float64 here would
+	// round an 18-decimal rate.
+	rates := make(map[string]json.Number, len(symbols))
+	for i, symbol := range symbols {
+		price := prices[i]
+		if price == nil || price.Sign() <= 0 {
 			httpx.WriteHTTPErrorWithStatus(w, http.StatusBadGateway,
 				errors.New("oracle returned a non-positive price"),
 				"invalid price for "+symbol)
 			return
 		}
 
-		_, decimals, ok := h.Tokens.ByAddress(address.Hex())
+		_, decimals, ok := h.Tokens.ByAddress(addresses[i].Hex())
 		if !ok {
 			decimals = priceDecimals
 		}

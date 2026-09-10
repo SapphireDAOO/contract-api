@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -87,20 +86,40 @@ func TestExchangeRateChecksTheCurrencyBeforeTheOracle(t *testing.T) {
 	}
 }
 
-func TestDefaultUsdPerToken(t *testing.T) {
-	want := new(big.Int).Exp(big.NewInt(10), big.NewInt(priceDecimals), nil)
-
-	if defaultUsdPerToken.Cmp(want) != 0 {
-		t.Errorf("defaultUsdPerToken = %s, want %s (one dollar at %d decimals)",
-			defaultUsdPerToken, want, priceDecimals)
-	}
-}
-
 func TestPriceDecimalsMatchesTheFeedConvention(t *testing.T) {
 	if priceDecimals != 8 {
 		t.Errorf("priceDecimals = %d, want 8", priceDecimals)
 	}
 	if usdCurrency != "USD" {
 		t.Errorf("usdCurrency = %q, want USD", usdCurrency)
+	}
+}
+
+func TestExchangeRateRejectsAnUnknownTokenBeforeCallingTheOracle(t *testing.T) {
+	h := &ContractHandler{Tokens: testTokens()}
+	rec := httptest.NewRecorder()
+
+	h.ExchangeRate(rec, exchangeRateRequest("to=DOGE"))
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+	body := decodeError(t, rec)
+	if !strings.Contains(body["error"], "unknown token DOGE") {
+		t.Errorf("error = %q, want it to name the token", body["error"])
+	}
+	if !strings.Contains(body["error"], "ETH, USDC") {
+		t.Errorf("error = %q, want it to list the known symbols", body["error"])
+	}
+}
+
+func TestExchangeRateChecksEveryTokenBeforeTheOracle(t *testing.T) {
+	h := &ContractHandler{Tokens: testTokens()}
+	rec := httptest.NewRecorder()
+
+	h.ExchangeRate(rec, exchangeRateRequest("to=ETH&to=DOGE"))
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d; a bad token anywhere in the batch is a 400", rec.Code, http.StatusBadRequest)
 	}
 }
