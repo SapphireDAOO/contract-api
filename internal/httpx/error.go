@@ -1,4 +1,4 @@
-// Package httpx writes the API's JSON error responses.
+// Package httpx writes the API's JSON responses.
 package httpx
 
 import (

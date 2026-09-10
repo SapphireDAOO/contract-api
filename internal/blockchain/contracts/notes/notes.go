@@ -51,36 +51,6 @@ func (c *Notes) SetOpened(
 	return c.send(ctx, c.contract.PackSetOpened(invoiceId, account, noteId))
 }
 
-func (c *Notes) GetNote(ctx context.Context, invoiceId, noteId *big.Int) (*Note, error) {
-	if c == nil || c.instance == nil {
-		return nil, errors.New("notes contract is not initialized")
-	}
-
-	data := c.contract.PackGetNote(invoiceId, noteId)
-
-	note, err := bind.Call(c.instance, &bind.CallOpts{Context: ctx}, data, c.contract.UnpackGetNote)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Note{
-		Author:  note.Author,
-		Share:   note.Share,
-		Content: note.Content,
-		Opened:  note.OpenedStatus,
-		Version: note.Version,
-	}, nil
-}
-
-func (c *Notes) GetNoteCount(ctx context.Context, invoiceId *big.Int) (*big.Int, error) {
-	if c == nil || c.instance == nil {
-		return nil, errors.New("notes contract is not initialized")
-	}
-
-	data := c.contract.PackGetNoteCount(invoiceId)
-	return bind.Call(c.instance, &bind.CallOpts{Context: ctx}, data, c.contract.UnpackGetNoteCount)
-}
-
 func (c *Notes) send(ctx context.Context, data []byte) (*common.Hash, error) {
 	auth, err := c.client.Auth()
 	if err != nil {

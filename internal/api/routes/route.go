@@ -34,6 +34,9 @@ const v1 = "/v1"
 const (
 	feeReceivers     = v1 + "/fee-receivers"
 	feeReceiversAuth = feeReceivers + "/authorization"
+
+	notes     = v1 + "/notes"
+	notesOpen = notes + "/open"
 )
 
 func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
@@ -63,7 +66,8 @@ func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
 	router.POST(feeReceiversAuth, middleware.CORS(contractHandler.AuthorizeFeeReceivers))
 	router.OPTIONS(feeReceiversAuth, middleware.Preflight)
 
-	router.POST("/notes", middleware.AccessControlMiddleWare(contractHandler.HandleNote))
+	router.POST(notes, middleware.AccessControlMiddleWare(contractHandler.WriteNote))
+	router.POST(notesOpen, middleware.AccessControlMiddleWare(contractHandler.OpenNote))
 
 	return router.mux
 }

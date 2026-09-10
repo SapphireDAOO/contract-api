@@ -422,3 +422,42 @@ func TestCurrencyPrecision(t *testing.T) {
 		t.Errorf("CurrencyPrecision[USD] = %d, want more than the 2 decimals a price arrives with", precision)
 	}
 }
+
+func TestParseAddress(t *testing.T) {
+	const valid = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+
+	tests := []struct {
+		name   string
+		value  string
+		want   string
+		wantOK bool
+	}{
+		{name: "checksummed", value: valid, want: valid, wantOK: true},
+		{name: "lowercase", value: strings.ToLower(valid), want: valid, wantOK: true},
+		{name: "surrounding whitespace is trimmed", value: "  " + valid + "  ", want: valid, wantOK: true},
+		{name: "missing prefix", value: "5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed", want: valid, wantOK: true},
+		{name: "empty", value: ""},
+		{name: "not hex", value: "not-an-address"},
+		{name: "too short", value: "0x123"},
+		{name: "zero address", value: "0x0000000000000000000000000000000000000000"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := ParseAddress(tt.value)
+
+			if ok != tt.wantOK {
+				t.Fatalf("ParseAddress(%q) ok = %v, want %v", tt.value, ok, tt.wantOK)
+			}
+			if !ok {
+				if got != (common.Address{}) {
+					t.Errorf("ParseAddress(%q) = %s on a miss, want the zero address", tt.value, got)
+				}
+				return
+			}
+			if got != common.HexToAddress(tt.want) {
+				t.Errorf("ParseAddress(%q) = %s, want %s", tt.value, got, tt.want)
+			}
+		})
+	}
+}

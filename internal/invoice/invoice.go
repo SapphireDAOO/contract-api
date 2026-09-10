@@ -27,18 +27,22 @@ type CreateInvoiceParam struct {
 	PaymentTokens []string
 }
 
-func isValidAddress(addr string) bool {
-	addr = strings.TrimSpace(addr)
+// ParseAddress reads a value as a non-zero account address. The zero address
+// is rejected: it is never a real account, and the contracts read it as the
+// native token.
+func ParseAddress(value string) (common.Address, bool) {
+	trimmed := strings.TrimSpace(value)
 
-	if !common.IsHexAddress(addr) {
-		return false
+	if !common.IsHexAddress(trimmed) {
+		return common.Address{}, false
 	}
 
-	if (common.HexToAddress(addr) == common.Address{}) {
-		return false
+	address := common.HexToAddress(trimmed)
+	if address == (common.Address{}) {
+		return common.Address{}, false
 	}
 
-	return true
+	return address, true
 }
 
 // toPaymentTokens resolves symbols to the addresses the contract is called
@@ -65,7 +69,7 @@ func ValidateCreateInvoiceParams(params []CreateInvoiceParam, tokens TokenResolv
 		if strings.TrimSpace(p.OrderId) == "" {
 			return fmt.Errorf("invoice %d: orderId is required", i)
 		}
-		if !isValidAddress(p.Seller) {
+		if _, ok := ParseAddress(p.Seller); !ok {
 			return fmt.Errorf("invoice %d: seller %q is not a valid address", i, p.Seller)
 		}
 		if p.Price <= 0 {

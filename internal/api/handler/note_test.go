@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/SapphireDAOO/contract-api/internal/note"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -21,103 +20,15 @@ func noteResponse(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 	return body
 }
 
-func noteRequestFor(body string) *http.Request {
-	return httptest.NewRequest(http.MethodPost, "/v1/note", strings.NewReader(body))
+func noteRequestFor(path, body string) *http.Request {
+	return httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
 }
 
-func TestParseAddress(t *testing.T) {
-	const valid = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
-
-	tests := []struct {
-		name   string
-		value  string
-		want   string
-		wantOK bool
-	}{
-		{name: "checksummed", value: valid, want: valid, wantOK: true},
-		{name: "lowercase", value: strings.ToLower(valid), want: valid, wantOK: true},
-		{name: "surrounding whitespace is trimmed", value: "  " + valid + "  ", want: valid, wantOK: true},
-		{name: "empty", value: ""},
-		{name: "not hex", value: "not-an-address"},
-		{name: "too short", value: "0x123"},
-		{name: "missing prefix", value: "5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed", wantOK: true, want: valid},
-
-		{name: "zero address", value: zeroAddress},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, ok := parseAddress(tt.value)
-
-			if ok != tt.wantOK {
-				t.Fatalf("parseAddress(%q) ok = %v, want %v", tt.value, ok, tt.wantOK)
-			}
-			if !ok {
-				if got != (common.Address{}) {
-					t.Errorf("parseAddress(%q) = %s on a miss, want the zero address", tt.value, got)
-				}
-				return
-			}
-			if got != common.HexToAddress(tt.want) {
-				t.Errorf("parseAddress(%q) = %s, want %s", tt.value, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestWriteNoteError(t *testing.T) {
-	rec := httptest.NewRecorder()
-
-	writeNoteError(rec, http.StatusBadRequest, "Invalid request body")
-
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
-	}
-	if got, want := rec.Header().Get("Content-Type"), "application/json"; got != want {
-		t.Errorf("Content-Type = %q, want %q", got, want)
-	}
-
-	body := noteResponse(t, rec)
-	if body["success"] != false {
-		t.Errorf("success = %v, want false", body["success"])
-	}
-	if body["error"] != "Invalid request body" {
-		t.Errorf("error = %v, want the message", body["error"])
-	}
-}
-
-func TestWriteNoteSuccess(t *testing.T) {
-	rec := httptest.NewRecorder()
-
-	writeNoteSuccess(rec, map[string]any{"payload": "0xdeadbeef"})
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
-	body := noteResponse(t, rec)
-	if body["success"] != true {
-		t.Errorf("success = %v, want true", body["success"])
-	}
-	if body["payload"] != "0xdeadbeef" {
-		t.Errorf("payload = %v, want the body passed in", body["payload"])
-	}
-}
-
-func TestWriteNoteSuccessAlwaysReportsSuccess(t *testing.T) {
-	rec := httptest.NewRecorder()
-
-	writeNoteSuccess(rec, map[string]any{"success": false})
-
-	if body := noteResponse(t, rec); body["success"] != true {
-		t.Errorf("success = %v, want true", body["success"])
-	}
-}
-
-func TestHandleNoteRejectsAMalformedBody(t *testing.T) {
+func TestWriteNoteRejectsAMalformedBody(t *testing.T) {
 	h := &ContractHandler{}
 	rec := httptest.NewRecorder()
 
-	h.HandleNote(rec, noteRequestFor("not json"))
+	h.WriteNote(rec, noteRequestFor("/v1/notes", "not json"))
 
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
@@ -127,144 +38,153 @@ func TestHandleNoteRejectsAMalformedBody(t *testing.T) {
 	}
 }
 
-func TestHandleNoteRejectsAnUnknownAction(t *testing.T) {
-	h := &ContractHandler{}
+func TestWriteNoteBadRequests(t *testing.T) {
+	const author = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
 
-	for _, action := range []string{"", "delete", "Encrypt", "unknown"} {
-		t.Run(action, func(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       string
+		wantStatus int
+		wantErr    string
+	}{
+		{
+			name:       "invoice id is not a number",
+			body:       `{"invoiceId":"abc","author":"` + author + `","content":"0xdeadbeef"}`,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "invoiceId must be a base-10 integer",
+		},
+		{
+			name:       "missing invoice id",
+			body:       `{"author":"` + author + `","content":"0xdeadbeef"}`,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "invoiceId must be a base-10 integer",
+		},
+		{
+			name:       "invalid author",
+			body:       `{"invoiceId":"42","author":"nope","content":"0xdeadbeef"}`,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid author address",
+		},
+		{
+			name:       "zero author",
+			body:       `{"invoiceId":"42","author":"` + zeroAddress + `","content":"0xdeadbeef"}`,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid author address",
+		},
+		{
+			name:       "missing content",
+			body:       `{"invoiceId":"42","author":"` + author + `"}`,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "content is required",
+		},
+		{
+			name:       "content is not hex",
+			body:       `{"invoiceId":"42","author":"` + author + `","content":"Left at the door"}`,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "content must be 0x-prefixed hex",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &ContractHandler{}
 			rec := httptest.NewRecorder()
 
-			h.HandleNote(rec, noteRequestFor(`{"action":"`+action+`"}`))
+			h.WriteNote(rec, noteRequestFor("/v1/notes", tt.body))
 
-			if rec.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+			if rec.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d", rec.Code, tt.wantStatus)
 			}
-			if body := noteResponse(t, rec); body["error"] != "Unknown action" {
-				t.Errorf("error = %v, want %q", body["error"], "Unknown action")
+			body := noteResponse(t, rec)
+			if body["success"] != false {
+				t.Errorf("success = %v, want false", body["success"])
+			}
+			if body["error"] != tt.wantErr {
+				t.Errorf("error = %v, want %q", body["error"], tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestHandleNoteEncrypt(t *testing.T) {
-	t.Setenv("NOTES_SECRET_KEY", "the-test-secret")
+func TestWriteNoteRejectsOversizedContent(t *testing.T) {
+	const author = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
 
 	h := &ContractHandler{}
 	rec := httptest.NewRecorder()
 
-	h.HandleNote(rec, noteRequestFor(`{"action":"encrypt","content":"  a note  "}`))
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d (body %q)", rec.Code, http.StatusOK, rec.Body.String())
-	}
-
-	body := noteResponse(t, rec)
-	if body["success"] != true {
-		t.Errorf("success = %v, want true", body["success"])
-	}
-
-	payload, ok := body["payload"].(string)
-	if !ok {
-		t.Fatalf("payload is %T, want a hex string", body["payload"])
-	}
-
-	raw, err := hexutil.Decode(payload)
-	if err != nil {
-		t.Fatalf("payload %q is not hex: %v", payload, err)
-	}
-
-	got, err := note.DecryptNote(string(raw), "the-test-secret")
-	if err != nil {
-		t.Fatalf("DecryptNote returned %v", err)
-	}
-	if got != "a note" {
-		t.Errorf("decrypted %q, want the trimmed content", got)
-	}
-}
-
-func TestHandleNoteEncryptRejectsEmptyContent(t *testing.T) {
-	h := &ContractHandler{}
-
-	for _, content := range []string{"", "   ", "\\t"} {
-		t.Run(content, func(t *testing.T) {
-			rec := httptest.NewRecorder()
-
-			h.HandleNote(rec, noteRequestFor(`{"action":"encrypt","content":"`+content+`"}`))
-
-			if rec.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
-			}
-			if body := noteResponse(t, rec); body["error"] != note.ErrNoteContentRequired.Error() {
-				t.Errorf("error = %v, want %q", body["error"], note.ErrNoteContentRequired)
-			}
-		})
-	}
-}
-
-func TestHandleNoteEncryptRejectsAnOverlongNote(t *testing.T) {
-	h := &ContractHandler{}
-	rec := httptest.NewRecorder()
-
-	long := strings.Repeat("a", note.MaxNoteLength+1)
-	h.HandleNote(rec, noteRequestFor(`{"action":"encrypt","content":"`+long+`"}`))
+	oversized := hexutil.Encode(make([]byte, note.MaxContentBytes+1))
+	h.WriteNote(rec, noteRequestFor("/v1/notes",
+		`{"invoiceId":"42","author":"`+author+`","content":"`+oversized+`"}`))
 
 	if rec.Code != http.StatusRequestEntityTooLarge {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusRequestEntityTooLarge)
 	}
-	if body := noteResponse(t, rec); body["error"] != note.ErrNoteTooLong.Error() {
-		t.Errorf("error = %v, want %q", body["error"], note.ErrNoteTooLong)
+	if body := noteResponse(t, rec); body["error"] != "content is too large" {
+		t.Errorf("error = %v, want the size message", body["error"])
 	}
 }
 
-func TestHandleNoteEncryptAcceptsANoteAtTheLimit(t *testing.T) {
-	t.Setenv("NOTES_SECRET_KEY", "the-test-secret")
-
+func TestOpenNoteRejectsAMalformedBody(t *testing.T) {
 	h := &ContractHandler{}
 	rec := httptest.NewRecorder()
 
-	atLimit := strings.Repeat("a", note.MaxNoteLength)
-	h.HandleNote(rec, noteRequestFor(`{"action":"encrypt","content":"`+atLimit+`"}`))
+	h.OpenNote(rec, noteRequestFor("/v1/notes/open", "not json"))
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d (body %q)", rec.Code, http.StatusOK, rec.Body.String())
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+	if body := noteResponse(t, rec); body["error"] != "Invalid request body" {
+		t.Errorf("error = %v, want the malformed-body message", body["error"])
 	}
 }
 
-func TestHandleNoteEncryptWithoutASecret(t *testing.T) {
-	t.Setenv("NOTES_SECRET_KEY", "")
+func TestOpenNoteBadRequests(t *testing.T) {
+	const author = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
 
-	h := &ContractHandler{}
-	rec := httptest.NewRecorder()
-
-	h.HandleNote(rec, noteRequestFor(`{"action":"encrypt","content":"a note"}`))
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d (body %q)", rec.Code, http.StatusOK, rec.Body.String())
+	tests := []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{
+			name:    "invoice id is not a number",
+			body:    `{"invoiceId":"abc","noteId":"1","author":"` + author + `"}`,
+			wantErr: "invoiceId must be a base-10 integer",
+		},
+		{
+			name:    "note id is not a number",
+			body:    `{"invoiceId":"42","noteId":"abc","author":"` + author + `"}`,
+			wantErr: "noteId must be a base-10 integer",
+		},
+		{
+			name:    "missing note id",
+			body:    `{"invoiceId":"42","author":"` + author + `"}`,
+			wantErr: "noteId must be a base-10 integer",
+		},
+		{
+			name:    "invalid author",
+			body:    `{"invoiceId":"42","noteId":"1","author":"nope"}`,
+			wantErr: "Invalid author address",
+		},
 	}
 
-	payload := noteResponse(t, rec)["payload"].(string)
-	raw, err := hexutil.Decode(payload)
-	if err != nil {
-		t.Fatalf("payload %q is not hex: %v", payload, err)
-	}
-	if string(raw) != "a note" {
-		t.Errorf("payload decoded to %q, want the plaintext", raw)
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &ContractHandler{}
+			rec := httptest.NewRecorder()
 
-func TestHandleNoteEncryptIsRandomised(t *testing.T) {
-	t.Setenv("NOTES_SECRET_KEY", "the-test-secret")
+			h.OpenNote(rec, noteRequestFor("/v1/notes/open", tt.body))
 
-	h := &ContractHandler{}
-
-	payloads := make([]string, 2)
-	for i := range payloads {
-		rec := httptest.NewRecorder()
-		h.HandleNote(rec, noteRequestFor(`{"action":"encrypt","content":"a note"}`))
-		payloads[i] = noteResponse(t, rec)["payload"].(string)
-	}
-
-	if payloads[0] == payloads[1] {
-		t.Error("encrypting the same note twice produced identical payloads")
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+			}
+			body := noteResponse(t, rec)
+			if body["success"] != false {
+				t.Errorf("success = %v, want false", body["success"])
+			}
+			if body["error"] != tt.wantErr {
+				t.Errorf("error = %v, want %q", body["error"], tt.wantErr)
+			}
+		})
 	}
 }

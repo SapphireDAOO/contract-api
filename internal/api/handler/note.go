@@ -4,130 +4,93 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
-	"math/big"
 	"net/http"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
+	"github.com/SapphireDAOO/contract-api/internal/invoice"
 	"github.com/SapphireDAOO/contract-api/internal/note"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-const (
-	maxDecryptBatch = 50
+const noteCallTimeout = 30 * time.Second
 
-	noteCallTimeout = 30 * time.Second
-)
-
-type noteRequest struct {
-	Action    string   `json:"action"`
-	InvoiceId string   `json:"invoiceId"`
-	NoteId    string   `json:"noteId"`
-	NoteIds   []string `json:"noteIds"`
-	Author    string   `json:"author"`
-	Viewer    string   `json:"viewer"`
-	Content   string   `json:"content"`
-	Share     bool     `json:"share"`
-	Open      bool     `json:"open"`
-}
-
-type noteResult struct {
-	NoteId  string  `json:"noteId"`
-	Content *string `json:"content"`
-}
-
-// HandleNote is the single entry point for note actions, dispatching on the
-// "action" field so the website can forward a request body unchanged.
-func (h *ContractHandler) HandleNote(w http.ResponseWriter, r *http.Request) {
-	var req noteRequest
+// WriteNote stores an already-encrypted note against an invoice.
+func (h *ContractHandler) WriteNote(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		InvoiceId string `json:"invoiceId"`
+		Author    string `json:"author"`
+		Content   string `json:"content"`
+		Share     bool   `json:"share"`
+	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeNoteError(w, http.StatusBadRequest, "Invalid request body")
+		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	switch req.Action {
-	case "create":
-		h.createNote(w, r, &req)
-	case "setOpened":
-		h.setNoteOpened(w, r, &req)
-	case "encrypt":
-		h.encryptNote(w, &req)
-	case "decrypt":
-		h.decryptNotes(w, r, &req)
-	default:
-		writeNoteError(w, http.StatusBadRequest, "Unknown action")
-	}
-}
-
-func (h *ContractHandler) createNote(w http.ResponseWriter, r *http.Request, req *noteRequest) {
 	invoiceId, err := parseBigInt("invoiceId", req.InvoiceId)
 	if err != nil {
-		writeNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
+		httpx.WriteFailure(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
 		return
 	}
 
-	author, ok := parseAddress(req.Author)
+	author, ok := invoice.ParseAddress(req.Author)
 	if !ok {
-		writeNoteError(w, http.StatusBadRequest, "Invalid author address")
+		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid author address")
 		return
 	}
 
-	content := strings.TrimSpace(req.Content)
-
-	if err := note.ValidateNoteContent(content); err != nil {
+	content, err := note.ParseContent(req.Content)
+	if err != nil {
 		status := http.StatusBadRequest
-		if errors.Is(err, note.ErrNoteTooLong) {
+		if errors.Is(err, note.ErrContentTooLong) {
 			status = http.StatusRequestEntityTooLarge
 		}
-		writeNoteError(w, status, err.Error())
+		httpx.WriteFailure(w, status, err.Error())
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), noteCallTimeout)
 	defer cancel()
 
-	encrypted, err := note.ToEncryptedNoteBytes(content)
-	if err != nil {
-		writeNoteError(w, http.StatusInternalServerError, "Failed to encrypt note")
-		return
-	}
-
-	txHash, err := h.Notes.CreateNote(ctx, invoiceId, author, encrypted, req.Share)
+	txHash, err := h.Notes.CreateNote(ctx, invoiceId, author, content, req.Share)
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
 	}
 
-	writeNoteSuccess(w, map[string]any{"txHash": txHash.Hex()})
+	httpx.WriteSuccess(w, map[string]any{"txHash": txHash.Hex()})
 }
 
-func (h *ContractHandler) setNoteOpened(w http.ResponseWriter, r *http.Request, req *noteRequest) {
+// OpenNote records that the author has opened a note. Closing is a
+// client-side state and is not written on chain.
+func (h *ContractHandler) OpenNote(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		InvoiceId string `json:"invoiceId"`
+		Author    string `json:"author"`
+		NoteId    string `json:"noteId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
 	invoiceId, err := parseBigInt("invoiceId", req.InvoiceId)
 	if err != nil {
-		writeNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
+		httpx.WriteFailure(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
 		return
 	}
 
 	noteId, err := parseBigInt("noteId", req.NoteId)
 	if err != nil {
-		writeNoteError(w, http.StatusBadRequest, "noteId must be a base-10 integer")
+		httpx.WriteFailure(w, http.StatusBadRequest, "noteId must be a base-10 integer")
 		return
 	}
 
-	author, ok := parseAddress(req.Author)
+	author, ok := invoice.ParseAddress(req.Author)
 	if !ok {
-		writeNoteError(w, http.StatusBadRequest, "Invalid author address")
-		return
-	}
-
-	// Only opening is recorded on chain; closing is a client-side state.
-	if !req.Open {
-		writeNoteSuccess(w, map[string]any{})
+		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid author address")
 		return
 	}
 
@@ -140,124 +103,5 @@ func (h *ContractHandler) setNoteOpened(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	writeNoteSuccess(w, map[string]any{"txHash": txHash.Hex()})
-}
-
-func (h *ContractHandler) encryptNote(w http.ResponseWriter, req *noteRequest) {
-	content := strings.TrimSpace(req.Content)
-
-	if err := note.ValidateNoteContent(content); err != nil {
-		status := http.StatusBadRequest
-		if errors.Is(err, note.ErrNoteTooLong) {
-			status = http.StatusRequestEntityTooLarge
-		}
-		writeNoteError(w, status, err.Error())
-		return
-	}
-
-	encrypted, err := note.ToEncryptedNoteBytes(content)
-	if err != nil {
-		writeNoteError(w, http.StatusInternalServerError, "Failed to encrypt note")
-		return
-	}
-
-	writeNoteSuccess(w, map[string]any{"payload": hexutil.Encode(encrypted)})
-}
-
-func (h *ContractHandler) decryptNotes(w http.ResponseWriter, r *http.Request, req *noteRequest) {
-	invoiceId, err := parseBigInt("invoiceId", req.InvoiceId)
-	if err != nil {
-		writeNoteError(w, http.StatusBadRequest, "invoiceId must be a base-10 integer")
-		return
-	}
-
-	if len(req.NoteIds) == 0 {
-		writeNoteError(w, http.StatusBadRequest, "noteIds is required")
-		return
-	}
-
-	if len(req.NoteIds) > maxDecryptBatch {
-		writeNoteError(w, http.StatusRequestEntityTooLarge, "Too many notes requested")
-		return
-	}
-
-	noteIds := make([]*big.Int, 0, len(req.NoteIds))
-	for _, raw := range req.NoteIds {
-		noteId, err := parseBigInt("noteId", raw)
-		if err != nil {
-			writeNoteError(w, http.StatusBadRequest, "noteId must be a base-10 integer")
-			return
-		}
-		noteIds = append(noteIds, noteId)
-	}
-
-	viewer, hasViewer := parseAddress(req.Viewer)
-
-	ctx, cancel := context.WithTimeout(r.Context(), noteCallTimeout)
-	defer cancel()
-
-	notes := make([]noteResult, len(noteIds))
-	var wg sync.WaitGroup
-
-	for i, noteId := range noteIds {
-		wg.Add(1)
-		go func(i int, noteId *big.Int) {
-			defer wg.Done()
-
-			result := noteResult{NoteId: noteId.String()}
-			notes[i] = result
-
-			stored, err := h.Notes.GetNote(ctx, invoiceId, noteId)
-			if err != nil {
-				return
-			}
-
-			if !stored.Share && !(hasViewer && stored.Author == viewer) {
-				return
-			}
-
-			content, err := note.DecryptNoteBlob(stored.Content)
-			if err != nil {
-				log.Printf("failed to decrypt note %s on invoice %s: %v",
-					noteId.String(), invoiceId.String(), err)
-				return
-			}
-
-			result.Content = &content
-			notes[i] = result
-		}(i, noteId)
-	}
-
-	wg.Wait()
-
-	writeNoteSuccess(w, map[string]any{"notes": notes})
-}
-
-func writeNoteError(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]any{
-		"success": false,
-		"error":   message,
-	})
-}
-
-func writeNoteSuccess(w http.ResponseWriter, body map[string]any) {
-	body["success"] = true
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(body)
-}
-
-func parseAddress(value string) (common.Address, bool) {
-	trimmed := strings.TrimSpace(value)
-	if !common.IsHexAddress(trimmed) {
-		return common.Address{}, false
-	}
-
-	address := common.HexToAddress(trimmed)
-	if address == (common.Address{}) {
-		return common.Address{}, false
-	}
-
-	return address, true
+	httpx.WriteSuccess(w, map[string]any{"txHash": txHash.Hex()})
 }

@@ -13,12 +13,3 @@ type Notes struct {
 	contract *gen.Notes
 	client   *blockchain.Client
 }
-
-// Note is a single note as stored by the Notes contract.
-type Note struct {
-	Author  common.Address
-	Share   bool
-	Content []byte
-	Opened  bool
-	Version uint8
-}
