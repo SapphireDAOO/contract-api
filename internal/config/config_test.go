@@ -167,9 +167,9 @@ func TestLoadErrors(t *testing.T) {
 		},
 		{
 			name:    "network is not defined",
-			network: "goerli",
+			network: "no-such-network",
 			mutate:  func(s string) string { return s },
-			wantErr: `network "goerli" is not defined`,
+			wantErr: `network "no-such-network" is not defined`,
 		},
 		{
 			name:    "malformed yaml",
@@ -270,7 +270,7 @@ func TestLoadErrorsNameTheFileAndNetwork(t *testing.T) {
 }
 
 func TestLoadUnknownNetworkListsAvailable(t *testing.T) {
-	t.Setenv(NetworkEnv, "goerli")
+	t.Setenv(NetworkEnv, "no-such-network")
 
 	_, err := Load(writeConfig(t, validFile))
 
