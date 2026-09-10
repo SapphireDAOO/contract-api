@@ -110,9 +110,9 @@ func TestWriteMappedRevertError(t *testing.T) {
 		},
 		{
 			"described revert with no mapped status falls back to 500",
-			revertWith("0x00bfc921"),
+			revertWith("0xab143c06"),
 			http.StatusInternalServerError,
-			"The oracle reported an invalid price.",
+			"A reentrant call was detected.",
 		},
 		{
 			"unknown revert falls back to 500 and the error text",

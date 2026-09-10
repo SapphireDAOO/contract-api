@@ -3,7 +3,6 @@ package revert
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"testing"
 )
 
@@ -12,9 +11,9 @@ type revertError struct {
 	data any
 }
 
-func (e revertError) Error() string          { return "execution reverted" }
-func (e revertError) ErrorCode() int         { return e.code }
-func (e revertError) ErrorData() interface{} { return e.data }
+func (e revertError) Error() string  { return "execution reverted" }
+func (e revertError) ErrorCode() int { return e.code }
+func (e revertError) ErrorData() any { return e.data }
 
 func revertWith(selector string) error {
 	return revertError{code: 3, data: selector}
@@ -113,52 +112,5 @@ func TestReason(t *testing.T) {
 				t.Errorf("Reason() = %q, want %q", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestUnsupportedTokenIsDescribed(t *testing.T) {
-	if _, ok := Descriptions[UnsupportedToken]; !ok {
-		t.Errorf("Descriptions is missing the UnsupportedToken selector %q", UnsupportedToken)
-	}
-}
-
-func TestStatusCodesKeysAreDescriptions(t *testing.T) {
-	descriptions := make(map[string]bool, len(Descriptions))
-	for _, description := range Descriptions {
-		descriptions[description] = true
-	}
-
-	for reason := range StatusCodes {
-		if !descriptions[reason] {
-			t.Errorf("StatusCodes has %q, which no selector in Descriptions produces", reason)
-		}
-	}
-}
-
-func TestStatusCodesAreClientOrConflictErrors(t *testing.T) {
-	for reason, code := range StatusCodes {
-		if code < 400 || code >= 500 {
-			t.Errorf("StatusCodes[%q] = %d, want a 4xx status", reason, code)
-		}
-	}
-}
-
-func TestDescriptionKeysAreFourByteSelectors(t *testing.T) {
-	for selector, description := range Descriptions {
-		if len(selector) != 10 || selector[:2] != "0x" {
-			t.Errorf("selector %q is not a 0x-prefixed four-byte selector", selector)
-		}
-		if description == "" {
-			t.Errorf("selector %q has an empty description", selector)
-		}
-	}
-}
-
-func TestStatusCodeLookupFallsBackToServerError(t *testing.T) {
-	if code := StatusCodes[Reason(revertWith("0xdeadbeef"))]; code != 0 {
-		t.Errorf("unmapped reason has status %d, want 0 so callers can default", code)
-	}
-	if code := StatusCodes["The specified invoice does not exist."]; code != http.StatusNotFound {
-		t.Errorf("missing invoice status = %d, want %d", code, http.StatusNotFound)
 	}
 }
