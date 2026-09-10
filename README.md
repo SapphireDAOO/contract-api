@@ -11,7 +11,7 @@ Platform fees are collected through one-time stealth addresses issued by the [fe
 ## Endpoints
 
 | Method | Path                                            | Description                          |
-| ------ | ----------------------------------------------- | ------------------------------------ |
+| :----: | :---------------------------------------------: | :----------------------------------: |
 | GET    | [`/`](#endpoint-health)                          | Health check                         |
 | POST   | [`/v1/invoices`](#endpoint-create-invoices)      | Create one or more invoices          |
 | GET    | [`/v1/invoices/{invoiceId}`](#endpoint-get-invoice) | Read invoice data from the subgraph |
@@ -24,7 +24,8 @@ Platform fees are collected through one-time stealth addresses issued by the [fe
 | GET    | [`/v1/exchangeRate`](#endpoint-exchange-rates)    | How much of a token one USD buys     |
 | POST   | [`/v1/fee-receivers`](#endpoint-create-fee-receivers) | Derive and approve stealth fee receivers |
 | POST   | [`/v1/fee-receivers/authorization`](#endpoint-authorize-fee-receivers) | Sign the fee authorization |
-| POST   | [`/notes`](#endpoint-notes)                      | Invoice notes (all actions)          |
+| POST   | [`/v1/notes`](#endpoint-write-note)              | Write an encrypted note to an invoice |
+| POST   | [`/v1/notes/open`](#endpoint-open-note)          | Mark a note as opened                |
 
 The invoice id is a path segment on every invoice operation, so the request body carries only what is specific to that operation. `release`, `cancel` and `disputes` take no body at all.
 
@@ -67,7 +68,7 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
 #### Field Details
 
 | Field              | Type     | Required | Description                                                                              |
-| ------------------ | -------- | -------- | ---------------------------------------------------------------------------------------- |
+| :----------------: | :------: | :------: | :--------------------------------------------------------------------------------------: |
 | `orderId`          | string   | ✅       | Unique client-side identifier for the invoice (e.g., a UUID or any string).              |
 | `seller`           | string   | ✅       | Ethereum address of the seller. Must not be the zero address.                            |
 | `price`            | number   | ✅       | Invoice price in cents; scaled on the server using the `currency` precision.              |
@@ -250,7 +251,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 ```
 
 | Field         | Type   | Required | Description                                                            |
-| ------------- | ------ | -------- | ---------------------------------------------------------------------- |
+| :-----------: | :----: | :------: | :--------------------------------------------------------------------: |
 | `refundShare` | string | ✅       | Refund share in basis points (e.g., `"10000"` = 100%, `"5000"` = 50%). |
 
 **Success (200)**:
@@ -323,14 +324,14 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 ```
 
 | Field         | Type    | Required                                    | Description                                                              |
-| ------------- | ------- | ------------------------------------------- | ------------------------------------------------------------------------ |
+| :-----------: | :-----: | :-----------------------------------------: | :----------------------------------------------------------------------: |
 | `resolution`  | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
 | `sellerShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in basis points (e.g., `"10000"` = 100%, `"9000"` = 90%). |
 
 #### MarketplaceAction Enum (`resolution`)
 
 | Value | Name           | Description                                                                                            | Contract Function                        |
-| ----- | -------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| :---: | :------------: | :----------------------------------------------------------------------------------------------------: | :--------------------------------------: |
 | `1`   | ResolveDispute | Both buyer and seller agree to dismiss the dispute, with escrow allocation unchanged (fully to seller) | `resolveDispute`                         |
 | `2`   | SettleDispute  | Dispute resolved by an arbitrator, with `sellerShare` to the seller and the rest to the buyer          | `handleDispute` with `DISPUTE_SETTLED`   |
 | `3`   | DismissDispute | Arbitrator dismisses the dispute, leaving escrow allocation unchanged (fully to seller)                | `handleDispute` with `DISPUTE_DISMISSED` |
@@ -384,7 +385,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 - **Description**: Reports how much of each requested token one USD buys, inverting the `OracleManager` contract's `getUsdPerToken`. The oracle address comes from `contracts.oracleManager` for the selected network.
 
 | Query  | Required | Description                                                                                     |
-| ------ | -------- | ----------------------------------------------------------------------------------------------- |
+| :----: | :------: | :---------------------------------------------------------------------------------------------: |
 | `from` | ❌       | Must be `USD`, the only currency the oracle prices against. Defaults to `USD`. `From` also works. |
 | `to`   | ✅       | A token symbol from the network's `tokens` table. Repeat the parameter for several.              |
 
@@ -435,7 +436,7 @@ Fee receivers are issued in **two steps**, and the split is the point. This call
 ```
 
 | Field          | Type    | Required | Description                                                                                   |
-| -------------- | ------- | -------- | --------------------------------------------------------------------------------------------- |
+| :------------: | :-----: | :------: | :-------------------------------------------------------------------------------------------: |
 | `processor`    | string  | ✅       | `simple` or `intermediated` — which processor will verify the authorization.                   |
 | `quantity`     | integer | ❌       | How many receivers to derive, `1`–`5`. Defaults to `1`. A meta invoice needs one per sub-invoice. |
 | `paymentToken` | string  | ❌       | Token **symbol** the fee is collected in, e.g. `"USDC"`. Omit for a native-token payment.       |
@@ -485,7 +486,7 @@ Re-deriving is what makes it safe to accept these keys back from a client: a key
 ```
 
 | Field                 | Type     | Required | Description                                                                           |
-| --------------------- | -------- | -------- | --------------------------------------------------------------------------------------- |
+| :-------------------: | :------: | :------: | :-------------------------------------------------------------------------------------: |
 | `invoiceId`           | string   | ✅       | The on-chain invoice id, base-10. For `kind: "meta"`, the meta-invoice id.               |
 | `processor`           | string   | ✅       | `simple` or `intermediated`. Must match the processor the invoice lives on.              |
 | `kind`                | string   | ❌       | `single` (default) or `meta`. `meta` requires `processor: "intermediated"`.              |
@@ -522,7 +523,7 @@ curl -X POST https://sapphiredaotesting.com/v1/fee-receivers/authorization \
 #### Errors (both endpoints)
 
 | Status | Meaning                                                                                                         |
-| ------ | ----------------------------------------------------------------------------------------------------------------- |
+| :----: | :---------------------------------------------------------------------------------------------------------------: |
 | `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`; no keys) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with several keys). |
 | `502`  | The sidecar failed internally — a chain error, or one of its keys is unset. Its own message is generic by design.  |
 | `503`  | `services.feeReceiver` is not configured for this network, or the relayer has no native balance to sponsor the delegations. |
@@ -536,76 +537,41 @@ A rejection from the sidecar keeps the sidecar's own wording in `reason`:
 
 ---
 
-### Endpoint: `/notes`
+### Endpoint: `/v1/notes` <a id="endpoint-write-note"></a>
 
-- **Method**: POST `/notes`
-- **Description**: Reads and writes invoice notes on the `Notes` contract. Notes are encrypted with a server-held key before they reach the chain, so the ciphertext is public but the content is not. A single endpoint serves four actions, selected by the `action` field.
-
-> This endpoint keeps its action-dispatching shape, and its unversioned path, so the website can forward a request body unchanged.
-
-#### Actions
-
-| `action`    | Description                                                                              | On-chain |
-| ----------- | ---------------------------------------------------------------------------------------- | -------- |
-| `create`    | Encrypts a note and writes it for an invoice via `createNote`.                            | ✅        |
-| `setOpened` | Marks a note as opened by the author via `setOpened`. `open: false` is a no-op.           | ✅        |
-| `encrypt`   | Encrypts content and returns it as hex, for the `storageRef` note a client sends itself.  | ❌        |
-| `decrypt`   | Reads notes by id from the chain and decrypts the ones the caller is allowed to see.      | ❌        |
+- **Method**: POST `/v1/notes`
+- **Description**: Writes a note against an invoice via `createNote`. The content is encrypted by the caller and reaches this API as an opaque hex payload, so the plaintext is never seen or stored server-side.
 
 #### Authorization
 
-The `X-API-KEY` header is the only check. This API pays the gas and signs on the author's behalf, so the caller is trusted to have authenticated whoever the `author` and `viewer` fields name, and to have confirmed that they are a party on the invoice. Do not expose this endpoint to browsers directly.
+The `X-API-KEY` header is the only check. This API pays the gas and signs on the author's behalf, so the caller is trusted to have authenticated whoever the `author` field names, and to have confirmed that they are a party on the invoice. Do not expose this endpoint to browsers directly.
 
 #### **Request Body**
 
 ```json
 {
-  "action": "create",
   "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
   "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-  "content": "Left at the door",
+  "content": "0x4a6f8b2c1d...",
   "share": true
 }
 ```
 
 #### Field Details
 
-| Field       | Type     | Required                    | Description                                                             |
-| ----------- | -------- | --------------------------- | ----------------------------------------------------------------------- |
-| `action`    | string   | ✅                          | `create`, `setOpened`, `encrypt` or `decrypt`.                          |
-| `invoiceId` | string   | ✅ except `encrypt`         | On-chain invoice ID.                                                    |
-| `author`    | string   | ✅ for `create`/`setOpened` | Address the note is attributed to; must be a party on the invoice.      |
-| `content`   | string   | ✅ for `create`/`encrypt`   | Note text, at most 20 characters.                                       |
-| `share`     | boolean  | ❌                          | `true` publishes the note to both parties; private otherwise.           |
-| `noteId`    | string   | ✅ for `setOpened`          | Id of the note to mark opened.                                          |
-| `open`      | boolean  | ❌                          | Only `true` is written on chain.                                        |
-| `noteIds`   | string[] | ✅ for `decrypt`            | Up to 50 note ids to read.                                              |
-| `viewer`    | string   | ❌ for `decrypt`            | Address reading the notes; required to see that address's private notes. |
+| Field       | Type    | Required | Description                                                        |
+| :---------: | :-----: | :------: | :----------------------------------------------------------------: |
+| `invoiceId` | string  | ✅       | On-chain invoice ID, base-10.                                      |
+| `author`    | string  | ✅       | Address the note is attributed to; must be a party on the invoice. |
+| `content`   | string  | ✅       | Already-encrypted note, `0x`-prefixed hex, at most 4096 bytes.     |
+| `share`     | boolean | ❌       | `true` publishes the note to both parties; private otherwise.      |
 
 #### **Response**
 
-**Success (200)** — `create` and `setOpened`:
+**Success (200)**:
 
 ```json
 { "success": true, "txHash": "0x123456..." }
-```
-
-**Success (200)** — `encrypt`:
-
-```json
-{ "success": true, "payload": "0x4a6f..." }
-```
-
-**Success (200)** — `decrypt`. `content` is `null` for a note the caller may not read, or one that could not be read back:
-
-```json
-{
-  "success": true,
-  "notes": [
-    { "noteId": "1", "content": "Left at the door" },
-    { "noteId": "2", "content": null }
-  ]
-}
 ```
 
 **Error (400 / 413)**:
@@ -614,26 +580,77 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 { "success": false, "error": "Invalid author address" }
 ```
 
-- `400` for a malformed body, an unknown action, or a missing required field.
-- `413` for content over 20 characters or more than 50 `noteIds`.
+- `400` for a malformed body, a bad `invoiceId` or `author`, or a `content` that is missing or not `0x`-prefixed hex.
+- `413` for a `content` payload over 4096 bytes.
 
 **Notes**:
 
-- Notes are encrypted with AES-256-CBC under `sha256(NOTES_SECRET_KEY)` and stored as `<base64 iv>:<base64 ciphertext>`. This matches the scheme the website used, so notes written by either side stay readable by both. With `NOTES_SECRET_KEY` unset, notes are written and read in the clear.
-- `decrypt` resolves notes by `(invoiceId, noteId)` from the chain rather than accepting ciphertext from the caller, so a party cannot decrypt a blob lifted from another invoice. Shared notes are readable by anyone; a private note decrypts only for the `viewer` that authored it.
-- Write actions return as soon as the transaction is broadcast; the receipt is not awaited.
+- Encryption is entirely the caller's concern. This API validates that `content` is well-formed hex within the size cap and relays the bytes to the contract unchanged; it holds no note key and cannot read a note back.
+- The write returns as soon as the transaction is broadcast; the receipt is not awaited.
 
 **Example**:
 
 ```bash
-curl -X POST https://sapphiredaotesting.com/notes \
+curl -X POST https://sapphiredaotesting.com/v1/notes \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
 -d '{
-  "action": "decrypt",
   "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
-  "noteIds": ["1", "2"],
-  "viewer": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4"
+  "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+  "content": "0x4a6f8b2c1d",
+  "share": true
+}'
+```
+
+---
+
+### Endpoint: `/v1/notes/open` <a id="endpoint-open-note"></a>
+
+- **Method**: POST `/v1/notes/open`
+- **Description**: Records that the author has opened a note, via `setOpened`. Only opening is written on chain; closing is a client-side state.
+
+#### **Request Body**
+
+```json
+{
+  "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+  "noteId": "1"
+}
+```
+
+#### Field Details
+
+| Field       | Type   | Required | Description                          |
+| :---------: | :----: | :------: | :----------------------------------: |
+| `invoiceId` | string | ✅       | On-chain invoice ID, base-10.        |
+| `author`    | string | ✅       | Address opening the note.            |
+| `noteId`    | string | ✅       | Id of the note to mark opened.       |
+
+#### **Response**
+
+**Success (200)**:
+
+```json
+{ "success": true, "txHash": "0x123456..." }
+```
+
+**Error (400)**:
+
+```json
+{ "success": false, "error": "noteId must be a base-10 integer" }
+```
+
+**Example**:
+
+```bash
+curl -X POST https://sapphiredaotesting.com/v1/notes/open \
+-H "Content-Type: application/json" \
+-H "X-API-KEY: YOUR_API_KEY_HERE" \
+-d '{
+  "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
+  "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+  "noteId": "1"
 }'
 ```
 
@@ -698,10 +715,9 @@ NETWORK=local go run ./cmd/server
 Values that are secrets rather than settings stay in `.env`:
 
 | Variable                   | Purpose                                                    |
-| -------------------------- | ---------------------------------------------------------- |
+| :------------------------: | :--------------------------------------------------------: |
 | `KEY`                      | Value clients must send in `X-API-KEY`.                    |
 | `API_KEY`                  | Key this API sends when posting callbacks.                 |
-| `NOTES_SECRET_KEY`         | Encrypts note content. Unset means notes are stored plain. |
 | `PASS`                     | Private key that signs transactions on the deployed networks. |
 | `LOCAL_CALLER`             | Private key that signs on `local` (anvil's default account). |
 | `PORT`                     | HTTP port; defaults to `8080`.                             |
