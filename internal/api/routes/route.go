@@ -66,8 +66,10 @@ func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
 	router.POST(feeReceiversAuth, middleware.CORS(contractHandler.AuthorizeFeeReceivers))
 	router.OPTIONS(feeReceiversAuth, middleware.Preflight)
 
-	router.POST(notes, middleware.AccessControlMiddleWare(contractHandler.WriteNote))
-	router.POST(notesOpen, middleware.AccessControlMiddleWare(contractHandler.OpenNote))
+	router.POST(notes, middleware.CORS(contractHandler.WriteNote))
+	router.OPTIONS(notes, middleware.Preflight)
+	router.POST(notesOpen, middleware.CORS(contractHandler.OpenNote))
+	router.OPTIONS(notesOpen, middleware.Preflight)
 
 	return router.mux
 }
