@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -123,7 +124,7 @@ func TestFormatArg(t *testing.T) {
 	t.Run("address is rendered as a link", func(t *testing.T) {
 		got := c.formatArg(address)
 
-		if !strings.Contains(got, shortHex(address.Hex())) {
+		if !strings.Contains(got, discord.ShortHex(address.Hex())) {
 			t.Errorf("formatArg(address) = %q, want it to contain the shortened address", got)
 		}
 	})

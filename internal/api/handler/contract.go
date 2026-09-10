@@ -24,26 +24,6 @@ import (
 	"github.com/SapphireDAOO/contract-api/internal/query"
 )
 
-func parseBigInt(field, value string) (*big.Int, error) {
-	n, ok := new(big.Int).SetString(strings.TrimSpace(value), 10)
-	if !ok {
-		return nil, fmt.Errorf("%s must be a base-10 integer, got %q", field, value)
-	}
-	return n, nil
-}
-
-// feeReceiverReady reports whether the sidecar is wired up, answering 503 when
-// it is not — the same way an unconfigured oracle disables exchange rates.
-func (h *ContractHandler) feeReceiverReady(w http.ResponseWriter) bool {
-	if h.FeeReceiver == nil || h.ChainID == nil {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
-			errors.New("fee receiver service is not configured"),
-			"fee receivers are unavailable")
-		return false
-	}
-	return true
-}
-
 type ContractHandler struct {
 	ExplorerURL             string
 	Tokens                  config.Tokens
@@ -308,8 +288,23 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 // txURL links a transaction on the configured explorer. Chains without one
 // (a local node) fall back to the bare hash.
 func (h *ContractHandler) txURL(txHash string) string {
-	if h.ExplorerURL == "" {
-		return txHash
+	return config.Link(h.ExplorerURL, "/tx/", txHash)
+}
+
+func parseBigInt(field, value string) (*big.Int, error) {
+	n, ok := new(big.Int).SetString(strings.TrimSpace(value), 10)
+	if !ok {
+		return nil, fmt.Errorf("%s must be a base-10 integer, got %q", field, value)
 	}
-	return h.ExplorerURL + "/tx/" + txHash
+	return n, nil
+}
+
+func (h *ContractHandler) feeReceiverReady(w http.ResponseWriter) bool {
+	if h.FeeReceiver == nil || h.ChainID == nil {
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
+			errors.New("fee receiver service is not configured"),
+			"fee receivers are unavailable")
+		return false
+	}
+	return true
 }

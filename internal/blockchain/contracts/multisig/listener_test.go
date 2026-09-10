@@ -5,48 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum/common"
 )
-
-func TestShortHex(t *testing.T) {
-	tests := []struct {
-		name string
-		s    string
-		want string
-	}{
-		{"a full address", "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed", "0x5aAe…eAed"},
-		{"exactly twelve characters", "0x1234567890", "0x1234567890"},
-		{"thirteen characters", "0x12345678901", "0x1234…8901"},
-		{"short input", "0xabc", "0xabc"},
-		{"empty", "", ""},
-		{
-			"a transaction hash",
-			"0x0000000000000000000000000000000000000000000000000000000000000001",
-			"0x0000…0001",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := shortHex(tt.s); got != tt.want {
-				t.Errorf("shortHex(%q) = %q, want %q", tt.s, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestShortHexKeepsBothEnds(t *testing.T) {
-	const address = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
-
-	got := shortHex(address)
-
-	if !strings.HasPrefix(got, address[:6]) {
-		t.Errorf("shortHex = %q, want it to start with %q", got, address[:6])
-	}
-	if !strings.HasSuffix(got, address[len(address)-4:]) {
-		t.Errorf("shortHex = %q, want it to end with %q", got, address[len(address)-4:])
-	}
-}
 
 func TestFormatEth(t *testing.T) {
 	tests := []struct {
@@ -207,55 +168,9 @@ func TestProposalLine(t *testing.T) {
 	if !strings.HasPrefix(got, "Transaction id: `") {
 		t.Errorf("proposalLine = %q, want it to label the id", got)
 	}
-	if !strings.Contains(got, shortHex(common.Hash(txHash).Hex())) {
+	if !strings.Contains(got, discord.ShortHex(common.Hash(txHash).Hex())) {
 		t.Errorf("proposalLine = %q, want it to contain the shortened hash", got)
 	}
-}
-
-func TestLink(t *testing.T) {
-	t.Run("with an explorer", func(t *testing.T) {
-		c := &Multisig{explorerURL: "https://etherscan.io"}
-
-		if got, want := c.link("/tx/", "0xabc"), "https://etherscan.io/tx/0xabc"; got != want {
-			t.Errorf("link = %q, want %q", got, want)
-		}
-		if got, want := c.link("/address/", "0xdef"), "https://etherscan.io/address/0xdef"; got != want {
-			t.Errorf("link = %q, want %q", got, want)
-		}
-	})
-
-	t.Run("without an explorer", func(t *testing.T) {
-		c := &Multisig{}
-
-		if got := c.link("/tx/", "0xabc"); got != "0xabc" {
-			t.Errorf("link = %q, want the bare value", got)
-		}
-	})
-}
-
-func TestAddressLink(t *testing.T) {
-	address := common.HexToAddress("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed")
-
-	t.Run("with an explorer", func(t *testing.T) {
-		c := &Multisig{explorerURL: "https://etherscan.io"}
-
-		got := c.addressLink(address)
-
-		want := "[`" + shortHex(address.Hex()) + "`](https://etherscan.io/address/" + address.Hex() + ")"
-		if got != want {
-			t.Errorf("addressLink = %q, want %q", got, want)
-		}
-	})
-
-	t.Run("without an explorer", func(t *testing.T) {
-		c := &Multisig{}
-
-		got := c.addressLink(address)
-
-		if !strings.Contains(got, shortHex(address.Hex())) {
-			t.Errorf("addressLink = %q, want the shortened address", got)
-		}
-	})
 }
 
 func TestTargetName(t *testing.T) {
@@ -276,7 +191,7 @@ func TestTargetName(t *testing.T) {
 		if !strings.Contains(got, "Payment Processor") {
 			t.Errorf("targetName = %q, want it to name the contract", got)
 		}
-		if !strings.Contains(got, shortHex(processor.Hex())) {
+		if !strings.Contains(got, discord.ShortHex(processor.Hex())) {
 			t.Errorf("targetName = %q, want it to link the address", got)
 		}
 	})

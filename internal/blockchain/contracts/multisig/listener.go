@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
@@ -27,24 +28,10 @@ var (
 	thresholdUpdatedTopic    = crypto.Keccak256Hash([]byte("ThresholdUpdated(uint256,uint256)"))
 )
 
-func (c *Multisig) subscribeLogs(ctx context.Context, query ethereum.FilterQuery, logs chan types.Log) ethereum.Subscription {
-	for {
-		sub, err := c.client.WS.SubscribeFilterLogs(ctx, query, logs)
-		if err == nil {
-			return sub
-		}
-		log.Printf("Failed to subscribe to Multisig logs: %v", err)
-
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(5 * time.Second):
-		}
-	}
+func (c *Multisig) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,
+	logs chan types.Log) ethereum.Subscription {
+	return c.client.SubscribeLogs(ctx, query, logs, "Multisig")
 }
-
-// ListenToEvents subscribes to every log emitted by the multisig contract and
-// posts a Discord notification for each one.
 func (c *Multisig) ListenToEvents(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
 		log.Printf("multisig listener disabled: client or contract address not initialized")
@@ -101,7 +88,7 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 
 	base := discord.Embed{
 		URL:    c.link("/tx/", vLog.TxHash.Hex()),
-		Footer: &discord.Footer{Text: "Multisig " + shortHex(c.address.Hex()) + " • Base Sepolia"},
+		Footer: &discord.Footer{Text: "Multisig " + discord.ShortHex(c.address.Hex()) + " • Base Sepolia"},
 	}
 	var lines []string
 
@@ -285,28 +272,14 @@ func actionArgLines(act *action) []string {
 // proposalLine renders the multisig's internal transaction id, which groups
 // the propose/approve/execute notifications for the same transaction.
 func proposalLine(txHash [32]byte) string {
-	return fmt.Sprintf("Transaction id: `%s`", shortHex(common.Hash(txHash).Hex()))
+	return fmt.Sprintf("Transaction id: `%s`", discord.ShortHex(common.Hash(txHash).Hex()))
 }
 
 func (c *Multisig) addressLink(addr common.Address) string {
-	return fmt.Sprintf("[`%s`](%s)", shortHex(addr.Hex()), c.link("/address/", addr.Hex()))
+	return discord.AddressLink(c.explorerURL, addr)
 }
-
-// link builds an explorer URL for a path such as "/tx/" or "/address/".
-// Chains without an explorer fall back to the bare value.
 func (c *Multisig) link(path, value string) string {
-	if c.explorerURL == "" {
-		return value
-	}
-	return c.explorerURL + path + value
-}
-
-// shortHex shortens a hex string to the 0x1234…abcd form.
-func shortHex(s string) string {
-	if len(s) <= 12 {
-		return s
-	}
-	return s[:6] + "…" + s[len(s)-4:]
+	return config.Link(c.explorerURL, path, value)
 }
 
 func formatEth(wei *big.Int) string {

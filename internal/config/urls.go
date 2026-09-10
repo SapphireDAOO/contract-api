@@ -54,3 +54,13 @@ func (u URLs) validate() error {
 	}
 	return nil
 }
+
+// Link builds an explorer URL for a path such as "/tx/" or "/address/".
+// Chains without an explorer configured fall back to the bare value, so a
+// local node still produces something readable.
+func Link(explorerURL, path, value string) string {
+	if explorerURL == "" {
+		return value
+	}
+	return explorerURL + path + value
+}

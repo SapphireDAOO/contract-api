@@ -5,28 +5,17 @@ import (
 	"log"
 	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.FilterQuery, logs chan types.Log, label string) ethereum.Subscription {
-	for {
-		sub, err := c.client.WS.SubscribeFilterLogs(ctx, query, logs)
-		if err == nil {
-			return sub
-		}
-		log.Printf("Failed to subscribe to %s logs: %v", label, err)
-
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(5 * time.Second):
-		}
-	}
+func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,
+	logs chan types.Log, label string) ethereum.Subscription {
+	return c.client.SubscribeLogs(ctx, query, logs, label)
 }
-
 func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
 		log.Printf("payment listener disabled: client or contract address not initialized")
@@ -162,8 +151,5 @@ func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 // txURL links a transaction on the configured explorer. Chains without one
 // (a local node) fall back to the bare hash.
 func (c *PaymentProcessor) txURL(txHash string) string {
-	if c.explorerURL == "" {
-		return txHash
-	}
-	return c.explorerURL + "/tx/" + txHash
+	return config.Link(c.explorerURL, "/tx/", txHash)
 }

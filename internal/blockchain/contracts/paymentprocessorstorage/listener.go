@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,24 +20,10 @@ var (
 	emergencyPausedTopic = crypto.Keccak256Hash([]byte("EmergencyPaused(address,uint256)"))
 )
 
-func (c *PaymentProcessorStorage) subscribeLogs(ctx context.Context, query ethereum.FilterQuery, logs chan types.Log) ethereum.Subscription {
-	for {
-		sub, err := c.client.WS.SubscribeFilterLogs(ctx, query, logs)
-		if err == nil {
-			return sub
-		}
-		log.Printf("Failed to subscribe to Payment Processor Storage logs: %v", err)
-
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(5 * time.Second):
-		}
-	}
+func (c *PaymentProcessorStorage) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,
+	logs chan types.Log) ethereum.Subscription {
+	return c.client.SubscribeLogs(ctx, query, logs, "Payment Processor Storage")
 }
-
-// ListenToPauseEvents subscribes to the storage contract's Paused, Unpaused
-// and EmergencyPaused events and posts a Discord notification for each one.
 func (c *PaymentProcessorStorage) ListenToPauseEvents(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
 		log.Printf("payment processor storage listener disabled: client or contract address not initialized")
@@ -95,7 +81,7 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 
 	base := discord.Embed{
 		URL:    c.link("/tx/", vLog.TxHash.Hex()),
-		Footer: &discord.Footer{Text: "Payment Processor Storage " + shortHex(c.address.Hex()) + " • Base Sepolia"},
+		Footer: &discord.Footer{Text: "Payment Processor Storage " + discord.ShortHex(c.address.Hex()) + " • Base Sepolia"},
 	}
 	var lines []string
 
@@ -148,22 +134,8 @@ func (c *PaymentProcessorStorage) buildEmbed(vLog *types.Log) (*discord.Embed, e
 }
 
 func (c *PaymentProcessorStorage) addressLink(addr common.Address) string {
-	return fmt.Sprintf("[`%s`](%s)", shortHex(addr.Hex()), c.link("/address/", addr.Hex()))
+	return discord.AddressLink(c.explorerURL, addr)
 }
-
-// shortHex shortens a hex string to the 0x1234…abcd form.
-func shortHex(s string) string {
-	if len(s) <= 12 {
-		return s
-	}
-	return s[:6] + "…" + s[len(s)-4:]
-}
-
-// link builds an explorer URL for a path such as "/tx/" or "/address/".
-// Chains without an explorer fall back to the bare value.
 func (c *PaymentProcessorStorage) link(path, value string) string {
-	if c.explorerURL == "" {
-		return value
-	}
-	return c.explorerURL + path + value
+	return config.Link(c.explorerURL, path, value)
 }
