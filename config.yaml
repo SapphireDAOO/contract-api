@@ -31,14 +31,14 @@ networks:
         address: "0xda21fE4Acf85E375bC9eE72C9b00D0aEF6C495C7"
         decimals: 8
     contracts:
-      paymentProcessor: "0xAA845a76bf1a7e27e5e06071e2e8C8a8F4355C20"
-      paymentProcessorStorage: "0x9B486c746213EcD7A1BF449E01DeB43fC8BD3834"
-      simplePaymentProcessor: "0xC3bDDA2D7f231Dc48960ED61B649f971afd28010"
-      multisig: "0x05c405ef0dbBfB3005bBcd35E0b1911052731A0E"
-      paymentAutomation: "0x60C7b1D8b2a61aF9466a08DFC8350094d5BabfEa"
-      notes: "0x8C08B086d13F50C032f6DaB86785E7a78D437Fd1"
-      oracleManager: "0x457181a280b98Ba8ACc9C262d7a78e5ED2670E60"
-      sweeper: "0xcA32aB54b0503649b47d6b46c9ab5f285BbE5D0B"
+      paymentProcessor: "0xcDEf5a4084d380CAbf0AD88421843dCb1b1a1298"
+      paymentProcessorStorage: "0x9209Fb3710015c3b4c780cef605322457c7C863c"
+      simplePaymentProcessor: "0x75c0f4a0aF42101E64B493B71cEFEbC359B90F25"
+      multisig: "0xEE79d9E7EDBEf7c927A6A58EBc2a3b4c927C1384"
+      paymentAutomation: "0x8A2a192f8eCF63E5eFF22F288cDA7cef095653FF"
+      notes: "0xce270FA8D222300a2148477f924669d4b3a0523e"
+      oracleManager: "0xe73d6010E56BDe831321667Db88A03255e82106b"
+      sweeper: "0x0E078853ef04266c5d09F9cD21DFA761134B13f6"
       wrappedNative: "0x4a1E2AB38b64a82ef43fe3fD5921E915BfA4920c"
     services:
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
@@ -62,19 +62,20 @@ networks:
         address: "0x0000000000000000000000000000000000000000"
         decimals: 18
       USDC:
-        address: "0x41a196b1ff165419a1320f029e689a41f30c70b0"
+        address: "0x9652aF270a39E8F63Fa801F6293DEb944FdEB5B9"
         decimals: 6
       wBTC:
-        address: "0x8cdaf12598d71cad44e91fb1c05d565a383e3dba"
+        address: "0xc3a9d881A859EC02433eb0b6FaDC79F5678627b9"
         decimals: 8
     contracts:
-      paymentProcessor: "0xBD1E22D0E01e941e0e730335C0D025e4a46c888a"
-      paymentProcessorStorage: "0xAc7Df32b61Ba0b2F4646ee1505980b256dA8e582"
-      simplePaymentProcessor: "0xa74083E440532C2E7d3D82Ca5EE1b4d944d5154B"
-      multisig: "0xF859791dde7C3a121506f3f0747A067e3B70c86A"
-      paymentAutomation: "0xcd7F1e411f7ed9792f61a5F3181bc354f8E26845"
-      notes: "0x092722fF05A2Fe1dFeA4b8C3E6CEE3dc868D7be2"
-      sweeper: "0x732106c5cEBdD28B752F8e288413237c14f5e378"
+      paymentProcessor: "0x5ea98074A1779E1242feefB6df54C6c0a4b16423"
+      paymentProcessorStorage: "0xa5a8d53D9138D17F6C94c56846D50a850aFd14c9"
+      simplePaymentProcessor: "0x0741D5d919900c216Db4184e2cA0aaE6f88f21C3"
+      multisig: "0x2AEFE8BDd278fCF4b010111d7aDD8ab50d859419"
+      paymentAutomation: "0x3e2A316C3bc86B9cE91e702985cF7Ea611Db65d2"
+      notes: "0xE818dA06Ceed4Ac6c6d4871a5Fc0226B8032834e"
+      oracleManager: "0x1c8ab79AD43A601F18722E3B9f076fA96AD7Cd11"
+      sweeper: "0x23F53C2422AF06eb1B98f4B78f11F583a2435F5D"
       wrappedNative: "0x4200000000000000000000000000000000000006"
     services:
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
