@@ -99,8 +99,10 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 			return nil, err
 		}
 		act := c.decodeAction(event.Target, event.Data)
+		state := c.lookupProposal(ctx, event.TxHash)
 		base.Title = "📝 Proposal: " + actionTitle(act)
 		base.Color = discord.ColorBlue
+		lines = append(lines, progressLine(stageProposed, state.approvals, state.threshold))
 		lines = append(lines,
 			fmt.Sprintf("%s proposed %s on %s.",
 				c.addressLink(event.Proposer), actionName(act), c.targetName(act, event.Target)))
@@ -115,37 +117,50 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		if err != nil {
 			return nil, err
 		}
-		act := c.lookupAction(ctx, event.TxHash)
-		base.Title = "✍️ Approved by a signer: " + actionTitle(act)
+		state := c.lookupProposal(ctx, event.TxHash)
+		act := state.act
+
+		// The event's own count is authoritative for this approval; the
+		// contract read only supplies the threshold.
+		approvals := event.ApprovalCount
+		if approvals == nil {
+			approvals = state.approvals
+		}
+		reached := thresholdReached(approvals, state.threshold)
+
 		base.Color = discord.ColorYellow
-		lines = append(lines,
-			fmt.Sprintf("%s approved %s — **%s** so far.",
-				c.addressLink(event.Approver), actionName(act), plural(event.ApprovalCount, "approval")),
-			proposalLine(event.TxHash),
-		)
+		if reached {
+			base.Title = "✅ Fully approved: " + actionTitle(act)
+		} else {
+			base.Title = "✍️ Approved by a signer: " + actionTitle(act)
+		}
+
+		lines = append(lines, progressLine(stageApprovals, approvals, state.threshold))
+
+		approval := fmt.Sprintf("%s approved %s — **%s** so far.",
+			c.addressLink(event.Approver), actionName(act), plural(approvals, "approval"))
+		if reached {
+			// The approval that reaches the threshold says so here rather
+			// than in a second notification for TransactionApproved.
+			approval += " That meets the threshold, so it is **ready to execute**."
+		}
+		lines = append(lines, approval, proposalLine(event.TxHash))
 
 	case transactionApprovedTopic:
-		event, err := c.contract.UnpackTransactionApprovedEvent(vLog)
-		if err != nil {
-			return nil, err
-		}
-		act := c.lookupAction(ctx, event.TxHash)
-		base.Title = "✅ Fully approved: " + actionTitle(act)
-		base.Color = discord.ColorYellow
-		lines = append(lines,
-			fmt.Sprintf("%s has enough approvals and is **ready to execute**.",
-				capitalize(actionName(act))),
-			proposalLine(event.TxHash),
-		)
+		// Reported by the approval that reached the threshold, so this event
+		// would only duplicate it.
+		return nil, nil
 
 	case transactionExecutedTopic:
 		event, err := c.contract.UnpackTransactionExecutedEvent(vLog)
 		if err != nil {
 			return nil, err
 		}
-		act := c.lookupAction(ctx, event.TxHash)
+		state := c.lookupProposal(ctx, event.TxHash)
+		act := state.act
 		base.Title = "🚀 Executed: " + actionTitle(act)
 		base.Color = discord.ColorGreen
+		lines = append(lines, progressLine(stageExecuted, state.approvals, state.threshold))
 		lines = append(lines,
 			fmt.Sprintf("%s executed %s. The change is now live on-chain.",
 				c.addressLink(event.Executor), actionName(act)))
@@ -157,9 +172,11 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 		if err != nil {
 			return nil, err
 		}
-		act := c.lookupAction(ctx, event.TxHash)
+		state := c.lookupProposal(ctx, event.TxHash)
+		act := state.act
 		base.Title = "🚫 Canceled: " + actionTitle(act)
 		base.Color = discord.ColorRed
+		lines = append(lines, progressLine(stageCanceled, state.approvals, state.threshold))
 		lines = append(lines,
 			fmt.Sprintf("%s was canceled and can no longer be executed.",
 				capitalize(actionName(act))),
@@ -208,23 +225,99 @@ func (c *Multisig) buildEmbed(ctx context.Context, vLog *types.Log) (*discord.Em
 	return &base, nil
 }
 
-// lookupAction fetches a proposal from the multisig by its internal id and
-// decodes what it does, so approve/execute/cancel notifications can be named.
-func (c *Multisig) lookupAction(ctx context.Context, txHash [32]byte) *action {
+// proposal is what a lifecycle notification needs: what the transaction does,
+// how many approvals it has, and how many it needs. Any field may be nil when
+// the chain call fails, and the renderers degrade rather than error.
+type proposal struct {
+	act       *action
+	approvals *big.Int
+	threshold *big.Int
+}
+
+// lookupProposal reads a proposal from the multisig by its internal id.
+func (c *Multisig) lookupProposal(ctx context.Context, txHash [32]byte) proposal {
+	var p proposal
+
 	if c.client == nil || c.client.HTTP == nil || c.instance == nil {
-		return nil
+		return p
 	}
 
 	callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	opts := &bind.CallOpts{Context: callCtx}
 
-	data := c.contract.PackGetTransaction(txHash)
-	tx, err := bind.Call(c.instance, &bind.CallOpts{Context: callCtx}, data, c.contract.UnpackGetTransaction)
+	tx, err := bind.Call(c.instance, opts, c.contract.PackGetTransaction(txHash), c.contract.UnpackGetTransaction)
 	if err != nil {
 		log.Printf("Failed to look up multisig transaction %s: %v", common.Hash(txHash).Hex(), err)
-		return nil
+	} else {
+		p.act = c.decodeAction(tx.Target, tx.Data)
+		p.approvals = tx.ApprovalCount
 	}
-	return c.decodeAction(tx.Target, tx.Data)
+
+	threshold, err := bind.Call(c.instance, opts, c.contract.PackGetThreshold(), c.contract.UnpackGetThreshold)
+	if err != nil {
+		log.Printf("Failed to read the multisig threshold: %v", err)
+	} else {
+		p.threshold = threshold
+	}
+
+	return p
+}
+
+// stage is where in its lifecycle a proposal is, as told by the event being
+// reported rather than by the contract's own status enum.
+type stage int
+
+const (
+	stageProposed stage = iota
+	stageApprovals
+	stageExecuted
+	stageCanceled
+)
+
+// progressLine renders the lifecycle as propose -> approvals -> execution,
+// emphasising the step this notification is about, so a reader can see at a
+// glance where the proposal stands.
+func progressLine(current stage, approvals, threshold *big.Int) string {
+	final := "🚀 Execution"
+	switch current {
+	case stageExecuted:
+		final = "🚀 Executed"
+	case stageCanceled:
+		final = "🚫 Canceled"
+	}
+
+	steps := []string{"📝 Proposed", "✍️ " + approvalsText(approvals, threshold), final}
+
+	at := 2
+	switch current {
+	case stageProposed:
+		at = 0
+	case stageApprovals:
+		at = 1
+	}
+	steps[at] = "**" + steps[at] + "**"
+
+	return strings.Join(steps, "  →  ")
+}
+
+func approvalsText(approvals, threshold *big.Int) string {
+	switch {
+	case approvals != nil && threshold != nil:
+		return fmt.Sprintf("Approvals %s/%s", approvals, threshold)
+	case approvals != nil:
+		return fmt.Sprintf("Approvals %s", approvals)
+	default:
+		return "Approvals"
+	}
+}
+
+// thresholdReached reports whether a proposal has the approvals it needs.
+func thresholdReached(approvals, threshold *big.Int) bool {
+	if approvals == nil || threshold == nil || threshold.Sign() <= 0 {
+		return false
+	}
+	return approvals.Cmp(threshold) >= 0
 }
 
 // actionTitle names a decoded action for embed titles, e.g. "Set Fee Rate".
