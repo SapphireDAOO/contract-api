@@ -18,6 +18,7 @@ func (d *dependencies) startListeners(ctx context.Context) *sync.WaitGroup {
 		"payment released":   d.paymentProcessor.ListenToReleaseEvent,
 		"multisig":           d.multisig.ListenToEvents,
 		"storage pause":      d.paymentProcessorStorage.ListenToPauseEvents,
+		"pause expiry":       d.paymentProcessorStorage.WatchEmergencyPause,
 		"payment automation": d.paymentAutomation.PollDueTasks,
 	} {
 		listeners.Add(1)
