@@ -1,10 +1,9 @@
 package callback
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"time"
@@ -16,7 +15,7 @@ func (c *Client) SendRefundCallback(orderId string, paymentToken string, amount 
 	payload, err := c.buildRefundCallbackPayload(paymentToken, amount,
 		refundShare, transactionURL, transactionTimestamp)
 	if err != nil {
-		log.Printf("refund callback payload error for orderId %s: %v", orderId, err)
+		slog.Error("refund callback payload build failed", "orderId", orderId, "error", err)
 		return
 	}
 
@@ -28,7 +27,7 @@ func (c *Client) SendReleaseCallback(orderId, paymentToken, receiver string, rel
 	payload, err := c.buildReleaseCallbackPayload(paymentToken, receiver,
 		releaseAmount, transactionURL, transactionTimestamp)
 	if err != nil {
-		log.Printf("release callback payload error for orderId %s: %v", orderId, err)
+		slog.Error("release callback payload build failed", "orderId", orderId, "error", err)
 		return
 	}
 
@@ -39,7 +38,7 @@ func (c *Client) SendPaymentReceivedCallback(orderId, transactionURL, paymentTok
 	payload, err := c.buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
 		amount, transactionTimestamp)
 	if err != nil {
-		log.Printf("payment received callback payload error for orderId %s: %v", orderId, err)
+		slog.Error("payment received callback payload build failed", "orderId", orderId, "error", err)
 		return
 	}
 
@@ -51,13 +50,14 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 		res, err := c.post(payload, orderId, action)
 		if err != nil {
 			if attempt < callbackRetryAttempts {
-				log.Printf("callback attempt %d/%d failed for orderId %s action %s: %v",
-					attempt, callbackRetryAttempts, orderId, action, err)
+				slog.Warn("callback attempt failed, retrying",
+					"attempt", attempt, "attempts", callbackRetryAttempts,
+					"orderId", orderId, "action", action, "error", err)
 				time.Sleep(callbackRetryDelay(attempt))
 				continue
 			}
-			log.Printf("callback failed after %d attempts for orderId %s action %s: %v",
-				attempt, orderId, action, err)
+			slog.Error("callback failed, giving up",
+				"attempts", attempt, "orderId", orderId, "action", action, "error", err)
 			return
 		}
 
@@ -65,25 +65,15 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 		if status == http.StatusOK {
 			_, _ = io.Copy(io.Discard, res.Body)
 			res.Body.Close()
-			success := callbackResponse{
-				Status:  status,
-				Error:   "",
-				Message: json.RawMessage(`"success"`),
-			}
-			encoded, err := json.Marshal(success)
-			if err != nil {
-				log.Printf(`{"status":%d,"error":"log-marshal-failed","message":"%s"}`,
-					status, err.Error())
-				return
-			}
-			log.Print(string(encoded))
+			slog.Info("callback delivered",
+				"orderId", orderId, "action", action, "status", status)
 			return
 		}
 
 		body, readErr := io.ReadAll(res.Body)
 		res.Body.Close()
 		if readErr != nil {
-			log.Printf("callback response read failed for orderId %s action %s: %v", orderId, action, readErr)
+			slog.Error("callback response read failed", "orderId", orderId, "action", action, "error", readErr)
 			if status >= http.StatusInternalServerError && attempt < callbackRetryAttempts {
 				time.Sleep(callbackRetryDelay(attempt))
 				continue
@@ -104,7 +94,7 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 		}
 
 		if status >= http.StatusInternalServerError {
-			log.Printf("callback server error for orderId %s action %s (%s)", orderId, action, details)
+			slog.Error("callback returned a server error", "orderId", orderId, "action", action, "details", details)
 			if attempt < callbackRetryAttempts {
 				time.Sleep(callbackRetryDelay(attempt))
 				continue
@@ -112,7 +102,7 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 			return
 		}
 
-		log.Printf("callback rejected for orderId %s action %s (%s)", orderId, action, details)
+		slog.Error("callback rejected", "orderId", orderId, "action", action, "details", details)
 		return
 	}
 }

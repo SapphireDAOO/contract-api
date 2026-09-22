@@ -3,7 +3,7 @@ package multisig
 import (
 	"bytes"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/big"
 	"strings"
 	"unicode"
@@ -42,7 +42,7 @@ func buildKnownContracts(address common.Address, peers Peers) []knownContract {
 	for _, spec := range specs {
 		parsed, err := spec.metadata.ParseABI()
 		if err != nil {
-			log.Printf("Failed to parse %s ABI for multisig decoding: %v", spec.name, err)
+			slog.Error("abi parse failed for multisig decoding", "contract", spec.name, "error", err)
 			continue
 		}
 		contracts = append(contracts, knownContract{
@@ -100,7 +100,7 @@ func (c *Multisig) decodeAction(target common.Address, data []byte) *action {
 
 			values, err := method.Inputs.Unpack(data[4:])
 			if err != nil {
-				log.Printf("Failed to decode %s calldata: %v", method.Name, err)
+				slog.Warn("calldata decode failed", "method", method.Name, "error", err)
 				return decoded
 			}
 			for i, value := range values {

@@ -3,7 +3,7 @@ package multisig
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/big"
 	"strings"
 	"time"
@@ -34,7 +34,7 @@ func (c *Multisig) subscribeLogs(ctx context.Context, query ethereum.FilterQuery
 }
 func (c *Multisig) ListenToEvents(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
-		log.Printf("multisig listener disabled: client or contract address not initialized")
+		slog.Warn("multisig listener disabled", "reason", "client or contract address not initialized")
 		return
 	}
 
@@ -49,16 +49,16 @@ func (c *Multisig) ListenToEvents(ctx context.Context) {
 	}
 	defer sub.Unsubscribe()
 
-	log.Println("Listening for Multisig events...")
+	slog.Info("listening for multisig events", "contract", c.address.Hex())
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Multisig listener stopping")
+			slog.Info("multisig listener stopping")
 			return
 
 		case err := <-sub.Err():
-			log.Printf("Multisig subscription error: %v", err)
+			slog.Error("multisig subscription failed, resubscribing", "error", err)
 			sub.Unsubscribe()
 			sub = c.subscribeLogs(ctx, query, logs)
 			if sub == nil {
@@ -68,14 +68,14 @@ func (c *Multisig) ListenToEvents(ctx context.Context) {
 		case vLog := <-logs:
 			embed, err := c.buildEmbed(ctx, &vLog)
 			if err != nil {
-				log.Printf("Failed to parse Multisig event: %v", err)
+				slog.Error("multisig event parse failed", "txHash", vLog.TxHash.Hex(), "error", err)
 				continue
 			}
 			if embed == nil {
 				continue
 			}
 
-			log.Printf("Multisig event: %s (%s)", embed.Title, vLog.TxHash.Hex())
+			slog.Info("multisig event", "event", embed.Title, "txHash", vLog.TxHash.Hex())
 			go c.notifier.SendEmbed(*embed)
 		}
 	}
@@ -248,7 +248,7 @@ func (c *Multisig) lookupProposal(ctx context.Context, txHash [32]byte) proposal
 
 	tx, err := bind.Call(c.instance, opts, c.contract.PackGetTransaction(txHash), c.contract.UnpackGetTransaction)
 	if err != nil {
-		log.Printf("Failed to look up multisig transaction %s: %v", common.Hash(txHash).Hex(), err)
+		slog.Error("multisig transaction lookup failed", "proposalId", common.Hash(txHash).Hex(), "error", err)
 	} else {
 		p.act = c.decodeAction(tx.Target, tx.Data)
 		p.approvals = tx.ApprovalCount
@@ -256,7 +256,7 @@ func (c *Multisig) lookupProposal(ctx context.Context, txHash [32]byte) proposal
 
 	threshold, err := bind.Call(c.instance, opts, c.contract.PackGetThreshold(), c.contract.UnpackGetThreshold)
 	if err != nil {
-		log.Printf("Failed to read the multisig threshold: %v", err)
+		slog.Error("multisig threshold read failed", "error", err)
 	} else {
 		p.threshold = threshold
 	}

@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -19,7 +19,7 @@ func (c *Client) SubscribeLogs(ctx context.Context, query ethereum.FilterQuery,
 		if err == nil {
 			return sub
 		}
-		log.Printf("Failed to subscribe to %s logs: %v", label, err)
+		slog.Error("log subscription failed, retrying", "stream", label, "retryIn", resubscribeDelay, "error", err)
 
 		select {
 		case <-ctx.Done():

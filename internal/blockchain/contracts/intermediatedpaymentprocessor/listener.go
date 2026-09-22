@@ -2,7 +2,7 @@ package intermediatedpaymentprocessor
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/SapphireDAOO/contract-api/internal/config"
@@ -18,7 +18,7 @@ func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.Fil
 }
 func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
-		log.Printf("payment listener disabled: client or contract address not initialized")
+		slog.Warn("invoice paid listener disabled", "reason", "client or contract address not initialized")
 		return
 	}
 
@@ -36,16 +36,16 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 	}
 	defer sub.Unsubscribe()
 
-	log.Println("Listening for InvoicePaid events...")
+	slog.Info("listening for InvoicePaid events", "contract", c.address.Hex())
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("InvoicePaid listener stopping")
+			slog.Info("InvoicePaid listener stopping")
 			return
 
 		case err := <-sub.Err():
-			log.Printf("InvoicePaid subscription error: %v", err)
+			slog.Error("InvoicePaid subscription failed, resubscribing", "error", err)
 			sub.Unsubscribe()
 			sub = c.subscribeLogs(ctx, query, logs, "InvoicePaid")
 			if sub == nil {
@@ -55,13 +55,14 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 		case vLog := <-logs:
 			event, err := c.contract.UnpackInvoicePaidEvent(&vLog)
 			if err != nil {
-				log.Printf("Failed to parse InvoicePaid event: %v", err)
+				slog.Error("InvoicePaid event parse failed", "txHash", vLog.TxHash.Hex(), "error", err)
 				continue
 			}
 
-			log.Printf("InvoicePaid Event:\n")
-			log.Printf("  OrderId: %s\n", event.InvoiceId.String())
-			log.Printf("  Amount: %s\n", event.Amount.String())
+			slog.Info("InvoicePaid",
+				"invoiceId", event.InvoiceId.String(),
+				"amount", event.Amount.String(),
+				"txHash", vLog.TxHash.Hex())
 
 			transactionTimestamp := time.Now().UTC().UnixMilli()
 			if c.client.HTTP != nil {
@@ -69,7 +70,7 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 				header, err := c.client.HTTP.HeaderByHash(headerCtx, vLog.BlockHash)
 				cancel()
 				if err != nil {
-					log.Printf("Failed to fetch block header for InvoicePaid event: %v", err)
+					slog.Error("block header fetch failed for InvoicePaid", "block", vLog.BlockNumber, "error", err)
 				} else {
 					transactionTimestamp = int64(header.Time) * 1000
 				}
@@ -84,7 +85,7 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 
 func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
-		log.Printf("release listener disabled: client or contract address not initialized")
+		slog.Warn("payment released listener disabled", "reason", "client or contract address not initialized")
 		return
 	}
 
@@ -102,16 +103,16 @@ func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 	}
 	defer sub.Unsubscribe()
 
-	log.Println("Listening for PaymentReleased events...")
+	slog.Info("listening for PaymentReleased events", "contract", c.address.Hex())
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("PaymentReleased listener stopping")
+			slog.Info("PaymentReleased listener stopping")
 			return
 
 		case err := <-sub.Err():
-			log.Printf("Subscription error: %v", err)
+			slog.Error("PaymentReleased subscription failed, resubscribing", "error", err)
 			sub.Unsubscribe()
 			sub = c.subscribeLogs(ctx, query, logs, "PaymentReleased")
 			if sub == nil {
@@ -121,13 +122,14 @@ func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 		case vLog := <-logs:
 			event, err := c.contract.UnpackPaymentReleasedEvent(&vLog)
 			if err != nil {
-				log.Printf("Failed to parse PaymentReleased event: %v", err)
+				slog.Error("PaymentReleased event parse failed", "txHash", vLog.TxHash.Hex(), "error", err)
 				continue
 			}
 
-			log.Printf("PaymentReleased Event:\n")
-			log.Printf("  OrderId: %s\n", event.InvoiceId.String())
-			log.Printf("  SellerAmount: %s\n", event.SellerAmount.String())
+			slog.Info("PaymentReleased",
+				"invoiceId", event.InvoiceId.String(),
+				"sellerAmount", event.SellerAmount.String(),
+				"txHash", vLog.TxHash.Hex())
 
 			transactionTimestamp := time.Now().UTC().UnixMilli()
 			if c.client.HTTP != nil {
@@ -135,7 +137,7 @@ func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 				header, err := c.client.HTTP.HeaderByHash(headerCtx, vLog.BlockHash)
 				cancel()
 				if err != nil {
-					log.Printf("Failed to fetch block header for release event: %v", err)
+					slog.Error("block header fetch failed for PaymentReleased", "block", vLog.BlockNumber, "error", err)
 				} else {
 					transactionTimestamp = int64(header.Time) * 1000
 				}

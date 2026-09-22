@@ -4,7 +4,7 @@ package server
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,12 +17,13 @@ func Run() error {
 	if err := loadEnv(); err != nil {
 		return err
 	}
+	setupLogging()
 
 	cfg, err := config.Load(config.Path())
 	if err != nil {
 		return err
 	}
-	log.Printf("Using %s network", cfg.Network)
+	slog.Info("configuration loaded", "network", cfg.Network)
 
 	deps, err := newDependencies(cfg)
 	if err != nil {
@@ -40,6 +41,6 @@ func Run() error {
 	}
 
 	listeners.Wait()
-	log.Println("Shutdown complete")
+	slog.Info("shutdown complete")
 	return nil
 }

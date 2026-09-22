@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -34,7 +34,7 @@ func newHTTPServer(mux http.Handler) *http.Server {
 func serve(ctx context.Context, srv *http.Server) error {
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("Server running at port %s", srv.Addr)
+		slog.Info("http server listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -45,14 +45,14 @@ func serve(ctx context.Context, srv *http.Server) error {
 	case err := <-serverErr:
 		return err
 	case <-ctx.Done():
-		log.Println("Shutdown signal received")
+		slog.Info("shutdown signal received")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("HTTP server shutdown error: %v", err)
+		slog.Error("http server shutdown failed", "error", err)
 	}
 	return nil
 }

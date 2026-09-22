@@ -1,7 +1,7 @@
 package server
 
 import (
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -84,13 +84,13 @@ func newDependencies(cfg *config.Config) (*dependencies, error) {
 		}
 		deps.feeReceiver = feeReceiverClient
 	} else {
-		log.Print("Fee receivers disabled: services.feeReceiver is not configured")
+		slog.Warn("fee receivers disabled", "reason", "services.feeReceiver is not configured")
 	}
 
 	if (addresses.OracleManager != common.Address{}) {
 		deps.oracle = oraclemanager.NewOracleManager(client, addresses.OracleManager)
 	} else {
-		log.Print("Exchange rates disabled: contracts.oracleManager is not configured")
+		slog.Warn("exchange rates disabled", "reason", "contracts.oracleManager is not configured")
 	}
 
 	return deps, nil
@@ -118,7 +118,7 @@ func (d *dependencies) contractHandler(cfg *config.Config) *handler.ContractHand
 func (d *dependencies) close() {
 	if d.feeReceiver != nil {
 		if err := d.feeReceiver.Close(); err != nil {
-			log.Printf("fee receiver connection close error: %v", err)
+			slog.Error("fee receiver connection close failed", "error", err)
 		}
 	}
 }

@@ -3,7 +3,7 @@ package paymentprocessorstorage
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/SapphireDAOO/contract-api/internal/config"
@@ -26,7 +26,7 @@ func (c *PaymentProcessorStorage) subscribeLogs(ctx context.Context, query ether
 }
 func (c *PaymentProcessorStorage) ListenToPauseEvents(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
-		log.Printf("payment processor storage listener disabled: client or contract address not initialized")
+		slog.Warn("payment processor storage listener disabled", "reason", "client or contract address not initialized")
 		return
 	}
 
@@ -42,16 +42,16 @@ func (c *PaymentProcessorStorage) ListenToPauseEvents(ctx context.Context) {
 	}
 	defer sub.Unsubscribe()
 
-	log.Println("Listening for Payment Processor Storage pause events...")
+	slog.Info("listening for payment processor storage pause events", "contract", c.address.Hex())
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Payment Processor Storage listener stopping")
+			slog.Info("payment processor storage listener stopping")
 			return
 
 		case err := <-sub.Err():
-			log.Printf("Payment Processor Storage subscription error: %v", err)
+			slog.Error("payment processor storage subscription failed, resubscribing", "error", err)
 			sub.Unsubscribe()
 			sub = c.subscribeLogs(ctx, query, logs)
 			if sub == nil {
@@ -61,14 +61,14 @@ func (c *PaymentProcessorStorage) ListenToPauseEvents(ctx context.Context) {
 		case vLog := <-logs:
 			embed, err := c.buildEmbed(&vLog)
 			if err != nil {
-				log.Printf("Failed to parse Payment Processor Storage event: %v", err)
+				slog.Error("payment processor storage event parse failed", "txHash", vLog.TxHash.Hex(), "error", err)
 				continue
 			}
 			if embed == nil {
 				continue
 			}
 
-			log.Printf("Payment Processor Storage event: %s (%s)", embed.Title, vLog.TxHash.Hex())
+			slog.Info("payment processor storage event", "event", embed.Title, "txHash", vLog.TxHash.Hex())
 			go c.notifier.SendEmbed(*embed)
 		}
 	}

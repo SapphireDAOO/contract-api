@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"sync"
@@ -80,7 +80,7 @@ func NewClient(webhookURL string) *Client {
 func (c *Client) SendEmbed(embed Embed) {
 	if c == nil || c.webhookURL == "" {
 		warnMissingWebhookOnce.Do(func() {
-			log.Println("urls.discordWebhook not set; Discord notifications disabled")
+			slog.Warn("discord notifications disabled", "reason", "urls.discordWebhook not set")
 		})
 		return
 	}
@@ -97,12 +97,12 @@ func (c *Client) SendEmbed(embed Embed) {
 		AllowedMentions: &allowedMentions{Parse: []string{"everyone"}},
 	})
 	if err != nil {
-		log.Printf("Failed to marshal Discord payload: %v", err)
+		slog.Error("discord payload marshal failed", "error", err)
 		return
 	}
 
 	if err := post(webhookURL, payload); err != nil {
-		log.Printf("Failed to send Discord notification: %v", err)
+		slog.Error("discord notification failed", "error", err)
 	}
 }
 

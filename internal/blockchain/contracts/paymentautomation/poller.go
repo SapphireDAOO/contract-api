@@ -2,7 +2,7 @@ package paymentautomation
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -19,12 +19,12 @@ const (
 
 func (c *PaymentAutomation) PollDueTasks(ctx context.Context) {
 	if c == nil || c.client == nil || c.client.HTTP == nil || c.address == nil {
-		log.Println("payment automation poller disabled: client or contract address not initialized")
+		slog.Warn("payment automation poller disabled", "reason", "client or contract address not initialized")
 		return
 	}
 
 	interval := pollInterval()
-	log.Printf("Polling Payment Automation for due tasks every %s...", interval)
+	slog.Info("polling payment automation for due tasks", "interval", interval)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -34,7 +34,7 @@ func (c *PaymentAutomation) PollDueTasks(ctx context.Context) {
 
 		select {
 		case <-ctx.Done():
-			log.Println("Payment Automation poller stopping")
+			slog.Info("payment automation poller stopping")
 			return
 		case <-ticker.C:
 		}
@@ -49,7 +49,7 @@ func (c *PaymentAutomation) runCycle(ctx context.Context) {
 	if err != nil {
 		// A cancelled context means shutdown, not a contract problem.
 		if ctx.Err() == nil {
-			log.Printf("Failed to check for due tasks: %v", err)
+			slog.Error("due task check failed", "error", err)
 		}
 		return
 	}
@@ -57,7 +57,7 @@ func (c *PaymentAutomation) runCycle(ctx context.Context) {
 		return
 	}
 
-	log.Println("Due tasks found; sending processDueTasks transaction")
+	slog.Info("due tasks found, sending processDueTasks")
 
 	processCtx, cancelProcess := context.WithTimeout(ctx, processTimeout)
 	defer cancelProcess()
@@ -65,19 +65,19 @@ func (c *PaymentAutomation) runCycle(ctx context.Context) {
 	receipt, err := c.ProcessDueTasks(processCtx)
 	if err != nil {
 		if ctx.Err() == nil {
-			log.Printf("Failed to process due tasks: %v", err)
+			slog.Error("processDueTasks failed", "error", err)
 		}
 		return
 	}
 
 	if receipt.Status != types.ReceiptStatusSuccessful {
-		log.Printf("processDueTasks reverted in tx %s (block %d)",
-			receipt.TxHash.Hex(), receipt.BlockNumber)
+		slog.Error("processDueTasks reverted",
+			"txHash", receipt.TxHash.Hex(), "block", receipt.BlockNumber)
 		return
 	}
 
-	log.Printf("Processed due tasks in tx %s (block %d, gas used %d)",
-		receipt.TxHash.Hex(), receipt.BlockNumber, receipt.GasUsed)
+	slog.Info("processed due tasks",
+		"txHash", receipt.TxHash.Hex(), "block", receipt.BlockNumber, "gasUsed", receipt.GasUsed)
 }
 
 func pollInterval() time.Duration {
@@ -88,11 +88,11 @@ func pollInterval() time.Duration {
 
 	interval, err := time.ParseDuration(raw)
 	if err != nil {
-		log.Printf("Invalid AUTOMATION_POLL_INTERVAL %q, using %s: %v", raw, defaultPollInterval, err)
+		slog.Warn("invalid AUTOMATION_POLL_INTERVAL, using default", "value", raw, "default", defaultPollInterval, "error", err)
 		return defaultPollInterval
 	}
 	if interval <= 0 {
-		log.Printf("AUTOMATION_POLL_INTERVAL must be positive, using %s", defaultPollInterval)
+		slog.Warn("AUTOMATION_POLL_INTERVAL must be positive, using default", "value", raw, "default", defaultPollInterval)
 		return defaultPollInterval
 	}
 	return interval
