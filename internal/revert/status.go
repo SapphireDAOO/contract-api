@@ -34,6 +34,7 @@ var StatusCodes = map[string]int{
 	"The fee rate is invalid.":                                           http.StatusBadRequest,
 	"The fee signer address is invalid.":                                 http.StatusBadRequest,
 	"The new owner cannot be the zero address.":                          http.StatusBadRequest,
+	"The wrapped native token address is invalid.":                       http.StatusBadRequest,
 	"The transaction target is invalid.":                                 http.StatusBadRequest,
 	"The approval threshold is invalid.":                                 http.StatusBadRequest,
 	"That address is not a signer.":                                      http.StatusBadRequest,

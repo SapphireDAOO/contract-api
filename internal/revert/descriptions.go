@@ -79,6 +79,7 @@ var Descriptions = map[string]string{
 	"0xdb469296": "There is no active emergency pause.",
 	"0x6f5e8818": "There is no pending ownership handover.",
 	"0x6cd60201": "The contract is not paused.",
+	"0xf8726406": "The wrapped native token address is invalid.",
 
 	// NotAuthorized() and Unauthorized(), declared by several contracts. A
 	// caller cannot act on them differently, so both read the same.
