@@ -19,6 +19,7 @@ import {
 import { getClients } from "../chain/clients";
 import { chainId, config } from "../config/config";
 import { FeeReceiverUnavailableError } from "../errors";
+import { logger } from "../logger";
 
 /**
  * Resolves the token the stealth account must approve: the payment token
@@ -50,9 +51,9 @@ export const delegateAndApprove = async (
   try {
     environment = getSmartAccountsEnvironment(chain);
   } catch {
-    console.warn(
-      `No smart accounts environment for chain ${chain}; skipping 7702 delegation`,
-    );
+    logger.warn("no smart accounts environment; skipping 7702 delegation", {
+      chainId: chain,
+    });
     return;
   }
 
@@ -115,6 +116,12 @@ export const delegateAndApprove = async (
     ],
   });
 
+  logger.debug("sending delegation and approval", {
+    address: stealthAccount.address,
+    approvalToken,
+    sweeper,
+  });
+
   const hash = await walletClient.sendTransaction({
     to: environment.DelegationManager,
     data,
@@ -122,6 +129,18 @@ export const delegateAndApprove = async (
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") {
+    logger.error("delegation transaction reverted", {
+      address: stealthAccount.address,
+      txHash: hash,
+      block: receipt.blockNumber,
+    });
     throw new Error("Stealth fee receiver delegation transaction failed");
   }
+
+  logger.info("stealth fee receiver delegated and approved", {
+    address: stealthAccount.address,
+    approvalToken,
+    txHash: hash,
+    gasUsed: receipt.gasUsed,
+  });
 };

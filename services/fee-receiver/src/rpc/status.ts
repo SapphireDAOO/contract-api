@@ -1,5 +1,6 @@
 import grpc from "@grpc/grpc-js";
 import { FeeReceiverUnavailableError } from "../errors";
+import { logger } from "../logger";
 import { InvalidArgument } from "./validate";
 
 const statusError = (code: grpc.status, message: string): grpc.ServiceError =>
@@ -14,7 +15,7 @@ export const toStatusError = (error: unknown): grpc.ServiceError => {
     return statusError(grpc.status.INVALID_ARGUMENT, error.message);
   }
 
-  console.error("fee-receiver rpc error", error);
+  logger.error("rpc call failed", { error });
 
   if (error instanceof FeeReceiverUnavailableError) {
     return statusError(

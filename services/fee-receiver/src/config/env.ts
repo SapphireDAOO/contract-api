@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { logger } from "../logger";
 
 /**
  * The repo-root .env, where the Go API keeps its secrets too. Bun only loads a
@@ -45,7 +46,7 @@ export const loadRootEnv = (path: string = DEFAULT_ENV_PATH): void => {
   try {
     text = readFileSync(path, "utf8");
   } catch {
-    console.warn(`No .env at ${path}; relying on the ambient environment`);
+    logger.warn("no .env file; relying on the ambient environment", { path });
     return;
   }
 

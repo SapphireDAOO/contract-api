@@ -15,6 +15,7 @@ import {
   restoreStealthFeeReceiver,
   type StealthFeeReceiver,
 } from "../fees/stealth";
+import { logger } from "../logger";
 import {
   invalid,
   parseEphemeralKeys,
@@ -47,12 +48,25 @@ export const generateaddresses = async (
   const quantity = parseQuantity(request.quantity);
   const paymentToken = parsePaymentToken(request.paymentToken);
 
+  logger.info("generating fee receivers", {
+    quantity,
+    chainId: request.chainId,
+    paymentToken: paymentToken ?? "default",
+  });
+
   const receivers = Array.from({ length: quantity }, () =>
     generateStealthFeeReceiver(),
   );
   await approveAll(receivers, paymentToken);
 
-  return { ephemeralPublicKey: receivers.map((r) => r.ephemeralPublicKey) };
+  const ephemeralPublicKey = receivers.map((r) => r.ephemeralPublicKey);
+  logger.info("fee receivers ready", {
+    quantity: receivers.length,
+    addresses: receivers.map((r) => r.stealthAccount.address),
+    ephemeralPublicKey,
+  });
+
+  return { ephemeralPublicKey };
 };
 
 export const send = async (
@@ -72,7 +86,11 @@ export const send = async (
   try {
     receivers = keys.map((key) => restoreStealthFeeReceiver(key));
   } catch (error) {
-    console.warn("Unusable ephemeral public key", error);
+    logger.warn("unusable ephemeral public key", {
+      invoiceId,
+      keys: keys.length,
+      error,
+    });
     return invalid("Invalid ephemeral_public_key");
   }
 
@@ -83,6 +101,13 @@ export const send = async (
     feeReceivers,
     kind,
   );
+
+  logger.info("fee receivers authorized", {
+    invoiceId,
+    processor,
+    kind,
+    addresses: feeReceivers,
+  });
 
   return { addresses: feeReceivers, signature };
 };

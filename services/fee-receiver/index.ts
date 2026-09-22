@@ -1,6 +1,7 @@
 import grpc from "@grpc/grpc-js";
 import { FeeReceiverService } from "./generated/fee_receiver";
 import { config } from "./src/config/config";
+import { logger } from "./src/logger";
 import { feeReceiverServer } from "./src/rpc/server";
 
 const ADDRESS = process.env.GRPC_ADDRESS ?? "127.0.0.1:50051";
@@ -16,26 +17,32 @@ const main = () => {
     grpc.ServerCredentials.createInsecure(),
     (error, port) => {
       if (error) {
-        console.error("fee-receiver failed to bind", error);
+        logger.error("fee-receiver failed to bind", { address: ADDRESS, error });
         process.exit(1);
       }
 
-      console.log(
-        `fee-receiver listening on port ${port} (network ${network}, chain ${chain.id})`,
-      );
+      logger.info("fee-receiver listening", {
+        port,
+        network,
+        chainId: chain.id,
+      });
 
       if (!sweeper) {
-        console.warn(`No sweeper contract configured for network ${network}`);
+        logger.warn("no sweeper contract configured", { network });
       }
       if (!wrappedNative) {
-        console.warn(
-          `No wrapped native token configured for network ${network}`,
-        );
+        logger.warn("no wrapped native token configured", { network });
       }
     },
   );
 
-  const shutdown = () => server.tryShutdown(() => process.exit(0));
+  const shutdown = () => {
+    logger.info("shutdown signal received");
+    server.tryShutdown(() => {
+      logger.info("shutdown complete");
+      process.exit(0);
+    });
+  };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 };
