@@ -4,10 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 )
@@ -90,8 +89,7 @@ func TestAccessControlMiddleWare(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("KEY", tt.envKey)
-			log.SetOutput(io.Discard)
-			t.Cleanup(func() { log.SetOutput(os.Stderr) })
+			silenceLogs(t)
 
 			var reached bool
 			handler := AccessControlMiddleWare(called(&reached))
@@ -152,4 +150,12 @@ func TestAccessControlMiddleWarePreservesTheRequest(t *testing.T) {
 	if body != `{"a":1}` {
 		t.Errorf("handler read %q, want the original body", body)
 	}
+}
+
+func silenceLogs(t *testing.T) {
+	t.Helper()
+
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	t.Cleanup(func() { slog.SetDefault(previous) })
 }

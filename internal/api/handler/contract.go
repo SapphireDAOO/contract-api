@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"strings"
@@ -100,7 +100,9 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 		}
 		id := invoices[0].InvoiceId
 		res.Url = h.BaseUrl + invoice.EncodeIDString(res.Orders[id].OrderId)
-		json.NewEncoder(w).Encode(res)
+		if err := json.NewEncoder(w).Encode(res); err != nil {
+			slog.Error("writing the response failed", "error", err)
+		}
 		return
 	}
 
@@ -111,7 +113,9 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 	}
 
 	res.Url = h.BaseUrl + invoice.EncodeMetaIDString(*res.MetaInvoiceId)
-	json.NewEncoder(w).Encode(res)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
@@ -128,10 +132,12 @@ func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
 		"transactionUrl": h.txURL(txHash.Hex()),
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
@@ -179,17 +185,20 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	data, err := h.PaymentProcessor.GetInvoiceData(orderId)
 	if err != nil {
 		// The refund transaction already succeeded; only the callback is skipped.
-		log.Printf("refund callback skipped for invoice %s: fetching invoice data failed: %v", invoiceID, err)
+		slog.Error("refund callback skipped",
+			"invoiceId", invoiceID, "reason", "fetching invoice data failed", "error", err)
 	} else {
 		go h.Callbacks.SendRefundCallback(invoiceID,
 			data.PaymentToken.String(), data.AmountPaid, refundShare, transactionURL, transactionTimestamp)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
 		"transactionUrl": transactionURL,
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) {
@@ -214,10 +223,12 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
 		"transactionUrl": h.txURL(txHash.Hex()),
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
@@ -240,10 +251,12 @@ func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 		res.SellerAmount, transactionURL, res.BlockTimestamp)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
 		"transactionUrl": transactionURL,
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) {
@@ -279,10 +292,12 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"status":         "success",
 		"transactionUrl": h.txURL(txHash.Hex()),
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 // txURL links a transaction on the configured explorer. Chains without one

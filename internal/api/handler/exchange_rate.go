@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -94,8 +95,10 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"from": usdCurrency,
 		"to":   rates,
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }

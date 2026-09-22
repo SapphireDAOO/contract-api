@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/SapphireDAOO/contract-api/internal/feereceiver"
@@ -71,10 +72,12 @@ func (h *ContractHandler) CreateFeeReceivers(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"status":              "success",
 		"ephemeralPublicKeys": res.GetEphemeralPublicKey(),
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }
 
 // AuthorizeFeeReceivers turns stored ephemeral public keys back into fee
@@ -142,9 +145,11 @@ func (h *ContractHandler) AuthorizeFeeReceivers(w http.ResponseWriter, r *http.R
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"status":       "success",
 		"feeReceivers": res.GetAddresses(),
 		"signature":    res.GetSignature(),
-	})
+	}); err != nil {
+		slog.Error("writing the response failed", "error", err)
+	}
 }

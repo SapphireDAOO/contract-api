@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -39,7 +40,7 @@ const (
 	notesOpen = notes + "/open"
 )
 
-func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
+func Route(contractHandler *handler.ContractHandler) http.Handler {
 	router := Router{mux: http.NewServeMux()}
 
 	router.GET("/{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +49,9 @@ func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
 			"time":   time.Now().Format(time.RFC3339),
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			slog.Error("writing the response failed", "error", err)
+		}
 	})
 
 	router.POST(v1+"/invoices", middleware.AccessControlMiddleWare(contractHandler.CreateInvoice))
@@ -71,5 +74,5 @@ func Route(contractHandler *handler.ContractHandler) *http.ServeMux {
 	router.POST(notesOpen, middleware.CORS(contractHandler.OpenNote))
 	router.OPTIONS(notesOpen, middleware.Preflight)
 
-	return router.mux
+	return middleware.Logging(router.mux.ServeHTTP)
 }
