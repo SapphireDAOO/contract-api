@@ -18,7 +18,6 @@ import {
 } from "viem";
 import { getClients } from "../chain/clients";
 import { chainId, config } from "../config/config";
-import { FeeReceiverUnavailableError } from "../errors";
 import { logger } from "../logger";
 
 /**

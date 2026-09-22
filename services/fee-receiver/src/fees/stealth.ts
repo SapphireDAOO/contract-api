@@ -55,9 +55,6 @@ export const generateStealthFeeReceiver = (): StealthFeeReceiver => {
     );
   }
 
-  // The ephemeral public key is the only way to recover this wallet later,
-  // so it is recorded here alongside the address it controls. Both are
-  // public; the stealth private key is never logged.
   logger.info("stealth fee receiver created", {
     ephemeralPublicKey: receiver.ephemeralPublicKey,
     address: receiver.stealthAccount.address,
