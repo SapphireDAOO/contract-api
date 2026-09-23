@@ -53,15 +53,15 @@ func (c *PaymentProcessor) CreateInvoice(
 		SimulateAndBroadcast(ctx, c.instance, c.client, intermediatedOperatorAddress, *c.address, data)
 
 	orders := make(map[string]struct {
-		Seller  string `json:"seller"`
-		OrderId string `json:"orderId"`
+		Seller    string `json:"seller"`
+		InvoiceId string `json:"invoiceId"`
 	})
 
 	id := param[0].InvoiceId
 	o := orders[id]
 
 	o.Seller = param[0].Seller.Hex()
-	o.OrderId = invoice.OrderIDToUint216(id)
+	o.InvoiceId = invoice.OrderIDToUint216(id)
 
 	orders[id] = o
 
@@ -89,8 +89,8 @@ func (c *PaymentProcessor) CreateInvoices(
 	}
 
 	orders := make(map[string]struct {
-		Seller  string `json:"seller"`
-		OrderId string `json:"orderId"`
+		Seller    string `json:"seller"`
+		InvoiceId string `json:"invoiceId"`
 	})
 
 	for i := range param {
@@ -99,7 +99,7 @@ func (c *PaymentProcessor) CreateInvoices(
 		o := orders[id]
 		o.Seller = param[i].Seller.Hex()
 
-		o.OrderId = invoice.OrderIDToUint216(id)
+		o.InvoiceId = invoice.OrderIDToUint216(id)
 
 		orders[id] = o
 	}

@@ -96,7 +96,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
   "orders": {
     "550e8400-e29b-41d4-a716-446655440000": {
       "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
-      "orderId": "59808737901387817475691215581034097896123425895641016234844280889"
+      "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889"
     }
   }
 }
@@ -113,7 +113,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 - `price` is converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
 - A single invoice triggers `createSingleInvoice`, emitting `InvoiceCreated`. Multiple invoices trigger `createMetaInvoice`, emitting `MetaInvoiceCreated`.
 - Only the intermediated platform operator (retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`) can call these functions.
-- The client-provided `orderId` is hashed to a `uint216` by `invoice.OrderIDToUint216` for on-chain storage, producing the numeric `orderId` in the response. That numeric id is the `{invoiceId}` used by every other endpoint.
+- The client-provided `orderId` is hashed to a `uint216` by `invoice.OrderIDToUint216` for on-chain storage, producing the numeric `invoiceId` in the response. That id is the `{invoiceId}` every other endpoint takes.
 
 **Error Responses**:
 

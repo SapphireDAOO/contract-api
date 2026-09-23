@@ -99,7 +99,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		id := invoices[0].InvoiceId
-		res.Url = h.BaseUrl + invoice.EncodeIDString(res.Orders[id].OrderId)
+		res.Url = h.BaseUrl + invoice.EncodeIDString(res.Orders[id].InvoiceId)
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			slog.Error("writing the response failed", "error", err)
 		}
