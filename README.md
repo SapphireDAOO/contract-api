@@ -53,28 +53,33 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
 #### **Request Body**
 
 ```json
-[
-  {
-    "orderId": "550e8400-e29b-41d4-a716-446655440000",
-    "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": 8680000000,
-    "escrowHoldPeriod": 604800,
-    "currency": "USD",
-    "paymentTokens": ["ETH", "USDC"]
-  }
-]
+{
+  "invoices": [
+    {
+      "orderId": "550e8400-e29b-41d4-a716-446655440000",
+      "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+      "price": 8680000000,
+      "escrowHoldPeriod": 604800,
+      "currency": "USD"
+    }
+  ],
+  "paymentTokens": ["ETH", "USDC"]
+}
 ```
+
+`invoices` holds one entry per invoice; one creates a single invoice, several create a meta invoice. `paymentTokens` sits beside it and applies to every invoice in the batch.
 
 #### Field Details
 
 | Field              | Type     | Required | Description                                                                              |
 | :----------------: | :------: | :------: | :--------------------------------------------------------------------------------------: |
+| `invoices`         | object[] | ✅       | The invoices to create. At least one.                                                    |
 | `orderId`          | string   | ✅       | Unique client-side identifier for the invoice (e.g., a UUID or any string).              |
 | `seller`           | string   | ✅       | Ethereum address of the seller. Must not be the zero address.                            |
 | `price`            | number   | ✅       | Invoice price in cents; scaled on the server using the `currency` precision.              |
 | `escrowHoldPeriod` | number   | ✅       | Duration in seconds for holding funds in escrow (e.g., `604800` = 7 days).                |
 | `currency`         | string   | ✅       | Pricing currency; sets the decimal precision applied to `price` (`USD` = 8 decimals).     |
-| `paymentTokens`    | string[] | ✅       | Token **symbols** the buyer may pay with, e.g. `["ETH", "USDC"]`. At least one.            |
+| `paymentTokens`    | string[] | ✅       | Token **symbols** the buyer may pay with, e.g. `["ETH", "USDC"]`. At least one. Applies to every invoice in the batch, and sits beside `invoices` rather than inside it. |
 
 **About `paymentTokens`**: callers name tokens by **symbol**, not address. Each symbol is resolved to the address deployed on the selected network using the `tokens` table in [`config.yaml`](config.yaml), so the same request body works against local, testnet and mainnet. Matching is case-insensitive (`usdc` resolves `USDC`).
 
@@ -141,16 +146,18 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 curl -X POST https://sapphiredaotesting.com/v1/invoices \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '[
-  {
-    "orderId": "550e8400-e29b-41d4-a716-446655440000",
-    "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
-    "price": 8680000000,
-    "escrowHoldPeriod": 604800,
-    "currency": "USD",
-    "paymentTokens": ["ETH", "USDC"]
-  }
-]'
+-d '{
+  "invoices": [
+    {
+      "orderId": "550e8400-e29b-41d4-a716-446655440000",
+      "seller": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
+      "price": 8680000000,
+      "escrowHoldPeriod": 604800,
+      "currency": "USD"
+    }
+  ],
+  "paymentTokens": ["ETH", "USDC"]
+}'
 ```
 
 ---

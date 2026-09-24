@@ -1,6 +1,7 @@
 package invoice
 
 import (
+	"encoding/json"
 	"maps"
 	"math/big"
 	"slices"
@@ -45,27 +46,30 @@ func validParam() CreateInvoiceParam {
 		Price:            1000,
 		EscrowHoldPeriod: 3600,
 		Currency:         "USD",
-		PaymentTokens:    []string{"USDC"},
 	}
+}
+
+func validRequest(params ...CreateInvoiceParam) CreateInvoiceRequest {
+	if len(params) == 0 {
+		params = []CreateInvoiceParam{validParam()}
+	}
+	return CreateInvoiceRequest{Invoices: params, PaymentTokens: []string{"USDC"}}
 }
 
 func TestValidateCreateInvoiceParams(t *testing.T) {
 	tests := []struct {
-		name    string
-		mutate  func(*CreateInvoiceParam)
-		params  []CreateInvoiceParam
-		wantErr string
+		name     string
+		mutate   func(*CreateInvoiceParam)
+		tokens   func(*CreateInvoiceRequest)
+		params   []CreateInvoiceParam
+		setEmpty bool
+		wantErr  string
 	}{
 		{name: "valid", mutate: func(*CreateInvoiceParam) {}},
 		{
-			name:    "no parameters",
-			params:  []CreateInvoiceParam{},
-			wantErr: "no invoice parameters provided",
-		},
-		{
-			name:    "nil parameters",
-			params:  nil,
-			wantErr: "no invoice parameters provided",
+			name:     "no parameters",
+			setEmpty: true,
+			wantErr:  "no invoice parameters provided",
 		},
 		{
 			name:    "empty order id",
@@ -104,31 +108,37 @@ func TestValidateCreateInvoiceParams(t *testing.T) {
 		},
 		{
 			name:    "no payment tokens",
-			mutate:  func(p *CreateInvoiceParam) { p.PaymentTokens = nil },
+			tokens:  func(r *CreateInvoiceRequest) { r.PaymentTokens = nil },
 			wantErr: "at least one payment token is required",
 		},
 		{
 			name:    "unknown payment token",
-			mutate:  func(p *CreateInvoiceParam) { p.PaymentTokens = []string{"DOGE"} },
+			tokens:  func(r *CreateInvoiceRequest) { r.PaymentTokens = []string{"DOGE"} },
 			wantErr: `unknown payment token "DOGE"`,
 		},
 		{
 			name:    "one unknown token among known ones",
-			mutate:  func(p *CreateInvoiceParam) { p.PaymentTokens = []string{"USDC", "DOGE"} },
+			tokens:  func(r *CreateInvoiceRequest) { r.PaymentTokens = []string{"USDC", "DOGE"} },
 			wantErr: `unknown payment token "DOGE"`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := tt.params
+			request := validRequest()
+			if tt.setEmpty {
+				request.Invoices = nil
+			}
 			if tt.mutate != nil {
 				p := validParam()
 				tt.mutate(&p)
-				params = []CreateInvoiceParam{p}
+				request.Invoices = []CreateInvoiceParam{p}
+			}
+			if tt.tokens != nil {
+				tt.tokens(&request)
 			}
 
-			err := ValidateCreateInvoiceParams(params, testTokens())
+			err := ValidateCreateInvoiceParams(request, testTokens())
 
 			if tt.wantErr == "" {
 				if err != nil {
@@ -149,9 +159,11 @@ func TestValidateCreateInvoiceParams(t *testing.T) {
 func TestValidateCreateInvoiceParamsTrimsAndFolds(t *testing.T) {
 	p := validParam()
 	p.Seller = "  " + sellerAddress + "  "
-	p.PaymentTokens = []string{" usdc ", "eth"}
 
-	if err := ValidateCreateInvoiceParams([]CreateInvoiceParam{p}, testTokens()); err != nil {
+	request := validRequest(p)
+	request.PaymentTokens = []string{" usdc ", "eth"}
+
+	if err := ValidateCreateInvoiceParams(request, testTokens()); err != nil {
 		t.Errorf("ValidateCreateInvoiceParams returned %v, want nil", err)
 	}
 }
@@ -161,7 +173,7 @@ func TestValidateCreateInvoiceParamsReportsTheIndex(t *testing.T) {
 	bad := validParam()
 	bad.Price = 0
 
-	err := ValidateCreateInvoiceParams([]CreateInvoiceParam{good, good, bad}, testTokens())
+	err := ValidateCreateInvoiceParams(validRequest(good, good, bad), testTokens())
 
 	if err == nil {
 		t.Fatal("ValidateCreateInvoiceParams returned nil, want an error")
@@ -172,10 +184,10 @@ func TestValidateCreateInvoiceParamsReportsTheIndex(t *testing.T) {
 }
 
 func TestValidateCreateInvoiceParamsListsKnownTokens(t *testing.T) {
-	p := validParam()
-	p.PaymentTokens = []string{"DOGE"}
+	request := validRequest()
+	request.PaymentTokens = []string{"DOGE"}
 
-	err := ValidateCreateInvoiceParams([]CreateInvoiceParam{p}, testTokens())
+	err := ValidateCreateInvoiceParams(request, testTokens())
 
 	if err == nil {
 		t.Fatal("ValidateCreateInvoiceParams returned nil, want an error")
@@ -189,7 +201,7 @@ func TestConvertParam(t *testing.T) {
 	p := validParam()
 	p.Price = 1000
 
-	got, err := ConvertParam([]CreateInvoiceParam{p}, testTokens())
+	got, err := ConvertParam(validRequest(p), testTokens())
 	if err != nil {
 		t.Fatalf("ConvertParam returned %v", err)
 	}
@@ -236,7 +248,7 @@ func TestConvertParamScalesByCurrencyPrecision(t *testing.T) {
 			p.Currency = tt.currency
 			p.Price = tt.price
 
-			got, err := ConvertParam([]CreateInvoiceParam{p}, testTokens())
+			got, err := ConvertParam(validRequest(p), testTokens())
 			if err != nil {
 				t.Fatalf("ConvertParam returned %v", err)
 			}
@@ -248,10 +260,10 @@ func TestConvertParamScalesByCurrencyPrecision(t *testing.T) {
 }
 
 func TestConvertParamRejectsUnknownTokens(t *testing.T) {
-	p := validParam()
-	p.PaymentTokens = []string{"DOGE"}
+	request := validRequest()
+	request.PaymentTokens = []string{"DOGE"}
 
-	got, err := ConvertParam([]CreateInvoiceParam{p}, testTokens())
+	got, err := ConvertParam(request, testTokens())
 
 	if err == nil {
 		t.Fatalf("ConvertParam returned %v, want an error", got)
@@ -259,19 +271,16 @@ func TestConvertParamRejectsUnknownTokens(t *testing.T) {
 	if !strings.Contains(err.Error(), `unknown payment token "DOGE"`) {
 		t.Errorf("error = %q, want it to name the unknown token", err)
 	}
-	if !strings.Contains(err.Error(), "invoice 0") {
-		t.Errorf("error = %q, want it to name the invoice index", err)
-	}
 	if got != nil {
 		t.Errorf("ConvertParam returned %v alongside an error, want nil", got)
 	}
 }
 
 func TestConvertParamResolvesTheNativeToken(t *testing.T) {
-	p := validParam()
-	p.PaymentTokens = []string{"ETH"}
+	request := validRequest()
+	request.PaymentTokens = []string{"ETH"}
 
-	got, err := ConvertParam([]CreateInvoiceParam{p}, testTokens())
+	got, err := ConvertParam(request, testTokens())
 	if err != nil {
 		t.Fatalf("ConvertParam returned %v", err)
 	}
@@ -285,9 +294,11 @@ func TestConvertParamPreservesOrderAndCount(t *testing.T) {
 	first.OrderId = "ORDER-1"
 	second := validParam()
 	second.OrderId = "ORDER-2"
-	second.PaymentTokens = []string{"ETH", "USDC"}
 
-	got, err := ConvertParam([]CreateInvoiceParam{first, second}, testTokens())
+	request := validRequest(first, second)
+	request.PaymentTokens = []string{"ETH", "USDC"}
+
+	got, err := ConvertParam(request, testTokens())
 	if err != nil {
 		t.Fatalf("ConvertParam returned %v", err)
 	}
@@ -303,7 +314,7 @@ func TestConvertParamPreservesOrderAndCount(t *testing.T) {
 }
 
 func TestConvertParamEmpty(t *testing.T) {
-	got, err := ConvertParam(nil, testTokens())
+	got, err := ConvertParam(CreateInvoiceRequest{PaymentTokens: []string{"USDC"}}, testTokens())
 
 	if err != nil {
 		t.Fatalf("ConvertParam(nil) returned %v", err)
@@ -349,7 +360,7 @@ func TestValidateInvoices(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			invoices, err := ConvertParam([]CreateInvoiceParam{validParam()}, testTokens())
+			invoices, err := ConvertParam(validRequest(validParam()), testTokens())
 			if err != nil {
 				t.Fatalf("ConvertParam returned %v", err)
 			}
@@ -382,7 +393,7 @@ func TestValidateInvoicesEmpty(t *testing.T) {
 }
 
 func TestValidateInvoicesReportsTheIndex(t *testing.T) {
-	invoices, err := ConvertParam([]CreateInvoiceParam{validParam(), validParam()}, testTokens())
+	invoices, err := ConvertParam(validRequest(validParam(), validParam()), testTokens())
 	if err != nil {
 		t.Fatalf("ConvertParam returned %v", err)
 	}
@@ -399,12 +410,12 @@ func TestValidateInvoicesReportsTheIndex(t *testing.T) {
 }
 
 func TestConvertParamOutputPassesValidateInvoices(t *testing.T) {
-	params := []CreateInvoiceParam{validParam(), validParam()}
+	request := validRequest(validParam(), validParam())
 
-	if err := ValidateCreateInvoiceParams(params, testTokens()); err != nil {
+	if err := ValidateCreateInvoiceParams(request, testTokens()); err != nil {
 		t.Fatalf("ValidateCreateInvoiceParams returned %v", err)
 	}
-	invoices, err := ConvertParam(params, testTokens())
+	invoices, err := ConvertParam(request, testTokens())
 	if err != nil {
 		t.Fatalf("ConvertParam returned %v", err)
 	}
@@ -459,5 +470,72 @@ func TestParseAddress(t *testing.T) {
 				t.Errorf("ParseAddress(%q) = %s, want %s", tt.value, got, tt.want)
 			}
 		})
+	}
+}
+
+// The wire format the API documents must decode into the request, including
+// the mixed-case field names a caller may send.
+func TestCreateInvoiceRequestDecodesFromJSON(t *testing.T) {
+	const body = `{
+	  "invoices": [
+	    {
+	      "orderId": "531CA29F27FA6",
+	      "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+	      "price": 1000,
+	      "EscrowHoldPeriod": 60,
+	      "Currency": "USD"
+	    },
+	    {
+	      "orderId": "SECOND",
+	      "seller": "0x60D7dD3b4248D53Abba8DA999B22023656A2E4B3",
+	      "price": 2000,
+	      "escrowHoldPeriod": 120,
+	      "currency": "USD"
+	    }
+	  ],
+	  "paymentTokens": ["ETH"]
+	}`
+
+	var request CreateInvoiceRequest
+	if err := json.Unmarshal([]byte(body), &request); err != nil {
+		t.Fatalf("Unmarshal returned %v", err)
+	}
+
+	if len(request.Invoices) != 2 {
+		t.Fatalf("got %d invoices, want 2", len(request.Invoices))
+	}
+	if request.Invoices[0].OrderId != "531CA29F27FA6" {
+		t.Errorf("orderId = %q", request.Invoices[0].OrderId)
+	}
+	if request.Invoices[0].EscrowHoldPeriod != 60 {
+		t.Errorf("EscrowHoldPeriod = %d, want 60", request.Invoices[0].EscrowHoldPeriod)
+	}
+	if request.Invoices[0].Currency != "USD" {
+		t.Errorf("Currency = %q, want USD", request.Invoices[0].Currency)
+	}
+	if request.Invoices[1].Price != 2000 {
+		t.Errorf("second price = %d, want 2000", request.Invoices[1].Price)
+	}
+	if len(request.PaymentTokens) != 1 || request.PaymentTokens[0] != "ETH" {
+		t.Errorf("paymentTokens = %v, want [ETH]", request.PaymentTokens)
+	}
+}
+
+// One token list covers the whole batch.
+func TestConvertParamAppliesTheSharedTokensToEveryInvoice(t *testing.T) {
+	request := validRequest(validParam(), validParam(), validParam())
+	request.PaymentTokens = []string{"ETH", "USDC"}
+
+	got, err := ConvertParam(request, testTokens())
+	if err != nil {
+		t.Fatalf("ConvertParam returned %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("got %d invoices, want 3", len(got))
+	}
+	for i, inv := range got {
+		if len(inv.PaymentTokens) != 2 {
+			t.Errorf("invoice %d has %d payment tokens, want 2", i, len(inv.PaymentTokens))
+		}
 	}
 }

@@ -17,14 +17,16 @@ type TokenResolver interface {
 }
 
 type CreateInvoiceParam struct {
-	OrderId          string
-	Seller           string
-	Price            int
-	EscrowHoldPeriod uint32
-	Currency         string
-	// PaymentTokens are token symbols such as "ETH" or "USDC", resolved to
-	// addresses for the selected network.
-	PaymentTokens []string
+	OrderId          string `json:"orderId"`
+	Seller           string `json:"seller"`
+	Price            int    `json:"price"`
+	EscrowHoldPeriod uint32 `json:"escrowHoldPeriod"`
+	Currency         string `json:"currency"`
+}
+
+type CreateInvoiceRequest struct {
+	Invoices      []CreateInvoiceParam `json:"invoices"`
+	PaymentTokens []string             `json:"paymentTokens"`
 }
 
 // ParseAddress reads a value as a non-zero account address. The zero address
@@ -61,11 +63,22 @@ func toPaymentTokens(symbols []string, tokens TokenResolver) ([]common.Address, 
 	return addresses, nil
 }
 
-func ValidateCreateInvoiceParams(params []CreateInvoiceParam, tokens TokenResolver) error {
-	if len(params) == 0 {
+func ValidateCreateInvoiceParams(request CreateInvoiceRequest, tokens TokenResolver) error {
+	if len(request.Invoices) == 0 {
 		return fmt.Errorf("no invoice parameters provided")
 	}
-	for i, p := range params {
+
+	if len(request.PaymentTokens) == 0 {
+		return fmt.Errorf("at least one payment token is required")
+	}
+	for _, symbol := range request.PaymentTokens {
+		if _, ok := tokens.Address(strings.TrimSpace(symbol)); !ok {
+			return fmt.Errorf("unknown payment token %q (known: %s)",
+				symbol, strings.Join(tokens.Symbols(), ", "))
+		}
+	}
+
+	for i, p := range request.Invoices {
 		if strings.TrimSpace(p.OrderId) == "" {
 			return fmt.Errorf("invoice %d: orderId is required", i)
 		}
@@ -75,34 +88,24 @@ func ValidateCreateInvoiceParams(params []CreateInvoiceParam, tokens TokenResolv
 		if p.Price <= 0 {
 			return fmt.Errorf("invoice %d: price must be greater than zero", i)
 		}
-
-		if len(p.PaymentTokens) == 0 {
-			return fmt.Errorf("invoice %d: at least one payment token is required", i)
-		}
-		for _, symbol := range p.PaymentTokens {
-			if _, ok := tokens.Address(strings.TrimSpace(symbol)); !ok {
-				return fmt.Errorf("invoice %d: unknown payment token %q (known: %s)",
-					i, symbol, strings.Join(tokens.Symbols(), ", "))
-			}
-		}
 	}
 	return nil
 }
 
-func ConvertParam(param []CreateInvoiceParam, tokens TokenResolver) ([]intermediatedpaymentprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam, error) {
+func ConvertParam(request CreateInvoiceRequest, tokens TokenResolver) ([]intermediatedpaymentprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam, error) {
 	var results []intermediatedpaymentprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam
 
-	for i, v := range param {
+	paymentTokens, err := toPaymentTokens(request.PaymentTokens, tokens)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range request.Invoices {
 		var result intermediatedpaymentprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam
 		precision := CurrencyPrecision[v.Currency]
 		multiple := precision - 2
 		multiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(multiple)), nil)
 		price := new(big.Int).Mul(big.NewInt(int64(v.Price)), multiplier)
-
-		paymentTokens, err := toPaymentTokens(v.PaymentTokens, tokens)
-		if err != nil {
-			return nil, fmt.Errorf("invoice %d: %w", i, err)
-		}
 
 		result = intermediatedpaymentprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam{
 			InvoiceId:        v.OrderId,

@@ -61,19 +61,19 @@ func NewContractHandler(c *ContractHandler) *ContractHandler {
 }
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
-	var param []invoice.CreateInvoiceParam
+	var request invoice.CreateInvoiceRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&param); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
-	if err := invoice.ValidateCreateInvoiceParams(param, h.Tokens); err != nil {
+	if err := invoice.ValidateCreateInvoiceParams(request, h.Tokens); err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
 	}
 
-	invoices, err := invoice.ConvertParam(param, h.Tokens)
+	invoices, err := invoice.ConvertParam(request, h.Tokens)
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
 		return
