@@ -99,7 +99,7 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		id := invoices[0].InvoiceId
-		res.Url = h.BaseUrl + invoice.EncodeIDString(res.Orders[id].InvoiceId)
+		res.Url = h.BaseUrl + invoice.EncodeIDString(res.Invoices[id].InvoiceId)
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			slog.Error("writing the response failed", "error", err)
 		}
@@ -119,13 +119,13 @@ func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ContractHandler) Cancel(w http.ResponseWriter, r *http.Request) {
-	orderId, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
+	id, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.Cancel(orderId)
+	txHash, err := h.PaymentProcessor.Cancel(id)
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -156,7 +156,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderId, err := parseBigInt("invoiceId", invoiceID)
+	id, err := parseBigInt("invoiceId", invoiceID)
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
@@ -174,7 +174,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	}
 
 	transactionTimestamp := time.Now().UTC().UnixMilli()
-	txHash, err := h.PaymentProcessor.Refund(orderId, refundShare)
+	txHash, err := h.PaymentProcessor.Refund(id, refundShare)
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -182,7 +182,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 
 	transactionURL := h.txURL(txHash.Hex())
 
-	data, err := h.PaymentProcessor.GetInvoiceData(orderId)
+	data, err := h.PaymentProcessor.GetInvoiceData(id)
 	if err != nil {
 		// The refund transaction already succeeded; only the callback is skipped.
 		slog.Error("refund callback skipped",
@@ -209,13 +209,13 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	orderId, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
+	id, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
-	txHash, err := h.PaymentProcessor.CreateDispute(orderId, *intermediatedOperatorAddress)
+	txHash, err := h.PaymentProcessor.CreateDispute(id, *intermediatedOperatorAddress)
 
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
@@ -234,13 +234,13 @@ func (h *ContractHandler) CreateDispute(w http.ResponseWriter, r *http.Request) 
 func (h *ContractHandler) Release(w http.ResponseWriter, r *http.Request) {
 	invoiceID := r.PathValue("invoiceId")
 
-	orderId, err := parseBigInt("invoiceId", invoiceID)
+	id, err := parseBigInt("invoiceId", invoiceID)
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
-	res, err := h.PaymentProcessor.Release(orderId)
+	res, err := h.PaymentProcessor.Release(id)
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return
@@ -270,7 +270,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	orderId, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
+	id, err := parseBigInt("invoiceId", r.PathValue("invoiceId"))
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, "invalid request body")
 		return
@@ -285,7 +285,7 @@ func (h *ContractHandler) HandleDispute(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	txHash, err := h.PaymentProcessor.HandleDispute(orderId, input.Resolution, sellerShare)
+	txHash, err := h.PaymentProcessor.HandleDispute(id, input.Resolution, sellerShare)
 	if err != nil {
 		httpx.WriteMappedRevertError(w, err, "Error sending transaction")
 		return

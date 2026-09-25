@@ -11,8 +11,8 @@ import (
 )
 
 func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request) {
-	orderId := r.PathValue("invoiceId")
-	if orderId == "" {
+	invoiceId := r.PathValue("invoiceId")
+	if invoiceId == "" {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("empty invoice id in path"), "Missing invoiceId parameter")
 		return
 	}
@@ -22,7 +22,7 @@ func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request)
 		err  error
 	)
 
-	data, err = h.Subgraph.GetInvoiceData(orderId)
+	data, err = h.Subgraph.GetInvoiceData(invoiceId)
 
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusInternalServerError, err, "failed to fetch invoice data")

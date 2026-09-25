@@ -45,7 +45,7 @@ func TestParseBigInt(t *testing.T) {
 		{name: "negative", value: "-42", want: "-42"},
 		{name: "surrounding whitespace is trimmed", value: "  42  ", want: "42"},
 		{
-			name:  "a 216-bit order id",
+			name:  "a 216-bit invoice id",
 			value: "105312291668557186697918027683670432318895095400549111254310977535",
 			want:  "105312291668557186697918027683670432318895095400549111254310977535",
 		},

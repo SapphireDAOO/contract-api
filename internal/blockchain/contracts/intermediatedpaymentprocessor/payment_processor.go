@@ -52,30 +52,30 @@ func (c *PaymentProcessor) CreateInvoice(
 	_, err := tx.
 		SimulateAndBroadcast(ctx, c.instance, c.client, intermediatedOperatorAddress, *c.address, data)
 
-	orders := make(map[string]struct {
+	invoices := make(map[string]struct {
 		Seller    string `json:"seller"`
 		InvoiceId string `json:"invoiceId"`
 	})
 
 	id := param[0].InvoiceId
-	o := orders[id]
+	inv := invoices[id]
 
-	o.Seller = param[0].Seller.Hex()
-	o.InvoiceId = invoice.OrderIDToUint216(id)
+	inv.Seller = param[0].Seller.Hex()
+	inv.InvoiceId = invoice.InvoiceIDToUint216(id)
 
-	orders[id] = o
+	invoices[id] = inv
 
 	if err != nil {
 		if strings.Contains(revert.Reason(err), "An invoice with this identifier already exists.") {
 			return &InvoiceResponse{
-				Orders: orders,
+				Invoices: invoices,
 			}, nil
 		}
 		return nil, err
 	}
 
 	return &InvoiceResponse{
-		Orders: orders,
+		Invoices: invoices,
 	}, nil
 
 }
@@ -88,7 +88,7 @@ func (c *PaymentProcessor) CreateInvoices(
 		return nil, errors.New("parameter has to be greater than one")
 	}
 
-	orders := make(map[string]struct {
+	invoices := make(map[string]struct {
 		Seller    string `json:"seller"`
 		InvoiceId string `json:"invoiceId"`
 	})
@@ -96,12 +96,12 @@ func (c *PaymentProcessor) CreateInvoices(
 	for i := range param {
 		id := param[i].InvoiceId
 
-		o := orders[id]
-		o.Seller = param[i].Seller.Hex()
+		inv := invoices[id]
+		inv.Seller = param[i].Seller.Hex()
 
-		o.InvoiceId = invoice.OrderIDToUint216(id)
+		inv.InvoiceId = invoice.InvoiceIDToUint216(id)
 
-		orders[id] = o
+		invoices[id] = inv
 	}
 
 	if c.address == nil {
@@ -127,12 +127,12 @@ func (c *PaymentProcessor) CreateInvoices(
 		}
 		return &InvoiceResponse{
 			MetaInvoiceId: result,
-			Orders:        orders,
+			Invoices:      invoices,
 		}, nil
 	}
 	return &InvoiceResponse{
 		MetaInvoiceId: response.Result,
-		Orders:        orders,
+		Invoices:      invoices,
 	}, nil
 }
 
@@ -162,11 +162,11 @@ func (c *PaymentProcessor) metaInvoiceIDFromLogs(receipt *types.Receipt) (*strin
 		"MetaInvoiceCreated event not found in receipt logs for tx %s", receipt.TxHash.Hex())
 }
 
-func (c *PaymentProcessor) CreateDispute(orderId *big.Int, intermediatedOperatorAddress common.Address) (*common.Hash, error) {
+func (c *PaymentProcessor) CreateDispute(invoiceId *big.Int, intermediatedOperatorAddress common.Address) (*common.Hash, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	data := c.contract.PackCreateDispute(orderId)
+	data := c.contract.PackCreateDispute(invoiceId)
 
 	response, err := tx.SimulateAndBroadcast(ctx, c.instance, c.client, intermediatedOperatorAddress, *c.address, data)
 
@@ -178,7 +178,7 @@ func (c *PaymentProcessor) CreateDispute(orderId *big.Int, intermediatedOperator
 }
 
 func (c *PaymentProcessor) HandleDispute(
-	orderId *big.Int, action blockchain.MarketplaceAction, sellersShare *big.Int,
+	invoiceId *big.Int, action blockchain.MarketplaceAction, sellersShare *big.Int,
 ) (*common.Hash, error) {
 	auth, err := c.client.Auth()
 
@@ -194,14 +194,14 @@ func (c *PaymentProcessor) HandleDispute(
 
 	switch action {
 	case blockchain.ResolveDispute:
-		data = c.contract.PackResolveDispute(orderId)
+		data = c.contract.PackResolveDispute(invoiceId)
 
 	case blockchain.SettleDispute:
-		data = c.contract.PackHandleDispute(orderId,
+		data = c.contract.PackHandleDispute(invoiceId,
 			c.getDisputeResolution(blockchain.SettleDispute), sellersShare)
 
 	case blockchain.DismissDispute:
-		data = c.contract.PackHandleDispute(orderId,
+		data = c.contract.PackHandleDispute(invoiceId,
 			c.getDisputeResolution(blockchain.DismissDispute), sellersShare)
 
 	default:
@@ -228,14 +228,14 @@ func (c *PaymentProcessor) HandleDispute(
 
 }
 
-func (c *PaymentProcessor) Cancel(orderId *big.Int) (*common.Hash, error) {
+func (c *PaymentProcessor) Cancel(invoiceId *big.Int) (*common.Hash, error) {
 	auth, err := c.client.Auth()
 
 	if err != nil {
 		return nil, err
 	}
 
-	data := c.contract.PackCancelInvoice(orderId)
+	data := c.contract.PackCancelInvoice(invoiceId)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 
@@ -258,14 +258,14 @@ func (c *PaymentProcessor) Cancel(orderId *big.Int) (*common.Hash, error) {
 
 }
 
-func (c *PaymentProcessor) Refund(orderId *big.Int, refundShare *big.Int) (*common.Hash, error) {
+func (c *PaymentProcessor) Refund(invoiceId *big.Int, refundShare *big.Int) (*common.Hash, error) {
 	auth, err := c.client.Auth()
 
 	if err != nil {
 		return nil, err
 	}
 
-	data := c.contract.PackRefund(orderId, refundShare)
+	data := c.contract.PackRefund(invoiceId, refundShare)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 
@@ -295,13 +295,13 @@ type ReleaseResult struct {
 	BlockTimestamp int64
 }
 
-func (c *PaymentProcessor) Release(orderId *big.Int) (*ReleaseResult, error) {
+func (c *PaymentProcessor) Release(invoiceId *big.Int) (*ReleaseResult, error) {
 	auth, err := c.client.Auth()
 	if err != nil {
 		return nil, err
 	}
 
-	data := c.contract.PackRelease(orderId)
+	data := c.contract.PackRelease(invoiceId)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 	if err != nil {
@@ -359,7 +359,7 @@ func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *gen
 	return nil
 }
 
-func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (gen.IIntermediatedPaymentProcessorInvoice, error) {
+func (c *PaymentProcessor) GetInvoiceData(invoiceId *big.Int) (gen.IIntermediatedPaymentProcessorInvoice, error) {
 	if c == nil || c.client == nil || c.client.HTTP == nil {
 		return gen.IIntermediatedPaymentProcessorInvoice{}, errors.New("blockchain client not initialized")
 	}
@@ -367,7 +367,7 @@ func (c *PaymentProcessor) GetInvoiceData(orderId *big.Int) (gen.IIntermediatedP
 		return gen.IIntermediatedPaymentProcessorInvoice{}, errors.New("payment processor address not initialized")
 	}
 
-	data := c.contract.PackGetInvoice(orderId)
+	data := c.contract.PackGetInvoice(invoiceId)
 
 	out, err := c.client.HTTP.CallContract(context.Background(), ethereum.CallMsg{
 		To:   c.address,

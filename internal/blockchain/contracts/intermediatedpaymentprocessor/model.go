@@ -11,10 +11,10 @@ import (
 type InvoiceResponse struct {
 	Url           string  `json:"url"`
 	MetaInvoiceId *string `json:"-"`
-	Orders        map[string]struct {
+	Invoices      map[string]struct {
 		Seller    string `json:"seller"`
 		InvoiceId string `json:"invoiceId"`
-	} `json:"orders"`
+	} `json:"invoices"`
 }
 
 type PaymentProcessor struct {

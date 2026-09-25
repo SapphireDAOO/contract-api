@@ -98,7 +98,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 ```json
 {
   "url": "https://sapphire-dao-website-six.vercel.app/checkout/?id=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
-  "orders": {
+  "invoices": {
     "550e8400-e29b-41d4-a716-446655440000": {
       "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
       "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889"
@@ -118,7 +118,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 - `price` is converted to token amounts using Chainlink price feeds via the contract's `getTokenValueFromUsd` function.
 - A single invoice triggers `createSingleInvoice`, emitting `InvoiceCreated`. Multiple invoices trigger `createMetaInvoice`, emitting `MetaInvoiceCreated`.
 - Only the intermediated platform operator (retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`) can call these functions.
-- The client-provided `orderId` is hashed to a `uint216` by `invoice.OrderIDToUint216` for on-chain storage, producing the numeric `invoiceId` in the response. That id is the `{invoiceId}` every other endpoint takes.
+- The client-provided `orderId` is hashed to a `uint216` by `invoice.InvoiceIDToUint216` for on-chain storage, producing the numeric `invoiceId` in the response. `invoices` is keyed by the `orderId`. That id is the `{invoiceId}` every other endpoint takes.
 
 **Error Responses**:
 
@@ -753,7 +753,7 @@ The last four are read by the sidecar rather than by this API, but live in the s
 - The contracts use Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting the native token and ERC20 tokens.
 - The intermediated platform operator, retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
 - Transaction links are built from `urls.explorer` for the selected network — `https://sepolia.basescan.org` on Base Sepolia.
-- The client-provided `orderId` is hashed to a `uint216` by `invoice.OrderIDToUint216` for on-chain storage, producing a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`). That value is the `{invoiceId}` path segment.
+- The client-provided `orderId` is hashed to a `uint216` by `invoice.InvoiceIDToUint216` for on-chain storage, producing a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`). That value is the `{invoiceId}` path segment.
 - Blockchain reverts are mapped to human-readable messages by `revert.Descriptions`, and to status codes by `revert.StatusCodes`:
   - `The buyer and seller addresses cannot be the same.`
   - `The account balance is insufficient to perform this action.`

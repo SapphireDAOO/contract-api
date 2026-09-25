@@ -7,10 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func OrderIDToUint216(orderId string) string {
+func InvoiceIDToUint216(invoiceId string) string {
 	stringType, _ := abi.NewType("string", "", nil)
 	arguments := abi.Arguments{{Type: stringType}}
-	encoded, err := arguments.Pack(orderId)
+	encoded, err := arguments.Pack(invoiceId)
 	if err != nil {
 		panic(err)
 	}
