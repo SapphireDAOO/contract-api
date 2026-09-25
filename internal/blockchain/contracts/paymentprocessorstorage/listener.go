@@ -6,18 +6,19 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/SapphireDAOO/contract-api/internal/blockchain"
+	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/paymentprocessorstorage"
 	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
-	pausedTopic          = crypto.Keccak256Hash([]byte("Paused(address)"))
-	unpausedTopic        = crypto.Keccak256Hash([]byte("Unpaused(address)"))
-	emergencyPausedTopic = crypto.Keccak256Hash([]byte("EmergencyPaused(address,uint256)"))
+	pausedTopic          = blockchain.EventTopic(&gen.PaymentprocessorstorageMetaData, gen.PaymentprocessorstoragePausedEventName)
+	unpausedTopic        = blockchain.EventTopic(&gen.PaymentprocessorstorageMetaData, gen.PaymentprocessorstorageUnpausedEventName)
+	emergencyPausedTopic = blockchain.EventTopic(&gen.PaymentprocessorstorageMetaData, gen.PaymentprocessorstorageEmergencyPausedEventName)
 )
 
 func (c *PaymentProcessorStorage) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,

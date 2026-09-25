@@ -5,11 +5,17 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/blockchain"
+	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/intermediatedpaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+)
+
+var (
+	invoicePaidTopic     = blockchain.EventTopic(&gen.IntermediatedpaymentprocessorMetaData, gen.IntermediatedpaymentprocessorInvoicePaidEventName)
+	paymentReleasedTopic = blockchain.EventTopic(&gen.IntermediatedpaymentprocessorMetaData, gen.IntermediatedpaymentprocessorPaymentReleasedEventName)
 )
 
 func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,
@@ -21,8 +27,6 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 		slog.Warn("invoice paid listener disabled", "reason", "client or contract address not initialized")
 		return
 	}
-
-	invoicePaidTopic := crypto.Keccak256Hash([]byte("InvoicePaid(uint216,address,address,uint256,uint40)"))
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{*c.address},
@@ -88,8 +92,6 @@ func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
 		slog.Warn("payment released listener disabled", "reason", "client or contract address not initialized")
 		return
 	}
-
-	paymentReleasedTopic := crypto.Keccak256Hash([]byte("PaymentReleased(uint216,address,address,uint256)"))
 
 	query := ethereum.FilterQuery{
 		Addresses: []common.Address{*c.address},

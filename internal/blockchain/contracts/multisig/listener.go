@@ -8,24 +8,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SapphireDAOO/contract-api/internal/blockchain"
+	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/multisig"
 	"github.com/SapphireDAOO/contract-api/internal/config"
 	"github.com/SapphireDAOO/contract-api/internal/discord"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
-	transactionProposedTopic = crypto.Keccak256Hash([]byte("TransactionProposed(bytes32,address,uint256,bytes,uint256,address)"))
-	approvalAddedTopic       = crypto.Keccak256Hash([]byte("ApprovalAdded(bytes32,address,uint256)"))
-	transactionApprovedTopic = crypto.Keccak256Hash([]byte("TransactionApproved(bytes32)"))
-	transactionExecutedTopic = crypto.Keccak256Hash([]byte("TransactionExecuted(bytes32,address)"))
-	transactionCanceledTopic = crypto.Keccak256Hash([]byte("TransactionCanceled(bytes32)"))
-	signerAddedTopic         = crypto.Keccak256Hash([]byte("SignerAdded(address)"))
-	signerRemovedTopic       = crypto.Keccak256Hash([]byte("SignerRemoved(address)"))
-	thresholdUpdatedTopic    = crypto.Keccak256Hash([]byte("ThresholdUpdated(uint256,uint256)"))
+	transactionProposedTopic = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigTransactionProposedEventName)
+	approvalAddedTopic       = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigApprovalAddedEventName)
+	transactionApprovedTopic = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigTransactionApprovedEventName)
+	transactionExecutedTopic = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigTransactionExecutedEventName)
+	transactionCanceledTopic = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigTransactionCanceledEventName)
+	signerAddedTopic         = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigSignerAddedEventName)
+	signerRemovedTopic       = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigSignerRemovedEventName)
+	thresholdUpdatedTopic    = blockchain.EventTopic(&gen.MultisigMetaData, gen.MultisigThresholdUpdatedEventName)
 )
 
 func (c *Multisig) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,
