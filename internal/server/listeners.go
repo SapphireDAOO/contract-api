@@ -21,11 +21,7 @@ func (d *dependencies) startListeners(ctx context.Context) *sync.WaitGroup {
 		"pause expiry":       d.paymentProcessorStorage.WatchEmergencyPause,
 		"payment automation": d.paymentAutomation.PollDueTasks,
 	} {
-		listeners.Add(1)
-		go func() {
-			defer listeners.Done()
-			// A panic here would otherwise take the whole process down with
-			// no indication of which listener caused it.
+		listeners.Go(func() {
 			defer func() {
 				if r := recover(); r != nil {
 					slog.Error("listener panicked and stopped",
@@ -35,7 +31,7 @@ func (d *dependencies) startListeners(ctx context.Context) *sync.WaitGroup {
 
 			listen(ctx)
 			slog.Info("listener stopped", "listener", name)
-		}()
+		})
 	}
 
 	return &listeners
