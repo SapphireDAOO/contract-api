@@ -169,3 +169,25 @@ func TestLoggingPassesTheResponseThrough(t *testing.T) {
 		t.Errorf("Content-Type = %q, want application/json", got)
 	}
 }
+
+func TestLoggingRecordsTheInvoiceID(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /v1/invoices/{invoiceId}/release", func(w http.ResponseWriter, r *http.Request) {})
+	mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {})
+	handler := Logging(mux.ServeHTTP)
+
+	records := captureLog(t, slog.LevelDebug, func() {
+		handler(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/v1/invoices/42/release", nil))
+		handler(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/v1/invoices", nil))
+	})
+
+	if len(records) != 2 {
+		t.Fatalf("got %d log records, want 2", len(records))
+	}
+	if got := records[0]["invoiceId"]; got != "42" {
+		t.Errorf("invoiceId = %v, want 42", got)
+	}
+	if got, ok := records[1]["invoiceId"]; ok {
+		t.Errorf("invoiceId = %v on a route without one, want it absent", got)
+	}
+}

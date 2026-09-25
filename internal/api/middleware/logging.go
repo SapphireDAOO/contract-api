@@ -53,13 +53,19 @@ func Logging(next http.HandlerFunc) http.HandlerFunc {
 			level = slog.LevelWarn
 		}
 
-		slog.Log(r.Context(), level, "request",
+		attrs := []any{
 			"method", r.Method,
 			"path", r.URL.Path,
 			"query", r.URL.RawQuery,
 			"status", status,
 			"bytes", recorder.bytes,
 			"duration", time.Since(started),
-		)
+		}
+
+		if invoiceID := r.PathValue("invoiceId"); invoiceID != "" {
+			attrs = append(attrs, "invoiceId", invoiceID)
+		}
+
+		slog.Log(r.Context(), level, "request", attrs...)
 	}
 }
