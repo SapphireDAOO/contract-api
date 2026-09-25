@@ -1,4 +1,4 @@
-import { privateKeyToAccount } from "viem/accounts";
+import { nonceManager, privateKeyToAccount } from "viem/accounts";
 import type { Hex, PrivateKeyAccount } from "viem";
 
 const PK_LENGTH = 66;
@@ -18,10 +18,6 @@ export const requirePrivateKey = (name: string): Hex => {
   return key;
 };
 
-/**
- * The relayer: it sponsors every delegation transaction and is the fee signer
- * registered on PaymentProcessorStorage, so the same key that pays is the one
- * the processors verify against.
- */
+
 export const relayerAccount = (): PrivateKeyAccount =>
-  privateKeyToAccount(requirePrivateKey("SPONSOR"));
+  privateKeyToAccount(requirePrivateKey("SPONSOR"), { nonceManager });
