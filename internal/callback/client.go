@@ -3,7 +3,11 @@ package callback
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -15,14 +19,18 @@ type Client struct {
 	apiKey  string
 	tokens  TokenLookup
 	http    *http.Client
+
+	production bool
 }
 
 func NewClient(baseURL, apiKey string, tokens TokenLookup) *Client {
+	production, _ := strconv.ParseBool(strings.TrimSpace(os.Getenv("PRODUCTION")))
 	return &Client{
-		baseURL: baseURL,
-		apiKey:  apiKey,
-		tokens:  tokens,
-		http:    &http.Client{Timeout: 30 * time.Second},
+		baseURL:    baseURL,
+		apiKey:     apiKey,
+		tokens:     tokens,
+		http:       &http.Client{Timeout: 30 * time.Second},
+		production: production,
 	}
 }
 
@@ -46,6 +54,14 @@ func (c *Client) post(payload []byte, orderId, action string) (*http.Response, e
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("APIKey", c.apiKey)
+
+	if !c.production {
+		slog.Info("callback not posted outside production", "url", url, "action", action)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("")),
+		}, nil
+	}
 
 	res, err := c.http.Do(req)
 	if err != nil {

@@ -188,6 +188,7 @@ func TestPostSendsTheExpectedRequest(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL+"/api/callback", "the-api-key", stubTokens{})
+	client.production = true
 
 	res, err := client.post([]byte(`{"amount":"1.5"}`), "ORDER-1", releaseCallbackAction)
 	if err != nil {
@@ -222,6 +223,7 @@ func TestPostReturnsErrorStatusesToTheCaller(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, "key", stubTokens{})
+	client.production = true
 
 	res, err := client.post([]byte(`{}`), "ORDER-1", releaseCallbackAction)
 	if err != nil {
@@ -240,6 +242,7 @@ func TestPostTransportErrorIsReturned(t *testing.T) {
 	server.Close()
 
 	client := NewClient(url, "key", stubTokens{})
+	client.production = true
 
 	if _, err := client.post([]byte(`{}`), "ORDER-1", releaseCallbackAction); err == nil {
 		t.Error("post to a closed server returned no error")

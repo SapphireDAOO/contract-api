@@ -734,7 +734,7 @@ Values that are secrets rather than settings stay in `.env`:
 | `NETWORK`                  | Selects the network section. Required — `network:` in the file is a `${NETWORK}` reference. |
 | `CONFIG_PATH`              | Path to the config file. Defaults to `config.yaml`.        |
 | `END_POINT`, `URL`, `DISCORD_WEBHOOK_URL` | Subgraph, callback and Discord endpoints.   |
-| `PRODUCTION`               | When set, `.env` is not read; the container supplies the environment. |
+| `PRODUCTION`               | When set, `.env` is not read; the container supplies the environment. Callbacks to the intermediated platform are only sent over HTTP when it is `1` or `true`; when it is empty, `0`, `false` or unset, each one is built and logged, and treated as accepted. |
 | `AUTOMATION_POLL_INTERVAL` | How often to poll for due automation tasks.                |
 | `FEE_RECEIVER_ADDRESS`     | `host:port` of the fee-receiver sidecar. Unset disables `/v1/fee-receivers`. |
 | `SWEEPER_CONTRACT`         | Sweeper address, referenced by `contracts.sweeper`.        |
