@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	invoicePaidTopic     = blockchain.EventTopic(&gen.IntermediatedpaymentprocessorMetaData, gen.IntermediatedpaymentprocessorInvoicePaidEventName)
-	paymentReleasedTopic = blockchain.EventTopic(&gen.IntermediatedpaymentprocessorMetaData, gen.IntermediatedpaymentprocessorPaymentReleasedEventName)
+	invoicePaidTopic = blockchain.EventTopic(&gen.IntermediatedpaymentprocessorMetaData, gen.IntermediatedpaymentprocessorInvoicePaidEventName)
 )
 
 func (c *PaymentProcessor) subscribeLogs(ctx context.Context, query ethereum.FilterQuery,
@@ -83,71 +82,6 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 			transactionURL := c.txURL(vLog.TxHash.Hex())
 			go c.callbacks.SendPaymentReceivedCallback(event.InvoiceId.String(), transactionURL, event.PaymentToken.Hex(),
 				event.Amount, transactionTimestamp)
-		}
-	}
-}
-
-func (c *PaymentProcessor) ListenToReleaseEvent(ctx context.Context) {
-	if c == nil || c.client == nil || c.client.WS == nil || c.address == nil {
-		slog.Warn("payment released listener disabled", "reason", "client or contract address not initialized")
-		return
-	}
-
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{*c.address},
-		Topics:    [][]common.Hash{{paymentReleasedTopic}},
-	}
-
-	logs := make(chan types.Log)
-	sub := c.subscribeLogs(ctx, query, logs, "PaymentReleased")
-	if sub == nil {
-		return
-	}
-	defer sub.Unsubscribe()
-
-	slog.Info("listening for PaymentReleased events", "contract", c.address.Hex())
-
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("PaymentReleased listener stopping")
-			return
-
-		case err := <-sub.Err():
-			slog.Error("PaymentReleased subscription failed, resubscribing", "error", err)
-			sub.Unsubscribe()
-			sub = c.subscribeLogs(ctx, query, logs, "PaymentReleased")
-			if sub == nil {
-				return
-			}
-
-		case vLog := <-logs:
-			event, err := c.contract.UnpackPaymentReleasedEvent(&vLog)
-			if err != nil {
-				slog.Error("PaymentReleased event parse failed", "txHash", vLog.TxHash.Hex(), "error", err)
-				continue
-			}
-
-			slog.Info("PaymentReleased",
-				"invoiceId", event.InvoiceId.String(),
-				"sellerAmount", event.SellerAmount.String(),
-				"txHash", vLog.TxHash.Hex())
-
-			transactionTimestamp := time.Now().UTC().UnixMilli()
-			if c.client.HTTP != nil {
-				headerCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-				header, err := c.client.HTTP.HeaderByHash(headerCtx, vLog.BlockHash)
-				cancel()
-				if err != nil {
-					slog.Error("block header fetch failed for PaymentReleased", "block", vLog.BlockNumber, "error", err)
-				} else {
-					transactionTimestamp = int64(header.Time) * 1000
-				}
-			}
-
-			transactionURL := c.txURL(vLog.TxHash.Hex())
-			go c.callbacks.SendReleaseCallback(event.InvoiceId.String(), event.Currency.Hex(),
-				event.Receiver.Hex(), event.SellerAmount, transactionURL, transactionTimestamp)
 		}
 	}
 }

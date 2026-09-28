@@ -15,7 +15,6 @@ func (d *dependencies) startListeners(ctx context.Context) *sync.WaitGroup {
 
 	for name, listen := range map[string]func(context.Context){
 		"payment received":   d.paymentProcessor.ListenToPaymentReceivedEvent,
-		"payment released":   d.paymentProcessor.ListenToReleaseEvent,
 		"multisig":           d.multisig.ListenToEvents,
 		"storage pause":      d.paymentProcessorStorage.ListenToPauseEvents,
 		"pause expiry":       d.paymentProcessorStorage.WatchEmergencyPause,
