@@ -67,16 +67,10 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 				"amount", event.Amount.String(),
 				"txHash", vLog.TxHash.Hex())
 
-			transactionTimestamp := time.Now().UTC().UnixMilli()
-			if c.client.HTTP != nil {
-				headerCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-				header, err := c.client.HTTP.HeaderByHash(headerCtx, vLog.BlockHash)
-				cancel()
-				if err != nil {
-					slog.Error("block header fetch failed for InvoicePaid", "block", vLog.BlockNumber, "error", err)
-				} else {
-					transactionTimestamp = int64(header.Time) * 1000
-				}
+			transactionTimestamp, err := c.blockTimestampMillis(ctx, &vLog)
+			if err != nil {
+				slog.Error("block timestamp unavailable for InvoicePaid", "block", vLog.BlockNumber, "error", err)
+				transactionTimestamp = time.Now().UTC().UnixMilli()
 			}
 
 			transactionURL := c.txURL(vLog.TxHash.Hex())

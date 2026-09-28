@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"strings"
 	"time"
@@ -317,29 +318,39 @@ func (c *PaymentProcessor) Release(invoiceId *big.Int) (*ReleaseResult, error) {
 		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
 	}
 
-	result := &ReleaseResult{
-		TxHash:         tx.Hash(),
-		BlockTimestamp: c.blockTimestampMillis(receipt.BlockHash),
-	}
+	result := &ReleaseResult{TxHash: tx.Hash()}
 	if event := c.findPaymentReleasedEvent(receipt); event != nil {
 		result.Seller = event.Receiver
 		result.PaymentToken = event.Currency
 		result.SellerAmount = event.SellerAmount
 	}
+
+	timestampLog := &types.Log{BlockHash: receipt.BlockHash}
+	if len(receipt.Logs) > 0 && receipt.Logs[0] != nil {
+		timestampLog = receipt.Logs[0]
+	}
+	result.BlockTimestamp, err = c.blockTimestampMillis(context.Background(), timestampLog)
+	if err != nil {
+		slog.Error("block timestamp unavailable for release",
+			"txHash", tx.Hash().Hex(), "block", receipt.BlockNumber, "error", err)
+	}
 	return result, nil
 }
 
-func (c *PaymentProcessor) blockTimestampMillis(blockHash common.Hash) int64 {
+func (c *PaymentProcessor) blockTimestampMillis(ctx context.Context, vLog *types.Log) (int64, error) {
+	if vLog.BlockTimestamp != 0 {
+		return int64(vLog.BlockTimestamp) * 1000, nil
+	}
 	if c.client == nil || c.client.HTTP == nil {
-		return 0
+		return 0, errors.New("blockchain client not initialized")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	header, err := c.client.HTTP.HeaderByHash(ctx, blockHash)
-	if err != nil || header == nil {
-		return 0
+	header, err := c.client.HTTP.HeaderByHash(ctx, vLog.BlockHash)
+	if err != nil {
+		return 0, err
 	}
-	return int64(header.Time) * 1000
+	return int64(header.Time) * 1000, nil
 }
 
 func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *gen.IntermediatedpaymentprocessorPaymentReleased {
