@@ -9,55 +9,55 @@ import (
 	"time"
 )
 
-func (c *Client) SendRefundCallback(orderId string, paymentToken string, amount *big.Int,
+func (c *Client) SendRefundCallback(invoiceId string, paymentToken string, amount *big.Int,
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) {
 
 	payload, err := c.buildRefundCallbackPayload(paymentToken, amount,
 		refundShare, transactionURL, transactionTimestamp)
 	if err != nil {
-		slog.Error("refund callback payload build failed", "orderId", orderId, "error", err)
+		slog.Error("refund callback payload build failed", "invoiceId", invoiceId, "error", err)
 		return
 	}
 
-	c.sendCallbackWithRetry(payload, orderId, refundCallbackAction)
+	c.sendCallbackWithRetry(payload, invoiceId, refundCallbackAction)
 }
 
-func (c *Client) SendReleaseCallback(orderId, paymentToken, receiver string, releaseAmount *big.Int,
+func (c *Client) SendReleaseCallback(invoiceId, paymentToken, receiver string, releaseAmount *big.Int,
 	transactionURL string, transactionTimestamp int64) {
 	payload, err := c.buildReleaseCallbackPayload(paymentToken, receiver,
 		releaseAmount, transactionURL, transactionTimestamp)
 	if err != nil {
-		slog.Error("release callback payload build failed", "orderId", orderId, "error", err)
+		slog.Error("release callback payload build failed", "invoiceId", invoiceId, "error", err)
 		return
 	}
 
-	c.sendCallbackWithRetry(payload, orderId, releaseCallbackAction)
+	c.sendCallbackWithRetry(payload, invoiceId, releaseCallbackAction)
 }
 
-func (c *Client) SendPaymentReceivedCallback(orderId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
+func (c *Client) SendPaymentReceivedCallback(invoiceId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
 	payload, err := c.buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
 		amount, transactionTimestamp)
 	if err != nil {
-		slog.Error("payment received callback payload build failed", "orderId", orderId, "error", err)
+		slog.Error("payment received callback payload build failed", "invoiceId", invoiceId, "error", err)
 		return
 	}
 
-	c.sendCallbackWithRetry(payload, orderId, paymentReceivedCallbackAction)
+	c.sendCallbackWithRetry(payload, invoiceId, paymentReceivedCallbackAction)
 }
 
-func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
+func (c *Client) sendCallbackWithRetry(payload []byte, invoiceId, action string) {
 	for attempt := 1; attempt <= callbackRetryAttempts; attempt++ {
-		res, err := c.post(payload, orderId, action)
+		res, err := c.post(payload, invoiceId, action)
 		if err != nil {
 			if attempt < callbackRetryAttempts {
 				slog.Warn("callback attempt failed, retrying",
 					"attempt", attempt, "attempts", callbackRetryAttempts,
-					"orderId", orderId, "action", action, "error", err)
+					"invoiceId", invoiceId, "action", action, "error", err)
 				time.Sleep(callbackRetryDelay(attempt))
 				continue
 			}
 			slog.Error("callback failed, giving up",
-				"attempts", attempt, "orderId", orderId, "action", action, "error", err)
+				"attempts", attempt, "invoiceId", invoiceId, "action", action, "error", err)
 			return
 		}
 
@@ -66,14 +66,14 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 			_, _ = io.Copy(io.Discard, res.Body)
 			res.Body.Close()
 			slog.Info("callback delivered",
-				"orderId", orderId, "action", action, "status", status)
+				"invoiceId", invoiceId, "action", action, "status", status)
 			return
 		}
 
 		body, readErr := io.ReadAll(res.Body)
 		res.Body.Close()
 		if readErr != nil {
-			slog.Error("callback response read failed", "orderId", orderId, "action", action, "error", readErr)
+			slog.Error("callback response read failed", "invoiceId", invoiceId, "action", action, "error", readErr)
 			if status >= http.StatusInternalServerError && attempt < callbackRetryAttempts {
 				time.Sleep(callbackRetryDelay(attempt))
 				continue
@@ -94,7 +94,7 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 		}
 
 		if status >= http.StatusInternalServerError {
-			slog.Error("callback returned a server error", "orderId", orderId, "action", action, "details", details)
+			slog.Error("callback returned a server error", "invoiceId", invoiceId, "action", action, "details", details)
 			if attempt < callbackRetryAttempts {
 				time.Sleep(callbackRetryDelay(attempt))
 				continue
@@ -102,7 +102,7 @@ func (c *Client) sendCallbackWithRetry(payload []byte, orderId, action string) {
 			return
 		}
 
-		slog.Error("callback rejected", "orderId", orderId, "action", action, "details", details)
+		slog.Error("callback rejected", "invoiceId", invoiceId, "action", action, "details", details)
 		return
 	}
 }
