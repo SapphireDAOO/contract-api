@@ -56,7 +56,7 @@ func (c *Client) post(payload []byte, orderId, action string) (*http.Response, e
 	req.Header.Set("APIKey", c.apiKey)
 
 	if !c.production {
-		slog.Info("callback not posted outside production", "url", url, "action", action)
+		slog.Info("callback not posted outside production", "action", action)
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader("")),
