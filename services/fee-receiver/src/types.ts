@@ -1,5 +1,4 @@
-/** Which payment processor the invoice lives on. */
 export type ProcessorKind = "simple" | "intermediated";
 
-/** Which FeeAuthorizationLib overload the processor will verify against. */
+// Selects the FeeAuthorizationLib overload the processor verifies against.
 export type InvoiceKind = "single" | "meta";

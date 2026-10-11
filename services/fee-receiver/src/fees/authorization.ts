@@ -3,7 +3,6 @@ import { relayerAccount } from "../chain/keys";
 import { chainId, config } from "../config/config";
 import type { InvoiceKind, ProcessorKind } from "../types";
 
-/** The processor whose storage the digest is verified against. */
 export const getProcessorAddress = (processor: ProcessorKind): Address =>
   processor === "simple"
     ? config().simpleProcessor

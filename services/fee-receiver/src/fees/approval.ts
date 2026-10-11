@@ -20,11 +20,6 @@ import { getClients } from "../chain/clients";
 import { chainId, config } from "../config/config";
 import { logger } from "../logger";
 
-/**
- * Resolves the token the stealth account must approve: the payment token
- * itself, or the chain's wrapped native token when the payment is in native
- * currency.
- */
 export const resolveApprovalToken = (paymentToken?: Address): Address => {
   if (paymentToken && paymentToken.toLowerCase() !== zeroAddress) {
     return paymentToken;

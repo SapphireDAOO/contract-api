@@ -8,7 +8,6 @@ import type { InvoiceKind, ProcessorKind } from "../types";
 
 export const MAX_FEE_RECEIVERS = 5;
 
-/** A rejected request, surfaced to the caller as INVALID_ARGUMENT. */
 export class InvalidArgument extends Error {}
 
 export const invalid = (message: string): never => {
@@ -37,10 +36,6 @@ export const parseInvoiceKind = (value: InvoiceKindProto): InvoiceKind => {
   }
 };
 
-/**
- * The service is configured for exactly one network, so a request naming a
- * different chain is refused rather than quietly signed for the configured one.
- */
 export const requireConfiguredChain = (value: number): void => {
   if (value !== chainId()) {
     invalid(
@@ -56,7 +51,7 @@ export const parseQuantity = (value: number): number => {
   return value;
 };
 
-/** An empty token means the payment is native, not that the field is missing. */
+// Empty means a native payment, not a missing field.
 export const parsePaymentToken = (value: string): Address | undefined => {
   if (!value) return undefined;
   if (!isAddress(value)) invalid("Invalid payment_token");

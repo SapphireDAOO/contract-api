@@ -63,14 +63,11 @@ export const createFeeReceivers = async (
   const receivers = Array.from({ length: quantity }, () =>
     generateStealthFeeReceiver(),
   );
-
-  // Resolves only once every delegation and approval has been mined.
   await approveAll(receivers, paymentToken);
 
   const addresses = receivers.map((r) => r.stealthAccount.address);
   const ephemeralPublicKey = receivers.map((r) => r.ephemeralPublicKey);
-  // Logged before signing so a signer failure still leaves the keys of
-  // receivers whose gas is already spent.
+  // Logged before signing, so a signer failure cannot lose keys whose gas is spent.
   logger.info("fee receivers ready", {
     invoiceId,
     addresses,

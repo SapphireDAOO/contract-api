@@ -1,12 +1,4 @@
-/**
- * Structured logging for the service, mirroring the Go API's slog setup:
- * JSON under PRODUCTION so a log shipper can parse it, readable text
- * otherwise. LOG_LEVEL selects verbosity and defaults to info.
- *
- * Nothing here ever logs key material. Callers pass public values only —
- * stealth addresses and ephemeral public keys — never a private or spending
- * key.
- */
+// Never pass key material here: addresses and ephemeral public keys only.
 import pino from "pino";
 import pretty from "pino-pretty";
 
@@ -25,8 +17,7 @@ const levelFromEnv = (): Level => {
 const create = (): pino.Logger => {
   const options: pino.LoggerOptions = {
     level: levelFromEnv(),
-    // No pid or hostname, so a line carries the same keys as the Go API's.
-    base: undefined,
+    base: undefined, // no pid or hostname, matching the Go API's lines
     timestamp: pino.stdTimeFunctions.isoTime,
     // Callers pass errors as `error`, not pino's default `err`.
     serializers: { error: pino.stdSerializers.err },
@@ -39,8 +30,7 @@ const create = (): pino.Logger => {
     });
   }
 
-  // In-process and synchronous, so a line logged just before process.exit
-  // still reaches the terminal.
+  // Synchronous, so a line logged just before process.exit is not lost.
   return pino(
     options,
     pretty({
@@ -53,8 +43,7 @@ const create = (): pino.Logger => {
 
 let instance: pino.Logger | undefined;
 
-// Built on first use rather than at import, so a LOG_LEVEL from the root .env
-// is already loaded by the time it is read.
+// Lazy, so a LOG_LEVEL from the root .env is loaded before it is read.
 const base = (): pino.Logger => (instance ??= create());
 
 export const logger = {

@@ -5,7 +5,6 @@ import { base, baseSepolia, hardhat } from "viem/chains";
 import { z } from "zod";
 import { expandEnv, loadRootEnv } from "./env";
 
-// Missing keys read "is required", as they did before the schema.
 const required = { error: "is required" };
 
 const address = z
@@ -13,19 +12,12 @@ const address = z
   .refine((value) => isAddress(value), "is not a valid address")
   .transform((value) => value as Address);
 
-/**
- * An address that must be present. The zero address is rejected for the same
- * reason the Go loader rejects it: it is never a real deployment.
- */
 const requiredAddress = address.refine(
   (value) => value.toLowerCase() !== zeroAddress,
   "cannot be the zero address",
 );
 
-/**
- * Empty, null (a bare YAML key) and the zero address all mean not deployed on
- * this network.
- */
+// Empty, a bare YAML key (null) or the zero address: not deployed here.
 const optionalAddress = z
   .union([z.literal(""), address])
   .nullish()
@@ -46,8 +38,8 @@ const NetworkSection = z.object({
   ),
 });
 
-// Only the selected network's section is validated: the others may reference
-// variables this environment does not set.
+// Other networks may use variables this environment does not set, so only the
+// selected one is validated.
 const ConfigFile = z.object({
   network: z.string().nullish(),
   networks: z.record(z.string(), z.unknown()).nullish(),
@@ -60,13 +52,10 @@ export type FeeReceiverConfig = {
   /** `contracts.paymentProcessor` — the intermediated processor. */
   intermediatedProcessor: Address;
   simpleProcessor: Address;
-  /** Unset until the sweeper is deployed on the selected network. */
   sweeper?: Address;
-  /** Unset where no wrapped native token exists, as on a local chain. */
   wrappedNative?: Address;
 };
 
-/** The viem chain each config.yaml network section describes. */
 const CHAINS: Record<string, Chain> = {
   local: hardhat,
   testnet: baseSepolia,
@@ -75,7 +64,6 @@ const CHAINS: Record<string, Chain> = {
 
 const DEFAULT_CONFIG_PATH = resolve(import.meta.dir, "../../../../config.yaml");
 
-/** Every issue on one line, each named by its full key in config.yaml. */
 const describe = (prefix: string, error: z.ZodError): string =>
   error.issues
     .map((issue) => `${[prefix, ...issue.path].join(".")} ${issue.message}`)
@@ -140,8 +128,6 @@ export const loadConfig = (
 
 let cached: FeeReceiverConfig | undefined;
 
-/** The resolved config, loaded once on first use. */
 export const config = (): FeeReceiverConfig => (cached ??= loadConfig());
 
-/** The chain this service is configured for; requests must match it. */
 export const chainId = (): number => config().chain.id;
