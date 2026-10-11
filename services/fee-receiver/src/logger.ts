@@ -7,6 +7,8 @@
  * stealth addresses and ephemeral public keys — never a private or spending
  * key.
  */
+import pino from "pino";
+import pretty from "pino-pretty";
 
 const LEVELS = ["debug", "info", "warn", "error"] as const;
 
@@ -20,64 +22,44 @@ const levelFromEnv = (): Level => {
   return (LEVELS as readonly string[]).includes(raw) ? (raw as Level) : "info";
 };
 
-const enabled = (level: Level): boolean =>
-  LEVELS.indexOf(level) >= LEVELS.indexOf(levelFromEnv());
+const create = (): pino.Logger => {
+  const options: pino.LoggerOptions = {
+    level: levelFromEnv(),
+    // No pid or hostname, so a line carries the same keys as the Go API's.
+    base: undefined,
+    timestamp: pino.stdTimeFunctions.isoTime,
+    // Callers pass errors as `error`, not pino's default `err`.
+    serializers: { error: pino.stdSerializers.err },
+  };
 
-const asJSON = (): boolean => process.env.PRODUCTION !== undefined;
-
-/** Errors do not survive JSON.stringify, so unwrap them to useful fields. */
-const normalise = (value: unknown): unknown => {
-  if (value instanceof Error) {
-    return { message: value.message, name: value.name };
-  }
-  if (typeof value === "bigint") return value.toString();
-  return value;
-};
-
-const render = (level: Level, msg: string, fields: Fields): string => {
-  const normalised: Fields = {};
-  for (const [key, value] of Object.entries(fields)) {
-    normalised[key] = normalise(value);
-  }
-
-  if (asJSON()) {
-    return JSON.stringify({
-      time: new Date().toISOString(),
-      level: level.toUpperCase(),
-      msg,
-      ...normalised,
+  if (process.env.PRODUCTION !== undefined) {
+    return pino({
+      ...options,
+      formatters: { level: (label) => ({ level: label.toUpperCase() }) },
     });
   }
 
-  const pairs = Object.entries(normalised)
-    .map(([key, value]) => {
-      const text = typeof value === "string" ? value : JSON.stringify(value);
-      return `${key}=${text}`;
-    })
-    .join(" ");
-
-  const head = `${new Date().toISOString()} ${level.toUpperCase()} ${msg}`;
-  return pairs ? `${head} ${pairs}` : head;
+  // In-process and synchronous, so a line logged just before process.exit
+  // still reaches the terminal.
+  return pino(
+    options,
+    pretty({
+      sync: true,
+      singleLine: true,
+      translateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss.l'Z'",
+    }),
+  );
 };
 
-const emit = (level: Level, msg: string, fields: Fields = {}): void => {
-  if (!enabled(level)) return;
+let instance: pino.Logger | undefined;
 
-  const line = render(level, msg, fields);
-  if (level === "error") {
-    console.error(line);
-    return;
-  }
-  if (level === "warn") {
-    console.warn(line);
-    return;
-  }
-  console.log(line);
-};
+// Built on first use rather than at import, so a LOG_LEVEL from the root .env
+// is already loaded by the time it is read.
+const base = (): pino.Logger => (instance ??= create());
 
 export const logger = {
-  debug: (msg: string, fields?: Fields) => emit("debug", msg, fields),
-  info: (msg: string, fields?: Fields) => emit("info", msg, fields),
-  warn: (msg: string, fields?: Fields) => emit("warn", msg, fields),
-  error: (msg: string, fields?: Fields) => emit("error", msg, fields),
+  debug: (msg: string, fields: Fields = {}) => base().debug(fields, msg),
+  info: (msg: string, fields: Fields = {}) => base().info(fields, msg),
+  warn: (msg: string, fields: Fields = {}) => base().warn(fields, msg),
+  error: (msg: string, fields: Fields = {}) => base().error(fields, msg),
 };

@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import dotenv from "dotenv";
 import { logger } from "../logger";
 
 /**
@@ -8,23 +8,6 @@ import { logger } from "../logger";
  * root file has to be loaded explicitly.
  */
 const DEFAULT_ENV_PATH = resolve(import.meta.dir, "../../../../.env");
-
-const ENV_LINE = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/;
-
-/** Strips surrounding quotes, or a trailing comment from a bare value. */
-const unquote = (value: string): string => {
-  const trimmed = value.trim();
-  const quote = trimmed[0];
-  if (
-    trimmed.length > 1 &&
-    (quote === '"' || quote === "'") &&
-    trimmed.endsWith(quote)
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  const comment = trimmed.indexOf(" #");
-  return (comment === -1 ? trimmed : trimmed.slice(0, comment)).trim();
-};
 
 let loaded = false;
 
@@ -42,20 +25,10 @@ export const loadRootEnv = (path: string = DEFAULT_ENV_PATH): void => {
 
   if (process.env.PRODUCTION !== undefined) return;
 
-  let text: string;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch {
+  // dotenv never overrides a variable that is already set unless asked to.
+  const { error } = dotenv.config({ path, quiet: true });
+  if (error) {
     logger.warn("no .env file; relying on the ambient environment", { path });
-    return;
-  }
-
-  for (const line of text.split("\n")) {
-    const match = ENV_LINE.exec(line);
-    if (!match) continue;
-
-    const [, key, value] = match;
-    if (key && !(key in process.env)) process.env[key] = unquote(value ?? "");
   }
 };
 

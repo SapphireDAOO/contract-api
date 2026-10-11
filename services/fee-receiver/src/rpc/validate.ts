@@ -1,13 +1,10 @@
-import type { Address } from "viem";
+import { isAddress, maxUint216, type Address } from "viem";
 import {
   InvoiceKind as InvoiceKindProto,
   ProcessorKind as ProcessorKindProto,
 } from "../../generated/fee_receiver";
 import { chainId } from "../config/config";
 import type { InvoiceKind, ProcessorKind } from "../types";
-
-const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
-const MAX_UINT216 = (BigInt(1) << BigInt(216)) - BigInt(1);
 
 export const MAX_FEE_RECEIVERS = 5;
 
@@ -62,7 +59,7 @@ export const parseQuantity = (value: number): number => {
 /** An empty token means the payment is native, not that the field is missing. */
 export const parsePaymentToken = (value: string): Address | undefined => {
   if (!value) return undefined;
-  if (!ADDRESS_PATTERN.test(value)) invalid("Invalid payment_token");
+  if (!isAddress(value)) invalid("Invalid payment_token");
   return value as Address;
 };
 
@@ -73,7 +70,7 @@ export const parseInvoiceId = (value: string): bigint => {
   } catch {
     return invalid("Invalid invoice_id");
   }
-  if (invoiceId < BigInt(0) || invoiceId > MAX_UINT216)
+  if (invoiceId < BigInt(0) || invoiceId > maxUint216)
     invalid("Invalid invoice_id");
   return invoiceId;
 };
