@@ -1,9 +1,7 @@
 import type { Address } from "viem";
 import type {
-  PrepareAddressRequest,
-  PrepareAddressResponse,
-  VerifyAddressesRequest,
-  VerifyAddressesResponse,
+  CreateFeeReceiversRequest,
+  CreateFeeReceiversResponse,
 } from "../../generated/fee_receiver";
 import {
   getProcessorAddress,
@@ -12,13 +10,11 @@ import {
 import { delegateAndApprove } from "../fees/approval";
 import {
   generateStealthFeeReceiver,
-  restoreStealthFeeReceiver,
   type StealthFeeReceiver,
 } from "../fees/stealth";
 import { logger } from "../logger";
 import {
   invalid,
-  parseEphemeralKeys,
   parseInvoiceId,
   parseInvoiceKind,
   parsePaymentToken,
@@ -40,38 +36,9 @@ const approveAll = async (
   }
 };
 
-export const generateaddresses = async (
-  request: PrepareAddressRequest,
-): Promise<PrepareAddressResponse> => {
-  parseProcessor(request.processorKind);
-  requireConfiguredChain(request.chainId);
-  const quantity = parseQuantity(request.quantity);
-  const paymentToken = parsePaymentToken(request.paymentToken);
-
-  logger.info("generating fee receivers", {
-    quantity,
-    chainId: request.chainId,
-    paymentToken: paymentToken ?? "default",
-  });
-
-  const receivers = Array.from({ length: quantity }, () =>
-    generateStealthFeeReceiver(),
-  );
-  await approveAll(receivers, paymentToken);
-
-  const ephemeralPublicKey = receivers.map((r) => r.ephemeralPublicKey);
-  logger.info("fee receivers ready", {
-    quantity: receivers.length,
-    addresses: receivers.map((r) => r.stealthAccount.address),
-    ephemeralPublicKey,
-  });
-
-  return { ephemeralPublicKey };
-};
-
-export const send = async (
-  request: VerifyAddressesRequest,
-): Promise<VerifyAddressesResponse> => {
+export const createFeeReceivers = async (
+  request: CreateFeeReceiversRequest,
+): Promise<CreateFeeReceiversResponse> => {
   const processor = parseProcessor(request.processorKind);
   const kind = parseInvoiceKind(request.invoiceKind);
   if (kind === "meta" && processor !== "intermediated") {
@@ -80,25 +47,40 @@ export const send = async (
 
   requireConfiguredChain(request.chainId);
   const invoiceId = parseInvoiceId(request.invoiceId);
-  const keys = parseEphemeralKeys(request.ephemeralPublicKey, kind);
-
-  let receivers: StealthFeeReceiver[];
-  try {
-    receivers = keys.map((key) => restoreStealthFeeReceiver(key));
-  } catch (error) {
-    logger.warn("unusable ephemeral public key", {
-      invoiceId,
-      keys: keys.length,
-      error,
-    });
-    return invalid("Invalid ephemeral_public_key");
+  const quantity = parseQuantity(request.quantity);
+  if (kind === "single" && quantity !== 1) {
+    invalid("A single invoice takes one fee receiver");
   }
+  const paymentToken = parsePaymentToken(request.paymentToken);
 
-  const feeReceivers = receivers.map((r) => r.stealthAccount.address);
+  logger.info("generating fee receivers", {
+    invoiceId,
+    quantity,
+    chainId: request.chainId,
+    paymentToken: paymentToken ?? "default",
+  });
+
+  const receivers = Array.from({ length: quantity }, () =>
+    generateStealthFeeReceiver(),
+  );
+
+  // Resolves only once every delegation and approval has been mined.
+  await approveAll(receivers, paymentToken);
+
+  const addresses = receivers.map((r) => r.stealthAccount.address);
+  const ephemeralPublicKey = receivers.map((r) => r.ephemeralPublicKey);
+  // Logged before signing so a signer failure still leaves the keys of
+  // receivers whose gas is already spent.
+  logger.info("fee receivers ready", {
+    invoiceId,
+    addresses,
+    ephemeralPublicKey,
+  });
+
   const signature = await signFeeAuthorization(
     getProcessorAddress(processor),
     invoiceId,
-    feeReceivers,
+    addresses,
     kind,
   );
 
@@ -106,8 +88,8 @@ export const send = async (
     invoiceId,
     processor,
     kind,
-    addresses: feeReceivers,
+    addresses,
   });
 
-  return { addresses: feeReceivers, signature };
+  return { addresses, signature, ephemeralPublicKey };
 };

@@ -6,45 +6,40 @@ and signs the `FeeAuthorizationLib` authorization the payment processors verify.
 It reads the repo's `config.yaml` — the same file the Go API reads — so the
 processor addresses cannot drift between the two.
 
-Clients do not reach it directly. The Go API fronts both RPCs as
-[`POST /v1/fee-receivers` and `/v1/fee-receivers/authorization`](../../README.md#endpoint-create-fee-receivers),
+Clients do not reach it directly. The Go API fronts the RPC as
+[`POST /v1/fee-receivers`](../../README.md#endpoint-create-fee-receivers),
 and dials the address in `services.feeReceiver`. That connection is plaintext,
 so this process must stay on loopback: it holds the platform's spending and
 viewing keys.
 
-## RPCs
+## RPC
 
 Defined in [`proto/fee_receiver.proto`](../../proto/fee_receiver.proto).
 
-**`Generateaddresses(PrepareAddressRequest)`** derives `quantity` stealth
-addresses, upgrades each to a MetaMask Stateless7702 delegator, hands the
-relayer a delegation over it and — in the same sponsored transaction — approves
-the Sweeper for max uint256 of the fee token. It returns only the ephemeral
-public keys.
+**`CreateFeeReceivers(CreateFeeReceiversRequest)`** validates the whole request
+first, so a bad one never spends gas. It then derives `quantity` stealth
+addresses and, one at a time, upgrades each to a MetaMask Stateless7702
+delegator, hands the relayer a delegation over it and — in the same sponsored
+transaction — approves the Sweeper for max uint256 of the fee token. Each
+receipt is awaited, and a reverted one fails the call.
 
-Store them. They are the only way to recover these addresses, so a caller that
-loses the response strands the gas already spent on them. At most 5 receivers
-per call: each costs a sponsored transaction, and past that the caller would sit
-in the approval loop long enough to look hung.
+Only after every approval is mined does it sign the fee authorization and
+answer with the addresses, the signature to pass on-chain as
+`_feeReceiver(s)` / `_data`, and the ephemeral public keys. Signing never
+happens for a receiver that is not yet approved, so a successful response means
+the receivers are ready to collect fees.
 
-**`Send(VerifyAddressesRequest)`** takes those keys back, re-derives the
-addresses and returns them with the fee signer's signature to pass on-chain as
-`_feeReceiver(s)` / `_data`.
-
-Re-deriving is what makes accepting caller input safe: a key can only ever
-resolve to an address the platform's spending and viewing keys control, never to
-one the caller chose.
-
-`Send` signs without re-checking the chain, so it trusts that
-`Generateaddresses` completed. A run that died partway leaves receivers that are
-derived but not approved, and this call will still sign for them — the caller is
-responsible for not reusing keys from a failed attempt. `payment_token` is
-accepted on this request but unused.
+The keys are the only way to recover a receiver's key, so callers should store
+them. They are also logged before signing, so a signer failure still leaves a
+record of receivers whose gas is spent. At most 5 receivers per call: each
+costs a sponsored transaction, and past that the caller would wait long enough
+to look hung.
 
 A meta invoice needs one receiver per sub-invoice, index-aligned with its
 `subInvoiceIds`, all covered by the single signature over the whole array. Pass
 `INVOICE_KIND_META` explicitly: a meta invoice holding one sub-invoice still
-signs the array form, so the kind is never inferred from the receiver count.
+signs the array form, so the kind is never inferred from `quantity`. A single
+invoice takes `quantity` 1.
 
 ## Layout
 
@@ -60,7 +55,7 @@ src/
   fees/approval.ts    7702 delegation + sweeper approval
   fees/authorization.ts  the fee authorization digest and signature
   rpc/validate.ts     request parsing, all rejections in one place
-  rpc/handlers.ts     the two RPCs
+  rpc/handlers.ts     the RPC
   rpc/status.ts       error -> gRPC status
   rpc/server.ts       the assembled service
 ```

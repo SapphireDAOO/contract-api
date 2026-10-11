@@ -21,29 +21,18 @@ import (
 type stubFeeReceiver struct {
 	pb.UnimplementedFeeReceiverServer
 
-	gotPrepare *pb.PrepareAddressRequest
-	gotVerify  *pb.VerifyAddressesRequest
+	got *pb.CreateFeeReceiversRequest
 
-	prepareResponse *pb.PrepareAddressResponse
-	prepareErr      error
-	verifyResponse  *pb.VerifyAddressesResponse
-	verifyErr       error
+	response *pb.CreateFeeReceiversResponse
+	err      error
 }
 
-func (s *stubFeeReceiver) Generateaddresses(_ context.Context, in *pb.PrepareAddressRequest) (*pb.PrepareAddressResponse, error) {
-	s.gotPrepare = in
-	if s.prepareErr != nil {
-		return nil, s.prepareErr
+func (s *stubFeeReceiver) CreateFeeReceivers(_ context.Context, in *pb.CreateFeeReceiversRequest) (*pb.CreateFeeReceiversResponse, error) {
+	s.got = in
+	if s.err != nil {
+		return nil, s.err
 	}
-	return s.prepareResponse, nil
-}
-
-func (s *stubFeeReceiver) Send(_ context.Context, in *pb.VerifyAddressesRequest) (*pb.VerifyAddressesResponse, error) {
-	s.gotVerify = in
-	if s.verifyErr != nil {
-		return nil, s.verifyErr
-	}
-	return s.verifyResponse, nil
+	return s.response, nil
 }
 
 func newFeeReceiverHandler(t *testing.T, stub *stubFeeReceiver) *ContractHandler {
@@ -90,7 +79,9 @@ func successBody(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 
 func TestCreateFeeReceivers(t *testing.T) {
 	stub := &stubFeeReceiver{
-		prepareResponse: &pb.PrepareAddressResponse{
+		response: &pb.CreateFeeReceiversResponse{
+			Addresses:          []string{"0xreceiver1", "0xreceiver2"},
+			Signature:          "0xsignature",
 			EphemeralPublicKey: []string{"0xkey1", "0xkey2"},
 		},
 	}
@@ -98,54 +89,76 @@ func TestCreateFeeReceivers(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
-		`{"quantity":2,"processor":"intermediated","paymentToken":"USDC"}`))
+		`{"invoiceId":"42","processor":"intermediated","kind":"meta",
+		  "quantity":2,"paymentToken":"USDC"}`))
 
 	body := successBody(t, rec)
 	if body["status"] != "success" {
 		t.Errorf("status = %v, want success", body["status"])
+	}
+	if body["signature"] != "0xsignature" {
+		t.Errorf("signature = %v, want the signer's authorization", body["signature"])
+	}
+	receivers, ok := body["feeReceivers"].([]any)
+	if !ok || len(receivers) != 2 {
+		t.Fatalf("feeReceivers = %v, want two addresses", body["feeReceivers"])
 	}
 	keys, ok := body["ephemeralPublicKeys"].([]any)
 	if !ok || len(keys) != 2 {
 		t.Fatalf("ephemeralPublicKeys = %v, want two keys", body["ephemeralPublicKeys"])
 	}
 
-	if stub.gotPrepare.GetQuantity() != 2 {
-		t.Errorf("quantity = %d, want 2", stub.gotPrepare.GetQuantity())
+	if stub.got.GetInvoiceId() != "42" {
+		t.Errorf("invoiceId = %q, want 42", stub.got.GetInvoiceId())
 	}
-	if stub.gotPrepare.GetProcessorKind() != pb.ProcessorKind_PROCESSOR_KIND_INTERMEDIATED {
-		t.Errorf("processorKind = %v, want INTERMEDIATED", stub.gotPrepare.GetProcessorKind())
+	if stub.got.GetInvoiceKind() != pb.InvoiceKind_INVOICE_KIND_META {
+		t.Errorf("invoiceKind = %v, want META", stub.got.GetInvoiceKind())
 	}
-	if stub.gotPrepare.GetChainId() != 8453 {
-		t.Errorf("chainId = %d, want 8453", stub.gotPrepare.GetChainId())
+	if stub.got.GetProcessorKind() != pb.ProcessorKind_PROCESSOR_KIND_INTERMEDIATED {
+		t.Errorf("processorKind = %v, want INTERMEDIATED", stub.got.GetProcessorKind())
 	}
-	if stub.gotPrepare.GetPaymentToken() != usdcAddress {
-		t.Errorf("paymentToken = %q, want the resolved address %q", stub.gotPrepare.GetPaymentToken(), usdcAddress)
+	if stub.got.GetQuantity() != 2 {
+		t.Errorf("quantity = %d, want 2", stub.got.GetQuantity())
 	}
-}
-
-func TestCreateFeeReceiversDefaultsQuantityToOne(t *testing.T) {
-	stub := &stubFeeReceiver{prepareResponse: &pb.PrepareAddressResponse{}}
-	h := newFeeReceiverHandler(t, stub)
-	rec := httptest.NewRecorder()
-
-	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers", `{"processor":"simple"}`))
-
-	successBody(t, rec)
-	if stub.gotPrepare.GetQuantity() != 1 {
-		t.Errorf("quantity = %d, want the default of 1", stub.gotPrepare.GetQuantity())
+	if stub.got.GetChainId() != 8453 {
+		t.Errorf("chainId = %d, want 8453", stub.got.GetChainId())
+	}
+	if stub.got.GetPaymentToken() != usdcAddress {
+		t.Errorf("paymentToken = %q, want the resolved address %q", stub.got.GetPaymentToken(), usdcAddress)
 	}
 }
 
-func TestCreateFeeReceiversAllowsAnUnsetPaymentToken(t *testing.T) {
-	stub := &stubFeeReceiver{prepareResponse: &pb.PrepareAddressResponse{}}
+func TestCreateFeeReceiversDefaults(t *testing.T) {
+	stub := &stubFeeReceiver{response: &pb.CreateFeeReceiversResponse{}}
 	h := newFeeReceiverHandler(t, stub)
 	rec := httptest.NewRecorder()
 
-	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers", `{"processor":"simple"}`))
+	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
+		`{"invoiceId":"42","processor":"simple"}`))
 
 	successBody(t, rec)
-	if stub.gotPrepare.GetPaymentToken() != "" {
-		t.Errorf("paymentToken = %q, want it empty", stub.gotPrepare.GetPaymentToken())
+	if stub.got.GetQuantity() != 1 {
+		t.Errorf("quantity = %d, want the default of 1", stub.got.GetQuantity())
+	}
+	if stub.got.GetInvoiceKind() != pb.InvoiceKind_INVOICE_KIND_SINGLE {
+		t.Errorf("invoiceKind = %v, want SINGLE", stub.got.GetInvoiceKind())
+	}
+	if stub.got.GetPaymentToken() != "" {
+		t.Errorf("paymentToken = %q, want it empty", stub.got.GetPaymentToken())
+	}
+}
+
+func TestCreateFeeReceiversNormalisesTheInvoiceID(t *testing.T) {
+	stub := &stubFeeReceiver{response: &pb.CreateFeeReceiversResponse{}}
+	h := newFeeReceiverHandler(t, stub)
+	rec := httptest.NewRecorder()
+
+	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
+		`{"invoiceId":"  0042  ","processor":"simple"}`))
+
+	successBody(t, rec)
+	if stub.got.GetInvoiceId() != "42" {
+		t.Errorf("invoiceId = %q, want the canonical 42", stub.got.GetInvoiceId())
 	}
 }
 
@@ -156,14 +169,17 @@ func TestCreateFeeReceiversBadRequests(t *testing.T) {
 		wantErr string
 	}{
 		{"malformed json", "not json", "invalid request body"},
-		{"missing processor", `{"quantity":1}`, "processor must be simple or intermediated"},
-		{"unknown processor", `{"processor":"escrow"}`, "processor must be simple or intermediated"},
-		{"unknown payment token", `{"processor":"simple","paymentToken":"DOGE"}`, "unknown token DOGE"},
+		{"missing processor", `{"invoiceId":"42"}`, "processor must be simple or intermediated"},
+		{"unknown processor", `{"invoiceId":"42","processor":"escrow"}`, "processor must be simple or intermediated"},
+		{"unknown kind", `{"invoiceId":"42","processor":"simple","kind":"batch"}`, "kind must be single or meta"},
+		{"invoice id is not a number", `{"invoiceId":"abc","processor":"simple"}`, "invoiceId must be a base-10 integer"},
+		{"missing invoice id", `{"processor":"simple"}`, "invoiceId must be a base-10 integer"},
+		{"unknown payment token", `{"invoiceId":"42","processor":"simple","paymentToken":"DOGE"}`, "unknown token DOGE"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stub := &stubFeeReceiver{prepareResponse: &pb.PrepareAddressResponse{}}
+			stub := &stubFeeReceiver{response: &pb.CreateFeeReceiversResponse{}}
 			h := newFeeReceiverHandler(t, stub)
 			rec := httptest.NewRecorder()
 
@@ -176,7 +192,7 @@ func TestCreateFeeReceiversBadRequests(t *testing.T) {
 				t.Errorf("error = %q, want it to contain %q", body["error"], tt.wantErr)
 			}
 
-			if stub.gotPrepare != nil {
+			if stub.got != nil {
 				t.Error("a rejected request was still forwarded to the sidecar")
 			}
 		})
@@ -197,10 +213,11 @@ func TestCreateFeeReceiversMapsSidecarErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := newFeeReceiverHandler(t, &stubFeeReceiver{prepareErr: tt.err})
+			h := newFeeReceiverHandler(t, &stubFeeReceiver{err: tt.err})
 			rec := httptest.NewRecorder()
 
-			h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers", `{"processor":"simple"}`))
+			h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
+				`{"invoiceId":"42","processor":"simple"}`))
 
 			if rec.Code != tt.wantStatus {
 				t.Errorf("status = %d, want %d", rec.Code, tt.wantStatus)
@@ -212,183 +229,34 @@ func TestCreateFeeReceiversMapsSidecarErrors(t *testing.T) {
 	}
 }
 
-func TestAuthorizeFeeReceivers(t *testing.T) {
-	stub := &stubFeeReceiver{
-		verifyResponse: &pb.VerifyAddressesResponse{
-			Addresses: []string{"0xreceiver1"},
-			Signature: "0xsignature",
-		},
-	}
-	h := newFeeReceiverHandler(t, stub)
-	rec := httptest.NewRecorder()
-
-	h.AuthorizeFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers/authorization",
-		`{"invoiceId":"42","processor":"intermediated","kind":"meta",
-		  "paymentToken":"USDC","ephemeralPublicKeys":["0xkey1"]}`))
-
-	body := successBody(t, rec)
-	if body["status"] != "success" {
-		t.Errorf("status = %v, want success", body["status"])
-	}
-	if body["signature"] != "0xsignature" {
-		t.Errorf("signature = %v, want the signer's authorization", body["signature"])
-	}
-	receivers, ok := body["feeReceivers"].([]any)
-	if !ok || len(receivers) != 1 {
-		t.Fatalf("feeReceivers = %v, want one address", body["feeReceivers"])
-	}
-
-	if stub.gotVerify.GetInvoiceId() != "42" {
-		t.Errorf("invoiceId = %q, want 42", stub.gotVerify.GetInvoiceId())
-	}
-	if stub.gotVerify.GetInvoiceKind() != pb.InvoiceKind_INVOICE_KIND_META {
-		t.Errorf("invoiceKind = %v, want META", stub.gotVerify.GetInvoiceKind())
-	}
-	if stub.gotVerify.GetProcessorKind() != pb.ProcessorKind_PROCESSOR_KIND_INTERMEDIATED {
-		t.Errorf("processorKind = %v, want INTERMEDIATED", stub.gotVerify.GetProcessorKind())
-	}
-	if stub.gotVerify.GetChainId() != 8453 {
-		t.Errorf("chainId = %d, want 8453", stub.gotVerify.GetChainId())
-	}
-	if len(stub.gotVerify.GetEphemeralPublicKey()) != 1 {
-		t.Errorf("ephemeralPublicKey = %v, want the stored key", stub.gotVerify.GetEphemeralPublicKey())
-	}
-}
-
-func TestAuthorizeFeeReceiversDefaultsToASingleInvoice(t *testing.T) {
-	stub := &stubFeeReceiver{verifyResponse: &pb.VerifyAddressesResponse{}}
-	h := newFeeReceiverHandler(t, stub)
-	rec := httptest.NewRecorder()
-
-	h.AuthorizeFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers/authorization",
-		`{"invoiceId":"42","processor":"simple","ephemeralPublicKeys":["0xkey1"]}`))
-
-	successBody(t, rec)
-	if stub.gotVerify.GetInvoiceKind() != pb.InvoiceKind_INVOICE_KIND_SINGLE {
-		t.Errorf("invoiceKind = %v, want SINGLE", stub.gotVerify.GetInvoiceKind())
-	}
-}
-
-func TestAuthorizeFeeReceiversNormalisesTheInvoiceID(t *testing.T) {
-	stub := &stubFeeReceiver{verifyResponse: &pb.VerifyAddressesResponse{}}
-	h := newFeeReceiverHandler(t, stub)
-	rec := httptest.NewRecorder()
-
-	h.AuthorizeFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers/authorization",
-		`{"invoiceId":"  0042  ","processor":"simple","ephemeralPublicKeys":["0xkey1"]}`))
-
-	successBody(t, rec)
-	if stub.gotVerify.GetInvoiceId() != "42" {
-		t.Errorf("invoiceId = %q, want the canonical 42", stub.gotVerify.GetInvoiceId())
-	}
-}
-
-func TestAuthorizeFeeReceiversBadRequests(t *testing.T) {
-	tests := []struct {
-		name    string
-		body    string
-		wantErr string
-	}{
-		{"malformed json", "not json", "invalid request body"},
-		{
-			"unknown processor",
-			`{"invoiceId":"42","processor":"escrow","ephemeralPublicKeys":["0xkey1"]}`,
-			"processor must be simple or intermediated",
-		},
-		{
-			"unknown kind",
-			`{"invoiceId":"42","processor":"simple","kind":"batch","ephemeralPublicKeys":["0xkey1"]}`,
-			"kind must be single or meta",
-		},
-		{
-			"no ephemeral keys",
-			`{"invoiceId":"42","processor":"simple","ephemeralPublicKeys":[]}`,
-			"ephemeralPublicKeys is required",
-		},
-		{
-			"missing ephemeral keys",
-			`{"invoiceId":"42","processor":"simple"}`,
-			"ephemeralPublicKeys is required",
-		},
-		{
-			"invoice id is not a number",
-			`{"invoiceId":"abc","processor":"simple","ephemeralPublicKeys":["0xkey1"]}`,
-			"invoiceId must be a base-10 integer",
-		},
-		{
-			"missing invoice id",
-			`{"processor":"simple","ephemeralPublicKeys":["0xkey1"]}`,
-			"invoiceId must be a base-10 integer",
-		},
-		{
-			"unknown payment token",
-			`{"invoiceId":"42","processor":"simple","paymentToken":"DOGE","ephemeralPublicKeys":["0xkey1"]}`,
-			"unknown token DOGE",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			stub := &stubFeeReceiver{verifyResponse: &pb.VerifyAddressesResponse{}}
-			h := newFeeReceiverHandler(t, stub)
-			rec := httptest.NewRecorder()
-
-			h.AuthorizeFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers/authorization", tt.body))
-
-			if rec.Code != http.StatusBadRequest {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
-			}
-			if body := decodeError(t, rec); !strings.Contains(body["error"], tt.wantErr) {
-				t.Errorf("error = %q, want it to contain %q", body["error"], tt.wantErr)
-			}
-			if stub.gotVerify != nil {
-				t.Error("a rejected request was still forwarded to the sidecar")
-			}
-		})
-	}
-}
-
-func TestAuthorizeFeeReceiversMapsSidecarErrors(t *testing.T) {
+func TestCreateFeeReceiversKeepsTheSidecarReason(t *testing.T) {
 	h := newFeeReceiverHandler(t, &stubFeeReceiver{
-		verifyErr: status.Error(codes.InvalidArgument, "keys do not match the invoice"),
+		err: status.Error(codes.InvalidArgument, "A single invoice takes one fee receiver"),
 	})
 	rec := httptest.NewRecorder()
 
-	h.AuthorizeFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers/authorization",
-		`{"invoiceId":"42","processor":"simple","ephemeralPublicKeys":["0xkey1"]}`))
+	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
+		`{"invoiceId":"42","processor":"simple","quantity":2}`))
 
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
-	body := decodeError(t, rec)
-	if !strings.Contains(body["error"], "error authorizing fee receivers") {
-		t.Errorf("error = %q, want the endpoint's message", body["error"])
-	}
-	if !strings.Contains(body["reason"], "keys do not match the invoice") {
+	if body := decodeError(t, rec); !strings.Contains(body["reason"], "A single invoice takes one fee receiver") {
 		t.Errorf("reason = %q, want the sidecar's message", body["reason"])
 	}
 }
 
-func TestFeeReceiverEndpointsWithoutTheSidecar(t *testing.T) {
+func TestCreateFeeReceiversWithoutTheSidecar(t *testing.T) {
 	h := &ContractHandler{Tokens: testTokens()}
+	rec := httptest.NewRecorder()
 
-	endpoints := map[string]func(http.ResponseWriter, *http.Request){
-		"create":    h.CreateFeeReceivers,
-		"authorize": h.AuthorizeFeeReceivers,
+	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
+		`{"invoiceId":"42","processor":"simple"}`))
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
 	}
-
-	for name, endpoint := range endpoints {
-		t.Run(name, func(t *testing.T) {
-			rec := httptest.NewRecorder()
-
-			endpoint(rec, feeReceiverRequest("/v1/fee-receivers", `{"processor":"simple"}`))
-
-			if rec.Code != http.StatusServiceUnavailable {
-				t.Errorf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
-			}
-			if body := decodeError(t, rec); !strings.Contains(body["error"], "fee receivers are unavailable") {
-				t.Errorf("error = %q, want it to say the endpoint is unavailable", body["error"])
-			}
-		})
+	if body := decodeError(t, rec); !strings.Contains(body["error"], "fee receivers are unavailable") {
+		t.Errorf("error = %q, want it to say the endpoint is unavailable", body["error"])
 	}
 }

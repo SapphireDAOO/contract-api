@@ -21,48 +21,36 @@ enum InvoiceKind {
   INVOICE_KIND_META        = 2;
 }
 
-message PrepareAddressRequest {
-  // How many receivers to derive: one per sub-invoice for a meta invoice,
-  // otherwise one.
-  int32         quantity       = 1;
-  ProcessorKind processor_kind = 2;
+message CreateFeeReceiversRequest {
+  ProcessorKind processor_kind = 1;
+  InvoiceKind   invoice_kind   = 2;
   // Must match the network this service is configured for.
   uint64        chain_id       = 3;
+  // uint216 on-chain, so it travels as a decimal string rather than a uint64.
+  string        invoice_id     = 4;
   // The fee token the sweeper is approved for. Empty or the zero address means
   // the payment is native, so the chain's wrapped native token is used.
-  string        payment_token  = 4;
+  string        payment_token  = 5;
+  // How many receivers to derive: one per sub-invoice for a meta invoice,
+  // otherwise one.
+  int32         quantity       = 6;
 }
 
-message PrepareAddressResponse {
-  repeated string ephemeral_public_key = 1;
-}
-
-message VerifyAddressesRequest {
-  // The keys returned by Generateaddresses, in sub-invoice order.
-  repeated string ephemeral_public_key = 1;
-  ProcessorKind   processor_kind       = 2;
-  InvoiceKind     invoice_kind         = 3;
-  uint64          chain_id             = 4;
-  // uint216 on-chain, so it travels as a decimal string rather than a uint64.
-  string          invoice_id           = 5;
-  string          payment_token        = 6;
-}
-
-message VerifyAddressesResponse {
-  repeated string addresses = 1;
+message CreateFeeReceiversResponse {
+  // Index-aligned with the meta invoice's sub-invoices.
+  repeated string addresses            = 1;
   // One signature covers every receiver, so this is singular even for a meta
   // invoice: the digest is taken over the whole address array at once.
-  string          signature = 2;
+  string          signature            = 2;
+  // One per address, in the same order. The only way to recover a receiver's
+  // key, so the caller should store them.
+  repeated string ephemeral_public_key = 3;
 }
 
 service FeeReceiver {
   // Derives one-time stealth fee receivers, 7702-delegates each to the relayer
-  // and approves the sweeper for the fee token. Returns the ephemeral public
-  // keys to store; the addresses themselves come back from Send.
-  rpc Generateaddresses(PrepareAddressRequest) returns (PrepareAddressResponse);
-
-  // Re-derives the receivers from their stored ephemeral keys, confirms the
-  // approvals are in place, and returns the addresses with the fee signer's
+  // and approves the sweeper for the fee token, waiting for every approval to
+  // be mined before it answers. Returns the addresses with the fee signer's
   // authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
-  rpc Send(VerifyAddressesRequest) returns (VerifyAddressesResponse);
+  rpc CreateFeeReceivers(CreateFeeReceiversRequest) returns (CreateFeeReceiversResponse);
 }

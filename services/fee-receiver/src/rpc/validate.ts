@@ -1,4 +1,4 @@
-import type { Address, Hex } from "viem";
+import type { Address } from "viem";
 import {
   InvoiceKind as InvoiceKindProto,
   ProcessorKind as ProcessorKindProto,
@@ -7,8 +7,6 @@ import { chainId } from "../config/config";
 import type { InvoiceKind, ProcessorKind } from "../types";
 
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
-// Compressed or uncompressed secp256k1 point, as the SDK may return either.
-const EPHEMERAL_KEY_PATTERN = /^0x[0-9a-fA-F]{66,130}$/;
 const MAX_UINT216 = (BigInt(1) << BigInt(216)) - BigInt(1);
 
 export const MAX_FEE_RECEIVERS = 5;
@@ -78,24 +76,4 @@ export const parseInvoiceId = (value: string): bigint => {
   if (invoiceId < BigInt(0) || invoiceId > MAX_UINT216)
     invalid("Invalid invoice_id");
   return invoiceId;
-};
-
-export const parseEphemeralKeys = (
-  keys: string[],
-  kind: InvoiceKind,
-): Hex[] => {
-  if (
-    !Array.isArray(keys) ||
-    keys.length < 1 ||
-    keys.length > MAX_FEE_RECEIVERS ||
-    !keys.every(
-      (key) => typeof key === "string" && EPHEMERAL_KEY_PATTERN.test(key),
-    )
-  ) {
-    invalid("Invalid ephemeral_public_key");
-  }
-  if (kind === "single" && keys.length !== 1) {
-    invalid("A single invoice takes one fee receiver");
-  }
-  return keys as Hex[];
 };

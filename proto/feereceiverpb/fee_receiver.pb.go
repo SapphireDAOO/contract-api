@@ -124,35 +124,38 @@ func (InvoiceKind) EnumDescriptor() ([]byte, []int) {
 	return file_fee_receiver_proto_rawDescGZIP(), []int{1}
 }
 
-type PrepareAddressRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// How many receivers to derive: one per sub-invoice for a meta invoice,
-	// otherwise one.
-	Quantity      int32         `protobuf:"varint,1,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	ProcessorKind ProcessorKind `protobuf:"varint,2,opt,name=processor_kind,json=processorKind,proto3,enum=feereceiver.v1.ProcessorKind" json:"processor_kind,omitempty"`
+type CreateFeeReceiversRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProcessorKind ProcessorKind          `protobuf:"varint,1,opt,name=processor_kind,json=processorKind,proto3,enum=feereceiver.v1.ProcessorKind" json:"processor_kind,omitempty"`
+	InvoiceKind   InvoiceKind            `protobuf:"varint,2,opt,name=invoice_kind,json=invoiceKind,proto3,enum=feereceiver.v1.InvoiceKind" json:"invoice_kind,omitempty"`
 	// Must match the network this service is configured for.
 	ChainId uint64 `protobuf:"varint,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// uint216 on-chain, so it travels as a decimal string rather than a uint64.
+	InvoiceId string `protobuf:"bytes,4,opt,name=invoice_id,json=invoiceId,proto3" json:"invoice_id,omitempty"`
 	// The fee token the sweeper is approved for. Empty or the zero address means
 	// the payment is native, so the chain's wrapped native token is used.
-	PaymentToken  string `protobuf:"bytes,4,opt,name=payment_token,json=paymentToken,proto3" json:"payment_token,omitempty"`
+	PaymentToken string `protobuf:"bytes,5,opt,name=payment_token,json=paymentToken,proto3" json:"payment_token,omitempty"`
+	// How many receivers to derive: one per sub-invoice for a meta invoice,
+	// otherwise one.
+	Quantity      int32 `protobuf:"varint,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PrepareAddressRequest) Reset() {
-	*x = PrepareAddressRequest{}
+func (x *CreateFeeReceiversRequest) Reset() {
+	*x = CreateFeeReceiversRequest{}
 	mi := &file_fee_receiver_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PrepareAddressRequest) String() string {
+func (x *CreateFeeReceiversRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PrepareAddressRequest) ProtoMessage() {}
+func (*CreateFeeReceiversRequest) ProtoMessage() {}
 
-func (x *PrepareAddressRequest) ProtoReflect() protoreflect.Message {
+func (x *CreateFeeReceiversRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_fee_receiver_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -164,194 +167,82 @@ func (x *PrepareAddressRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PrepareAddressRequest.ProtoReflect.Descriptor instead.
-func (*PrepareAddressRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateFeeReceiversRequest.ProtoReflect.Descriptor instead.
+func (*CreateFeeReceiversRequest) Descriptor() ([]byte, []int) {
 	return file_fee_receiver_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PrepareAddressRequest) GetQuantity() int32 {
-	if x != nil {
-		return x.Quantity
-	}
-	return 0
-}
-
-func (x *PrepareAddressRequest) GetProcessorKind() ProcessorKind {
+func (x *CreateFeeReceiversRequest) GetProcessorKind() ProcessorKind {
 	if x != nil {
 		return x.ProcessorKind
 	}
 	return ProcessorKind_PROCESSOR_KIND_UNSPECIFIED
 }
 
-func (x *PrepareAddressRequest) GetChainId() uint64 {
-	if x != nil {
-		return x.ChainId
-	}
-	return 0
-}
-
-func (x *PrepareAddressRequest) GetPaymentToken() string {
-	if x != nil {
-		return x.PaymentToken
-	}
-	return ""
-}
-
-type PrepareAddressResponse struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	EphemeralPublicKey []string               `protobuf:"bytes,1,rep,name=ephemeral_public_key,json=ephemeralPublicKey,proto3" json:"ephemeral_public_key,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
-}
-
-func (x *PrepareAddressResponse) Reset() {
-	*x = PrepareAddressResponse{}
-	mi := &file_fee_receiver_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PrepareAddressResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PrepareAddressResponse) ProtoMessage() {}
-
-func (x *PrepareAddressResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fee_receiver_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PrepareAddressResponse.ProtoReflect.Descriptor instead.
-func (*PrepareAddressResponse) Descriptor() ([]byte, []int) {
-	return file_fee_receiver_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *PrepareAddressResponse) GetEphemeralPublicKey() []string {
-	if x != nil {
-		return x.EphemeralPublicKey
-	}
-	return nil
-}
-
-type VerifyAddressesRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The keys returned by Generateaddresses, in sub-invoice order.
-	EphemeralPublicKey []string      `protobuf:"bytes,1,rep,name=ephemeral_public_key,json=ephemeralPublicKey,proto3" json:"ephemeral_public_key,omitempty"`
-	ProcessorKind      ProcessorKind `protobuf:"varint,2,opt,name=processor_kind,json=processorKind,proto3,enum=feereceiver.v1.ProcessorKind" json:"processor_kind,omitempty"`
-	InvoiceKind        InvoiceKind   `protobuf:"varint,3,opt,name=invoice_kind,json=invoiceKind,proto3,enum=feereceiver.v1.InvoiceKind" json:"invoice_kind,omitempty"`
-	ChainId            uint64        `protobuf:"varint,4,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// uint216 on-chain, so it travels as a decimal string rather than a uint64.
-	InvoiceId     string `protobuf:"bytes,5,opt,name=invoice_id,json=invoiceId,proto3" json:"invoice_id,omitempty"`
-	PaymentToken  string `protobuf:"bytes,6,opt,name=payment_token,json=paymentToken,proto3" json:"payment_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyAddressesRequest) Reset() {
-	*x = VerifyAddressesRequest{}
-	mi := &file_fee_receiver_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyAddressesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyAddressesRequest) ProtoMessage() {}
-
-func (x *VerifyAddressesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fee_receiver_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyAddressesRequest.ProtoReflect.Descriptor instead.
-func (*VerifyAddressesRequest) Descriptor() ([]byte, []int) {
-	return file_fee_receiver_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *VerifyAddressesRequest) GetEphemeralPublicKey() []string {
-	if x != nil {
-		return x.EphemeralPublicKey
-	}
-	return nil
-}
-
-func (x *VerifyAddressesRequest) GetProcessorKind() ProcessorKind {
-	if x != nil {
-		return x.ProcessorKind
-	}
-	return ProcessorKind_PROCESSOR_KIND_UNSPECIFIED
-}
-
-func (x *VerifyAddressesRequest) GetInvoiceKind() InvoiceKind {
+func (x *CreateFeeReceiversRequest) GetInvoiceKind() InvoiceKind {
 	if x != nil {
 		return x.InvoiceKind
 	}
 	return InvoiceKind_INVOICE_KIND_UNSPECIFIED
 }
 
-func (x *VerifyAddressesRequest) GetChainId() uint64 {
+func (x *CreateFeeReceiversRequest) GetChainId() uint64 {
 	if x != nil {
 		return x.ChainId
 	}
 	return 0
 }
 
-func (x *VerifyAddressesRequest) GetInvoiceId() string {
+func (x *CreateFeeReceiversRequest) GetInvoiceId() string {
 	if x != nil {
 		return x.InvoiceId
 	}
 	return ""
 }
 
-func (x *VerifyAddressesRequest) GetPaymentToken() string {
+func (x *CreateFeeReceiversRequest) GetPaymentToken() string {
 	if x != nil {
 		return x.PaymentToken
 	}
 	return ""
 }
 
-type VerifyAddressesResponse struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	Addresses []string               `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	// One signature covers every receiver, so this is singular even for a meta
-	// invoice: the digest is taken over the whole address array at once.
-	Signature     string `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *CreateFeeReceiversRequest) GetQuantity() int32 {
+	if x != nil {
+		return x.Quantity
+	}
+	return 0
 }
 
-func (x *VerifyAddressesResponse) Reset() {
-	*x = VerifyAddressesResponse{}
-	mi := &file_fee_receiver_proto_msgTypes[3]
+type CreateFeeReceiversResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Index-aligned with the meta invoice's sub-invoices.
+	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
+	// One signature covers every receiver, so this is singular even for a meta
+	// invoice: the digest is taken over the whole address array at once.
+	Signature string `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	// One per address, in the same order. The only way to recover a receiver's
+	// key, so the caller should store them.
+	EphemeralPublicKey []string `protobuf:"bytes,3,rep,name=ephemeral_public_key,json=ephemeralPublicKey,proto3" json:"ephemeral_public_key,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CreateFeeReceiversResponse) Reset() {
+	*x = CreateFeeReceiversResponse{}
+	mi := &file_fee_receiver_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *VerifyAddressesResponse) String() string {
+func (x *CreateFeeReceiversResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*VerifyAddressesResponse) ProtoMessage() {}
+func (*CreateFeeReceiversResponse) ProtoMessage() {}
 
-func (x *VerifyAddressesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fee_receiver_proto_msgTypes[3]
+func (x *CreateFeeReceiversResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fee_receiver_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,48 +253,49 @@ func (x *VerifyAddressesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use VerifyAddressesResponse.ProtoReflect.Descriptor instead.
-func (*VerifyAddressesResponse) Descriptor() ([]byte, []int) {
-	return file_fee_receiver_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use CreateFeeReceiversResponse.ProtoReflect.Descriptor instead.
+func (*CreateFeeReceiversResponse) Descriptor() ([]byte, []int) {
+	return file_fee_receiver_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *VerifyAddressesResponse) GetAddresses() []string {
+func (x *CreateFeeReceiversResponse) GetAddresses() []string {
 	if x != nil {
 		return x.Addresses
 	}
 	return nil
 }
 
-func (x *VerifyAddressesResponse) GetSignature() string {
+func (x *CreateFeeReceiversResponse) GetSignature() string {
 	if x != nil {
 		return x.Signature
 	}
 	return ""
 }
 
+func (x *CreateFeeReceiversResponse) GetEphemeralPublicKey() []string {
+	if x != nil {
+		return x.EphemeralPublicKey
+	}
+	return nil
+}
+
 var File_fee_receiver_proto protoreflect.FileDescriptor
 
 const file_fee_receiver_proto_rawDesc = "" +
 	"\n" +
-	"\x12fee_receiver.proto\x12\x0efeereceiver.v1\"\xb9\x01\n" +
-	"\x15PrepareAddressRequest\x12\x1a\n" +
-	"\bquantity\x18\x01 \x01(\x05R\bquantity\x12D\n" +
-	"\x0eprocessor_kind\x18\x02 \x01(\x0e2\x1d.feereceiver.v1.ProcessorKindR\rprocessorKind\x12\x19\n" +
-	"\bchain_id\x18\x03 \x01(\x04R\achainId\x12#\n" +
-	"\rpayment_token\x18\x04 \x01(\tR\fpaymentToken\"J\n" +
-	"\x16PrepareAddressResponse\x120\n" +
-	"\x14ephemeral_public_key\x18\x01 \x03(\tR\x12ephemeralPublicKey\"\xaf\x02\n" +
-	"\x16VerifyAddressesRequest\x120\n" +
-	"\x14ephemeral_public_key\x18\x01 \x03(\tR\x12ephemeralPublicKey\x12D\n" +
-	"\x0eprocessor_kind\x18\x02 \x01(\x0e2\x1d.feereceiver.v1.ProcessorKindR\rprocessorKind\x12>\n" +
-	"\finvoice_kind\x18\x03 \x01(\x0e2\x1b.feereceiver.v1.InvoiceKindR\vinvoiceKind\x12\x19\n" +
-	"\bchain_id\x18\x04 \x01(\x04R\achainId\x12\x1d\n" +
+	"\x12fee_receiver.proto\x12\x0efeereceiver.v1\"\x9c\x02\n" +
+	"\x19CreateFeeReceiversRequest\x12D\n" +
+	"\x0eprocessor_kind\x18\x01 \x01(\x0e2\x1d.feereceiver.v1.ProcessorKindR\rprocessorKind\x12>\n" +
+	"\finvoice_kind\x18\x02 \x01(\x0e2\x1b.feereceiver.v1.InvoiceKindR\vinvoiceKind\x12\x19\n" +
+	"\bchain_id\x18\x03 \x01(\x04R\achainId\x12\x1d\n" +
 	"\n" +
-	"invoice_id\x18\x05 \x01(\tR\tinvoiceId\x12#\n" +
-	"\rpayment_token\x18\x06 \x01(\tR\fpaymentToken\"U\n" +
-	"\x17VerifyAddressesResponse\x12\x1c\n" +
+	"invoice_id\x18\x04 \x01(\tR\tinvoiceId\x12#\n" +
+	"\rpayment_token\x18\x05 \x01(\tR\fpaymentToken\x12\x1a\n" +
+	"\bquantity\x18\x06 \x01(\x05R\bquantity\"\x8a\x01\n" +
+	"\x1aCreateFeeReceiversResponse\x12\x1c\n" +
 	"\taddresses\x18\x01 \x03(\tR\taddresses\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\tR\tsignature*l\n" +
+	"\tsignature\x18\x02 \x01(\tR\tsignature\x120\n" +
+	"\x14ephemeral_public_key\x18\x03 \x03(\tR\x12ephemeralPublicKey*l\n" +
 	"\rProcessorKind\x12\x1e\n" +
 	"\x1aPROCESSOR_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15PROCESSOR_KIND_SIMPLE\x10\x01\x12 \n" +
@@ -411,10 +303,9 @@ const file_fee_receiver_proto_rawDesc = "" +
 	"\vInvoiceKind\x12\x1c\n" +
 	"\x18INVOICE_KIND_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13INVOICE_KIND_SINGLE\x10\x01\x12\x15\n" +
-	"\x11INVOICE_KIND_META\x10\x022\xca\x01\n" +
-	"\vFeeReceiver\x12b\n" +
-	"\x11Generateaddresses\x12%.feereceiver.v1.PrepareAddressRequest\x1a&.feereceiver.v1.PrepareAddressResponse\x12W\n" +
-	"\x04Send\x12&.feereceiver.v1.VerifyAddressesRequest\x1a'.feereceiver.v1.VerifyAddressesResponseBHZFgithub.com/SapphireDAOO/contract-api/proto/feereceiverpb;feereceiverpbb\x06proto3"
+	"\x11INVOICE_KIND_META\x10\x022z\n" +
+	"\vFeeReceiver\x12k\n" +
+	"\x12CreateFeeReceivers\x12).feereceiver.v1.CreateFeeReceiversRequest\x1a*.feereceiver.v1.CreateFeeReceiversResponseBHZFgithub.com/SapphireDAOO/contract-api/proto/feereceiverpb;feereceiverpbb\x06proto3"
 
 var (
 	file_fee_receiver_proto_rawDescOnce sync.Once
@@ -429,28 +320,23 @@ func file_fee_receiver_proto_rawDescGZIP() []byte {
 }
 
 var file_fee_receiver_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_fee_receiver_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_fee_receiver_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_fee_receiver_proto_goTypes = []any{
-	(ProcessorKind)(0),              // 0: feereceiver.v1.ProcessorKind
-	(InvoiceKind)(0),                // 1: feereceiver.v1.InvoiceKind
-	(*PrepareAddressRequest)(nil),   // 2: feereceiver.v1.PrepareAddressRequest
-	(*PrepareAddressResponse)(nil),  // 3: feereceiver.v1.PrepareAddressResponse
-	(*VerifyAddressesRequest)(nil),  // 4: feereceiver.v1.VerifyAddressesRequest
-	(*VerifyAddressesResponse)(nil), // 5: feereceiver.v1.VerifyAddressesResponse
+	(ProcessorKind)(0),                 // 0: feereceiver.v1.ProcessorKind
+	(InvoiceKind)(0),                   // 1: feereceiver.v1.InvoiceKind
+	(*CreateFeeReceiversRequest)(nil),  // 2: feereceiver.v1.CreateFeeReceiversRequest
+	(*CreateFeeReceiversResponse)(nil), // 3: feereceiver.v1.CreateFeeReceiversResponse
 }
 var file_fee_receiver_proto_depIdxs = []int32{
-	0, // 0: feereceiver.v1.PrepareAddressRequest.processor_kind:type_name -> feereceiver.v1.ProcessorKind
-	0, // 1: feereceiver.v1.VerifyAddressesRequest.processor_kind:type_name -> feereceiver.v1.ProcessorKind
-	1, // 2: feereceiver.v1.VerifyAddressesRequest.invoice_kind:type_name -> feereceiver.v1.InvoiceKind
-	2, // 3: feereceiver.v1.FeeReceiver.Generateaddresses:input_type -> feereceiver.v1.PrepareAddressRequest
-	4, // 4: feereceiver.v1.FeeReceiver.Send:input_type -> feereceiver.v1.VerifyAddressesRequest
-	3, // 5: feereceiver.v1.FeeReceiver.Generateaddresses:output_type -> feereceiver.v1.PrepareAddressResponse
-	5, // 6: feereceiver.v1.FeeReceiver.Send:output_type -> feereceiver.v1.VerifyAddressesResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0, // 0: feereceiver.v1.CreateFeeReceiversRequest.processor_kind:type_name -> feereceiver.v1.ProcessorKind
+	1, // 1: feereceiver.v1.CreateFeeReceiversRequest.invoice_kind:type_name -> feereceiver.v1.InvoiceKind
+	2, // 2: feereceiver.v1.FeeReceiver.CreateFeeReceivers:input_type -> feereceiver.v1.CreateFeeReceiversRequest
+	3, // 3: feereceiver.v1.FeeReceiver.CreateFeeReceivers:output_type -> feereceiver.v1.CreateFeeReceiversResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_fee_receiver_proto_init() }
@@ -464,7 +350,7 @@ func file_fee_receiver_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_fee_receiver_proto_rawDesc), len(file_fee_receiver_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   4,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

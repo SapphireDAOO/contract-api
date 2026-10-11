@@ -108,68 +108,68 @@ export function invoiceKindToJSON(object: InvoiceKind): string {
   }
 }
 
-export interface PrepareAddressRequest {
-  /**
-   * How many receivers to derive: one per sub-invoice for a meta invoice,
-   * otherwise one.
-   */
-  quantity: number;
+export interface CreateFeeReceiversRequest {
   processorKind: ProcessorKind;
+  invoiceKind: InvoiceKind;
   /** Must match the network this service is configured for. */
   chainId: number;
+  /** uint216 on-chain, so it travels as a decimal string rather than a uint64. */
+  invoiceId: string;
   /**
    * The fee token the sweeper is approved for. Empty or the zero address means
    * the payment is native, so the chain's wrapped native token is used.
    */
   paymentToken: string;
+  /**
+   * How many receivers to derive: one per sub-invoice for a meta invoice,
+   * otherwise one.
+   */
+  quantity: number;
 }
 
-export interface PrepareAddressResponse {
-  ephemeralPublicKey: string[];
-}
-
-export interface VerifyAddressesRequest {
-  /** The keys returned by Generateaddresses, in sub-invoice order. */
-  ephemeralPublicKey: string[];
-  processorKind: ProcessorKind;
-  invoiceKind: InvoiceKind;
-  chainId: number;
-  /** uint216 on-chain, so it travels as a decimal string rather than a uint64. */
-  invoiceId: string;
-  paymentToken: string;
-}
-
-export interface VerifyAddressesResponse {
+export interface CreateFeeReceiversResponse {
+  /** Index-aligned with the meta invoice's sub-invoices. */
   addresses: string[];
   /**
    * One signature covers every receiver, so this is singular even for a meta
    * invoice: the digest is taken over the whole address array at once.
    */
   signature: string;
+  /**
+   * One per address, in the same order. The only way to recover a receiver's
+   * key, so the caller should store them.
+   */
+  ephemeralPublicKey: string[];
 }
 
-function createBasePrepareAddressRequest(): PrepareAddressRequest {
-  return { quantity: 0, processorKind: 0, chainId: 0, paymentToken: "" };
+function createBaseCreateFeeReceiversRequest(): CreateFeeReceiversRequest {
+  return { processorKind: 0, invoiceKind: 0, chainId: 0, invoiceId: "", paymentToken: "", quantity: 0 };
 }
 
-export const PrepareAddressRequest: MessageFns<PrepareAddressRequest> = {
-  encode(message: PrepareAddressRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.quantity !== 0) {
-      writer.uint32(8).int32(message.quantity);
-    }
+export const CreateFeeReceiversRequest: MessageFns<CreateFeeReceiversRequest> = {
+  encode(message: CreateFeeReceiversRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.processorKind !== 0) {
-      writer.uint32(16).int32(message.processorKind);
+      writer.uint32(8).int32(message.processorKind);
+    }
+    if (message.invoiceKind !== 0) {
+      writer.uint32(16).int32(message.invoiceKind);
     }
     if (message.chainId !== 0) {
       writer.uint32(24).uint64(message.chainId);
     }
+    if (message.invoiceId !== "") {
+      writer.uint32(34).string(message.invoiceId);
+    }
     if (message.paymentToken !== "") {
-      writer.uint32(34).string(message.paymentToken);
+      writer.uint32(42).string(message.paymentToken);
+    }
+    if (message.quantity !== 0) {
+      writer.uint32(48).int32(message.quantity);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PrepareAddressRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateFeeReceiversRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const previousRecursionDepth = (reader as any).__tsProtoDecodeDepth ?? 0;
     if (previousRecursionDepth >= 100) {
@@ -178,7 +178,7 @@ export const PrepareAddressRequest: MessageFns<PrepareAddressRequest> = {
     (reader as any).__tsProtoDecodeDepth = previousRecursionDepth + 1;
     try {
       const end = length === undefined ? reader.len : reader.pos + length;
-      const message = createBasePrepareAddressRequest();
+      const message = createBaseCreateFeeReceiversRequest();
       while (reader.pos < end) {
         const tag = reader.uint32();
         switch (tag >>> 3) {
@@ -187,7 +187,7 @@ export const PrepareAddressRequest: MessageFns<PrepareAddressRequest> = {
               break;
             }
 
-            message.quantity = reader.int32();
+            message.processorKind = reader.int32() as any;
             continue;
           }
           case 2: {
@@ -195,7 +195,7 @@ export const PrepareAddressRequest: MessageFns<PrepareAddressRequest> = {
               break;
             }
 
-            message.processorKind = reader.int32() as any;
+            message.invoiceKind = reader.int32() as any;
             continue;
           }
           case 3: {
@@ -211,215 +211,7 @@ export const PrepareAddressRequest: MessageFns<PrepareAddressRequest> = {
               break;
             }
 
-            message.paymentToken = reader.string();
-            continue;
-          }
-        }
-        if ((tag & 7) === 4 || tag === 0) {
-          break;
-        }
-        reader.skip(tag & 7);
-      }
-      return message;
-    } finally {
-      (reader as any).__tsProtoDecodeDepth = previousRecursionDepth;
-    }
-  },
-
-  fromJSON(object: any): PrepareAddressRequest {
-    return {
-      quantity: isSet(object.quantity) ? globalThis.Number(object.quantity) : 0,
-      processorKind: isSet(object.processorKind)
-        ? processorKindFromJSON(object.processorKind)
-        : isSet(object.processor_kind)
-        ? processorKindFromJSON(object.processor_kind)
-        : 0,
-      chainId: isSet(object.chainId)
-        ? globalThis.Number(object.chainId)
-        : isSet(object.chain_id)
-        ? globalThis.Number(object.chain_id)
-        : 0,
-      paymentToken: isSet(object.paymentToken)
-        ? globalThis.String(object.paymentToken)
-        : isSet(object.payment_token)
-        ? globalThis.String(object.payment_token)
-        : "",
-    };
-  },
-
-  toJSON(message: PrepareAddressRequest): unknown {
-    const obj: any = {};
-    if (message.quantity !== 0) {
-      obj.quantity = Math.round(message.quantity);
-    }
-    if (message.processorKind !== 0) {
-      obj.processorKind = processorKindToJSON(message.processorKind);
-    }
-    if (message.chainId !== 0) {
-      obj.chainId = Math.round(message.chainId);
-    }
-    if (message.paymentToken !== "") {
-      obj.paymentToken = message.paymentToken;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<PrepareAddressRequest>, I>>(base?: I): PrepareAddressRequest {
-    return PrepareAddressRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PrepareAddressRequest>, I>>(object: I): PrepareAddressRequest {
-    const message = createBasePrepareAddressRequest();
-    message.quantity = object.quantity ?? 0;
-    message.processorKind = object.processorKind ?? 0;
-    message.chainId = object.chainId ?? 0;
-    message.paymentToken = object.paymentToken ?? "";
-    return message;
-  },
-};
-
-function createBasePrepareAddressResponse(): PrepareAddressResponse {
-  return { ephemeralPublicKey: [] };
-}
-
-export const PrepareAddressResponse: MessageFns<PrepareAddressResponse> = {
-  encode(message: PrepareAddressResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.ephemeralPublicKey) {
-      writer.uint32(10).string(v!);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PrepareAddressResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const previousRecursionDepth = (reader as any).__tsProtoDecodeDepth ?? 0;
-    if (previousRecursionDepth >= 100) {
-      throw new globalThis.Error("protobuf decode recursion limit exceeded");
-    }
-    (reader as any).__tsProtoDecodeDepth = previousRecursionDepth + 1;
-    try {
-      const end = length === undefined ? reader.len : reader.pos + length;
-      const message = createBasePrepareAddressResponse();
-      while (reader.pos < end) {
-        const tag = reader.uint32();
-        switch (tag >>> 3) {
-          case 1: {
-            if (tag !== 10) {
-              break;
-            }
-
-            message.ephemeralPublicKey.push(reader.string());
-            continue;
-          }
-        }
-        if ((tag & 7) === 4 || tag === 0) {
-          break;
-        }
-        reader.skip(tag & 7);
-      }
-      return message;
-    } finally {
-      (reader as any).__tsProtoDecodeDepth = previousRecursionDepth;
-    }
-  },
-
-  fromJSON(object: any): PrepareAddressResponse {
-    return {
-      ephemeralPublicKey: globalThis.Array.isArray(object?.ephemeralPublicKey)
-        ? object.ephemeralPublicKey.map((e: any) => globalThis.String(e))
-        : globalThis.Array.isArray(object?.ephemeral_public_key)
-        ? object.ephemeral_public_key.map((e: any) => globalThis.String(e))
-        : [],
-    };
-  },
-
-  toJSON(message: PrepareAddressResponse): unknown {
-    const obj: any = {};
-    if (message.ephemeralPublicKey?.length) {
-      obj.ephemeralPublicKey = message.ephemeralPublicKey;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<PrepareAddressResponse>, I>>(base?: I): PrepareAddressResponse {
-    return PrepareAddressResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PrepareAddressResponse>, I>>(object: I): PrepareAddressResponse {
-    const message = createBasePrepareAddressResponse();
-    message.ephemeralPublicKey = object.ephemeralPublicKey?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBaseVerifyAddressesRequest(): VerifyAddressesRequest {
-  return { ephemeralPublicKey: [], processorKind: 0, invoiceKind: 0, chainId: 0, invoiceId: "", paymentToken: "" };
-}
-
-export const VerifyAddressesRequest: MessageFns<VerifyAddressesRequest> = {
-  encode(message: VerifyAddressesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.ephemeralPublicKey) {
-      writer.uint32(10).string(v!);
-    }
-    if (message.processorKind !== 0) {
-      writer.uint32(16).int32(message.processorKind);
-    }
-    if (message.invoiceKind !== 0) {
-      writer.uint32(24).int32(message.invoiceKind);
-    }
-    if (message.chainId !== 0) {
-      writer.uint32(32).uint64(message.chainId);
-    }
-    if (message.invoiceId !== "") {
-      writer.uint32(42).string(message.invoiceId);
-    }
-    if (message.paymentToken !== "") {
-      writer.uint32(50).string(message.paymentToken);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): VerifyAddressesRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const previousRecursionDepth = (reader as any).__tsProtoDecodeDepth ?? 0;
-    if (previousRecursionDepth >= 100) {
-      throw new globalThis.Error("protobuf decode recursion limit exceeded");
-    }
-    (reader as any).__tsProtoDecodeDepth = previousRecursionDepth + 1;
-    try {
-      const end = length === undefined ? reader.len : reader.pos + length;
-      const message = createBaseVerifyAddressesRequest();
-      while (reader.pos < end) {
-        const tag = reader.uint32();
-        switch (tag >>> 3) {
-          case 1: {
-            if (tag !== 10) {
-              break;
-            }
-
-            message.ephemeralPublicKey.push(reader.string());
-            continue;
-          }
-          case 2: {
-            if (tag !== 16) {
-              break;
-            }
-
-            message.processorKind = reader.int32() as any;
-            continue;
-          }
-          case 3: {
-            if (tag !== 24) {
-              break;
-            }
-
-            message.invoiceKind = reader.int32() as any;
-            continue;
-          }
-          case 4: {
-            if (tag !== 32) {
-              break;
-            }
-
-            message.chainId = longToNumber(reader.uint64());
+            message.invoiceId = reader.string();
             continue;
           }
           case 5: {
@@ -427,15 +219,15 @@ export const VerifyAddressesRequest: MessageFns<VerifyAddressesRequest> = {
               break;
             }
 
-            message.invoiceId = reader.string();
+            message.paymentToken = reader.string();
             continue;
           }
           case 6: {
-            if (tag !== 50) {
+            if (tag !== 48) {
               break;
             }
 
-            message.paymentToken = reader.string();
+            message.quantity = reader.int32();
             continue;
           }
         }
@@ -450,13 +242,8 @@ export const VerifyAddressesRequest: MessageFns<VerifyAddressesRequest> = {
     }
   },
 
-  fromJSON(object: any): VerifyAddressesRequest {
+  fromJSON(object: any): CreateFeeReceiversRequest {
     return {
-      ephemeralPublicKey: globalThis.Array.isArray(object?.ephemeralPublicKey)
-        ? object.ephemeralPublicKey.map((e: any) => globalThis.String(e))
-        : globalThis.Array.isArray(object?.ephemeral_public_key)
-        ? object.ephemeral_public_key.map((e: any) => globalThis.String(e))
-        : [],
       processorKind: isSet(object.processorKind)
         ? processorKindFromJSON(object.processorKind)
         : isSet(object.processor_kind)
@@ -482,14 +269,12 @@ export const VerifyAddressesRequest: MessageFns<VerifyAddressesRequest> = {
         : isSet(object.payment_token)
         ? globalThis.String(object.payment_token)
         : "",
+      quantity: isSet(object.quantity) ? globalThis.Number(object.quantity) : 0,
     };
   },
 
-  toJSON(message: VerifyAddressesRequest): unknown {
+  toJSON(message: CreateFeeReceiversRequest): unknown {
     const obj: any = {};
-    if (message.ephemeralPublicKey?.length) {
-      obj.ephemeralPublicKey = message.ephemeralPublicKey;
-    }
     if (message.processorKind !== 0) {
       obj.processorKind = processorKindToJSON(message.processorKind);
     }
@@ -505,40 +290,46 @@ export const VerifyAddressesRequest: MessageFns<VerifyAddressesRequest> = {
     if (message.paymentToken !== "") {
       obj.paymentToken = message.paymentToken;
     }
+    if (message.quantity !== 0) {
+      obj.quantity = Math.round(message.quantity);
+    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<VerifyAddressesRequest>, I>>(base?: I): VerifyAddressesRequest {
-    return VerifyAddressesRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CreateFeeReceiversRequest>, I>>(base?: I): CreateFeeReceiversRequest {
+    return CreateFeeReceiversRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<VerifyAddressesRequest>, I>>(object: I): VerifyAddressesRequest {
-    const message = createBaseVerifyAddressesRequest();
-    message.ephemeralPublicKey = object.ephemeralPublicKey?.map((e) => e) || [];
+  fromPartial<I extends Exact<DeepPartial<CreateFeeReceiversRequest>, I>>(object: I): CreateFeeReceiversRequest {
+    const message = createBaseCreateFeeReceiversRequest();
     message.processorKind = object.processorKind ?? 0;
     message.invoiceKind = object.invoiceKind ?? 0;
     message.chainId = object.chainId ?? 0;
     message.invoiceId = object.invoiceId ?? "";
     message.paymentToken = object.paymentToken ?? "";
+    message.quantity = object.quantity ?? 0;
     return message;
   },
 };
 
-function createBaseVerifyAddressesResponse(): VerifyAddressesResponse {
-  return { addresses: [], signature: "" };
+function createBaseCreateFeeReceiversResponse(): CreateFeeReceiversResponse {
+  return { addresses: [], signature: "", ephemeralPublicKey: [] };
 }
 
-export const VerifyAddressesResponse: MessageFns<VerifyAddressesResponse> = {
-  encode(message: VerifyAddressesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const CreateFeeReceiversResponse: MessageFns<CreateFeeReceiversResponse> = {
+  encode(message: CreateFeeReceiversResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.addresses) {
       writer.uint32(10).string(v!);
     }
     if (message.signature !== "") {
       writer.uint32(18).string(message.signature);
     }
+    for (const v of message.ephemeralPublicKey) {
+      writer.uint32(26).string(v!);
+    }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): VerifyAddressesResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateFeeReceiversResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const previousRecursionDepth = (reader as any).__tsProtoDecodeDepth ?? 0;
     if (previousRecursionDepth >= 100) {
@@ -547,7 +338,7 @@ export const VerifyAddressesResponse: MessageFns<VerifyAddressesResponse> = {
     (reader as any).__tsProtoDecodeDepth = previousRecursionDepth + 1;
     try {
       const end = length === undefined ? reader.len : reader.pos + length;
-      const message = createBaseVerifyAddressesResponse();
+      const message = createBaseCreateFeeReceiversResponse();
       while (reader.pos < end) {
         const tag = reader.uint32();
         switch (tag >>> 3) {
@@ -567,6 +358,14 @@ export const VerifyAddressesResponse: MessageFns<VerifyAddressesResponse> = {
             message.signature = reader.string();
             continue;
           }
+          case 3: {
+            if (tag !== 26) {
+              break;
+            }
+
+            message.ephemeralPublicKey.push(reader.string());
+            continue;
+          }
         }
         if ((tag & 7) === 4 || tag === 0) {
           break;
@@ -579,16 +378,21 @@ export const VerifyAddressesResponse: MessageFns<VerifyAddressesResponse> = {
     }
   },
 
-  fromJSON(object: any): VerifyAddressesResponse {
+  fromJSON(object: any): CreateFeeReceiversResponse {
     return {
       addresses: globalThis.Array.isArray(object?.addresses)
         ? object.addresses.map((e: any) => globalThis.String(e))
         : [],
       signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
+      ephemeralPublicKey: globalThis.Array.isArray(object?.ephemeralPublicKey)
+        ? object.ephemeralPublicKey.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.ephemeral_public_key)
+        ? object.ephemeral_public_key.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
-  toJSON(message: VerifyAddressesResponse): unknown {
+  toJSON(message: CreateFeeReceiversResponse): unknown {
     const obj: any = {};
     if (message.addresses?.length) {
       obj.addresses = message.addresses;
@@ -596,16 +400,20 @@ export const VerifyAddressesResponse: MessageFns<VerifyAddressesResponse> = {
     if (message.signature !== "") {
       obj.signature = message.signature;
     }
+    if (message.ephemeralPublicKey?.length) {
+      obj.ephemeralPublicKey = message.ephemeralPublicKey;
+    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<VerifyAddressesResponse>, I>>(base?: I): VerifyAddressesResponse {
-    return VerifyAddressesResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<CreateFeeReceiversResponse>, I>>(base?: I): CreateFeeReceiversResponse {
+    return CreateFeeReceiversResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<VerifyAddressesResponse>, I>>(object: I): VerifyAddressesResponse {
-    const message = createBaseVerifyAddressesResponse();
+  fromPartial<I extends Exact<DeepPartial<CreateFeeReceiversResponse>, I>>(object: I): CreateFeeReceiversResponse {
+    const message = createBaseCreateFeeReceiversResponse();
     message.addresses = object.addresses?.map((e) => e) || [];
     message.signature = object.signature ?? "";
+    message.ephemeralPublicKey = object.ephemeralPublicKey?.map((e) => e) || [];
     return message;
   },
 };
@@ -614,93 +422,54 @@ export type FeeReceiverService = typeof FeeReceiverService;
 export const FeeReceiverService = {
   /**
    * Derives one-time stealth fee receivers, 7702-delegates each to the relayer
-   * and approves the sweeper for the fee token. Returns the ephemeral public
-   * keys to store; the addresses themselves come back from Send.
-   */
-  generateaddresses: {
-    path: "/feereceiver.v1.FeeReceiver/Generateaddresses" as const,
-    requestStream: false as const,
-    responseStream: false as const,
-    requestSerialize: (value: PrepareAddressRequest): Buffer =>
-      Buffer.from(PrepareAddressRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): PrepareAddressRequest => PrepareAddressRequest.decode(value),
-    responseSerialize: (value: PrepareAddressResponse): Buffer =>
-      Buffer.from(PrepareAddressResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): PrepareAddressResponse => PrepareAddressResponse.decode(value),
-  },
-  /**
-   * Re-derives the receivers from their stored ephemeral keys, confirms the
-   * approvals are in place, and returns the addresses with the fee signer's
+   * and approves the sweeper for the fee token, waiting for every approval to
+   * be mined before it answers. Returns the addresses with the fee signer's
    * authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
    */
-  send: {
-    path: "/feereceiver.v1.FeeReceiver/Send" as const,
+  createFeeReceivers: {
+    path: "/feereceiver.v1.FeeReceiver/CreateFeeReceivers" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: VerifyAddressesRequest): Buffer =>
-      Buffer.from(VerifyAddressesRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): VerifyAddressesRequest => VerifyAddressesRequest.decode(value),
-    responseSerialize: (value: VerifyAddressesResponse): Buffer =>
-      Buffer.from(VerifyAddressesResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): VerifyAddressesResponse => VerifyAddressesResponse.decode(value),
+    requestSerialize: (value: CreateFeeReceiversRequest): Buffer =>
+      Buffer.from(CreateFeeReceiversRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateFeeReceiversRequest => CreateFeeReceiversRequest.decode(value),
+    responseSerialize: (value: CreateFeeReceiversResponse): Buffer =>
+      Buffer.from(CreateFeeReceiversResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreateFeeReceiversResponse => CreateFeeReceiversResponse.decode(value),
   },
 } as const;
 
 export interface FeeReceiverServer extends UntypedServiceImplementation {
   /**
    * Derives one-time stealth fee receivers, 7702-delegates each to the relayer
-   * and approves the sweeper for the fee token. Returns the ephemeral public
-   * keys to store; the addresses themselves come back from Send.
-   */
-  generateaddresses: handleUnaryCall<PrepareAddressRequest, PrepareAddressResponse>;
-  /**
-   * Re-derives the receivers from their stored ephemeral keys, confirms the
-   * approvals are in place, and returns the addresses with the fee signer's
+   * and approves the sweeper for the fee token, waiting for every approval to
+   * be mined before it answers. Returns the addresses with the fee signer's
    * authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
    */
-  send: handleUnaryCall<VerifyAddressesRequest, VerifyAddressesResponse>;
+  createFeeReceivers: handleUnaryCall<CreateFeeReceiversRequest, CreateFeeReceiversResponse>;
 }
 
 export interface FeeReceiverClient extends Client {
   /**
    * Derives one-time stealth fee receivers, 7702-delegates each to the relayer
-   * and approves the sweeper for the fee token. Returns the ephemeral public
-   * keys to store; the addresses themselves come back from Send.
-   */
-  generateaddresses(
-    request: PrepareAddressRequest,
-    callback: (error: ServiceError | null, response: PrepareAddressResponse) => void,
-  ): ClientUnaryCall;
-  generateaddresses(
-    request: PrepareAddressRequest,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: PrepareAddressResponse) => void,
-  ): ClientUnaryCall;
-  generateaddresses(
-    request: PrepareAddressRequest,
-    metadata: Metadata,
-    options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: PrepareAddressResponse) => void,
-  ): ClientUnaryCall;
-  /**
-   * Re-derives the receivers from their stored ephemeral keys, confirms the
-   * approvals are in place, and returns the addresses with the fee signer's
+   * and approves the sweeper for the fee token, waiting for every approval to
+   * be mined before it answers. Returns the addresses with the fee signer's
    * authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
    */
-  send(
-    request: VerifyAddressesRequest,
-    callback: (error: ServiceError | null, response: VerifyAddressesResponse) => void,
+  createFeeReceivers(
+    request: CreateFeeReceiversRequest,
+    callback: (error: ServiceError | null, response: CreateFeeReceiversResponse) => void,
   ): ClientUnaryCall;
-  send(
-    request: VerifyAddressesRequest,
+  createFeeReceivers(
+    request: CreateFeeReceiversRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: VerifyAddressesResponse) => void,
+    callback: (error: ServiceError | null, response: CreateFeeReceiversResponse) => void,
   ): ClientUnaryCall;
-  send(
-    request: VerifyAddressesRequest,
+  createFeeReceivers(
+    request: CreateFeeReceiversRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: VerifyAddressesResponse) => void,
+    callback: (error: ServiceError | null, response: CreateFeeReceiversResponse) => void,
   ): ClientUnaryCall;
 }
 

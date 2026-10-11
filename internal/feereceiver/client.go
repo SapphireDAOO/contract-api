@@ -28,18 +28,11 @@ func NewClient(target string) (*Client, error) {
 	return &Client{conn: conn, client: pb.NewFeeReceiverClient(conn), target: target}, nil
 }
 
-func (c *Client) Generate(ctx context.Context, in *pb.PrepareAddressRequest) (*pb.PrepareAddressResponse, error) {
+func (c *Client) Create(ctx context.Context, in *pb.CreateFeeReceiversRequest) (*pb.CreateFeeReceiversResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, callTimeout)
 	defer cancel()
 
-	return c.client.Generateaddresses(ctx, in)
-}
-
-func (c *Client) Authorize(ctx context.Context, in *pb.VerifyAddressesRequest) (*pb.VerifyAddressesResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, callTimeout)
-	defer cancel()
-
-	return c.client.Send(ctx, in)
+	return c.client.CreateFeeReceivers(ctx, in)
 }
 
 func (c *Client) Target() string { return c.target }

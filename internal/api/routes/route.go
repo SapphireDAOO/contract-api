@@ -33,8 +33,7 @@ func (r *Router) OPTIONS(path string, handler http.HandlerFunc) {
 const v1 = "/v1"
 
 const (
-	feeReceivers     = v1 + "/fee-receivers"
-	feeReceiversAuth = feeReceivers + "/authorization"
+	feeReceivers = v1 + "/fee-receivers"
 
 	notes     = v1 + "/notes"
 	notesOpen = notes + "/open"
@@ -66,8 +65,6 @@ func Route(contractHandler *handler.ContractHandler) http.Handler {
 
 	router.POST(feeReceivers, middleware.CORS(contractHandler.CreateFeeReceivers))
 	router.OPTIONS(feeReceivers, middleware.Preflight)
-	router.POST(feeReceiversAuth, middleware.CORS(contractHandler.AuthorizeFeeReceivers))
-	router.OPTIONS(feeReceiversAuth, middleware.Preflight)
 
 	router.POST(notes, middleware.CORS(contractHandler.WriteNote))
 	router.OPTIONS(notes, middleware.Preflight)

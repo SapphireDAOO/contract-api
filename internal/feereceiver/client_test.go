@@ -16,19 +16,16 @@ import (
 type stubServer struct {
 	pb.UnimplementedFeeReceiverServer
 
-	gotPrepare *pb.PrepareAddressRequest
-	gotVerify  *pb.VerifyAddressesRequest
+	got *pb.CreateFeeReceiversRequest
 
-	prepareResponse *pb.PrepareAddressResponse
-	prepareErr      error
-	verifyResponse  *pb.VerifyAddressesResponse
-	verifyErr       error
+	response *pb.CreateFeeReceiversResponse
+	err      error
 
 	delay time.Duration
 }
 
-func (s *stubServer) Generateaddresses(ctx context.Context, in *pb.PrepareAddressRequest) (*pb.PrepareAddressResponse, error) {
-	s.gotPrepare = in
+func (s *stubServer) CreateFeeReceivers(ctx context.Context, in *pb.CreateFeeReceiversRequest) (*pb.CreateFeeReceiversResponse, error) {
+	s.got = in
 	if s.delay > 0 {
 		select {
 		case <-time.After(s.delay):
@@ -36,25 +33,10 @@ func (s *stubServer) Generateaddresses(ctx context.Context, in *pb.PrepareAddres
 			return nil, ctx.Err()
 		}
 	}
-	if s.prepareErr != nil {
-		return nil, s.prepareErr
+	if s.err != nil {
+		return nil, s.err
 	}
-	return s.prepareResponse, nil
-}
-
-func (s *stubServer) Send(ctx context.Context, in *pb.VerifyAddressesRequest) (*pb.VerifyAddressesResponse, error) {
-	s.gotVerify = in
-	if s.delay > 0 {
-		select {
-		case <-time.After(s.delay):
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-	if s.verifyErr != nil {
-		return nil, s.verifyErr
-	}
-	return s.verifyResponse, nil
+	return s.response, nil
 }
 
 func newStubClient(t *testing.T, stub *stubServer) *Client {
@@ -123,110 +105,86 @@ func TestCallToAnUnreachableSidecar(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	_, err = client.Generate(ctx, &pb.PrepareAddressRequest{})
+	_, err = client.Create(ctx, &pb.CreateFeeReceiversRequest{})
 
 	if err == nil {
-		t.Fatal("Generate against an unreachable sidecar returned no error")
+		t.Fatal("Create against an unreachable sidecar returned no error")
 	}
 	if got := status.Code(err); got != codes.Unavailable && got != codes.DeadlineExceeded {
 		t.Errorf("error code = %v, want Unavailable or DeadlineExceeded", got)
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestCreate(t *testing.T) {
 	stub := &stubServer{
-		prepareResponse: &pb.PrepareAddressResponse{
+		response: &pb.CreateFeeReceiversResponse{
+			Addresses:          []string{"0xreceiver1", "0xreceiver2"},
+			Signature:          "0xsignature",
 			EphemeralPublicKey: []string{"0xkey1", "0xkey2"},
 		},
 	}
 	client := newStubClient(t, stub)
 
-	res, err := client.Generate(context.Background(), &pb.PrepareAddressRequest{
-		Quantity:      2,
+	res, err := client.Create(context.Background(), &pb.CreateFeeReceiversRequest{
 		ProcessorKind: pb.ProcessorKind_PROCESSOR_KIND_INTERMEDIATED,
+		InvoiceKind:   pb.InvoiceKind_INVOICE_KIND_META,
 		ChainId:       8453,
+		InvoiceId:     "42",
 		PaymentToken:  "0xtoken",
+		Quantity:      2,
 	})
 	if err != nil {
-		t.Fatalf("Generate returned %v", err)
+		t.Fatalf("Create returned %v", err)
 	}
 
+	if len(res.GetAddresses()) != 2 {
+		t.Errorf("got %d addresses, want 2", len(res.GetAddresses()))
+	}
+	if res.GetSignature() != "0xsignature" {
+		t.Errorf("signature = %q, want 0xsignature", res.GetSignature())
+	}
 	if len(res.GetEphemeralPublicKey()) != 2 {
 		t.Errorf("got %d keys, want 2", len(res.GetEphemeralPublicKey()))
 	}
 
-	if stub.gotPrepare.GetQuantity() != 2 {
-		t.Errorf("quantity = %d, want 2", stub.gotPrepare.GetQuantity())
+	if stub.got.GetQuantity() != 2 {
+		t.Errorf("quantity = %d, want 2", stub.got.GetQuantity())
 	}
-	if stub.gotPrepare.GetChainId() != 8453 {
-		t.Errorf("chainId = %d, want 8453", stub.gotPrepare.GetChainId())
+	if stub.got.GetChainId() != 8453 {
+		t.Errorf("chainId = %d, want 8453", stub.got.GetChainId())
 	}
-	if stub.gotPrepare.GetPaymentToken() != "0xtoken" {
-		t.Errorf("paymentToken = %q, want 0xtoken", stub.gotPrepare.GetPaymentToken())
+	if stub.got.GetInvoiceId() != "42" {
+		t.Errorf("invoiceId = %q, want 42", stub.got.GetInvoiceId())
 	}
-}
-
-func TestAuthorize(t *testing.T) {
-	stub := &stubServer{
-		verifyResponse: &pb.VerifyAddressesResponse{
-			Addresses: []string{"0xreceiver"},
-			Signature: "0xsignature",
-		},
-	}
-	client := newStubClient(t, stub)
-
-	res, err := client.Authorize(context.Background(), &pb.VerifyAddressesRequest{
-		EphemeralPublicKey: []string{"0xkey1"},
-		ProcessorKind:      pb.ProcessorKind_PROCESSOR_KIND_SIMPLE,
-		InvoiceKind:        pb.InvoiceKind_INVOICE_KIND_SINGLE,
-		ChainId:            8453,
-		InvoiceId:          "42",
-	})
-	if err != nil {
-		t.Fatalf("Authorize returned %v", err)
-	}
-
-	if res.GetSignature() != "0xsignature" {
-		t.Errorf("signature = %q, want 0xsignature", res.GetSignature())
-	}
-	if len(res.GetAddresses()) != 1 {
-		t.Errorf("got %d addresses, want 1", len(res.GetAddresses()))
-	}
-	if stub.gotVerify.GetInvoiceId() != "42" {
-		t.Errorf("invoiceId = %q, want 42", stub.gotVerify.GetInvoiceId())
+	if stub.got.GetPaymentToken() != "0xtoken" {
+		t.Errorf("paymentToken = %q, want 0xtoken", stub.got.GetPaymentToken())
 	}
 }
 
 func TestClientPropagatesStatusErrors(t *testing.T) {
 	client := newStubClient(t, &stubServer{
-		prepareErr: status.Error(codes.InvalidArgument, "quantity must be positive"),
-		verifyErr:  status.Error(codes.NotFound, "unknown ephemeral key"),
+		err: status.Error(codes.InvalidArgument, "quantity must be positive"),
 	})
 
-	_, err := client.Generate(context.Background(), &pb.PrepareAddressRequest{})
+	_, err := client.Create(context.Background(), &pb.CreateFeeReceiversRequest{})
 	if got := status.Code(err); got != codes.InvalidArgument {
-		t.Errorf("Generate error code = %v, want InvalidArgument", got)
-	}
-
-	_, err = client.Authorize(context.Background(), &pb.VerifyAddressesRequest{})
-	if got := status.Code(err); got != codes.NotFound {
-		t.Errorf("Authorize error code = %v, want NotFound", got)
+		t.Errorf("Create error code = %v, want InvalidArgument", got)
 	}
 }
 
 func TestClientHonoursACancelledContext(t *testing.T) {
 	client := newStubClient(t, &stubServer{
-		prepareResponse: &pb.PrepareAddressResponse{},
-		delay:           5 * time.Second,
+		response: &pb.CreateFeeReceiversResponse{},
+		delay:    5 * time.Second,
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := client.Generate(ctx, &pb.PrepareAddressRequest{})
+	_, err := client.Create(ctx, &pb.CreateFeeReceiversRequest{})
 
 	if err == nil {
-		t.Fatal("Generate returned no error for a cancelled context")
+		t.Fatal("Create returned no error for a cancelled context")
 	}
 	if got := status.Code(err); got != codes.Canceled {
 		t.Errorf("error code = %v, want Canceled", got)
@@ -235,26 +193,26 @@ func TestClientHonoursACancelledContext(t *testing.T) {
 
 func TestClientHonoursAShorterCallerDeadline(t *testing.T) {
 	client := newStubClient(t, &stubServer{
-		prepareResponse: &pb.PrepareAddressResponse{},
-		delay:           5 * time.Second,
+		response: &pb.CreateFeeReceiversResponse{},
+		delay:    5 * time.Second,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
 	start := time.Now()
-	_, err := client.Generate(ctx, &pb.PrepareAddressRequest{})
+	_, err := client.Create(ctx, &pb.CreateFeeReceiversRequest{})
 	elapsed := time.Since(start)
 
 	if err == nil {
-		t.Fatal("Generate returned no error for an expired deadline")
+		t.Fatal("Create returned no error for an expired deadline")
 	}
 	if got := status.Code(err); got != codes.DeadlineExceeded {
 		t.Errorf("error code = %v, want DeadlineExceeded", got)
 	}
 
 	if elapsed > callTimeout {
-		t.Errorf("Generate waited %v, want it bounded by the caller's deadline", elapsed)
+		t.Errorf("Create waited %v, want it bounded by the caller's deadline", elapsed)
 	}
 }
 
@@ -279,13 +237,13 @@ func TestClose(t *testing.T) {
 }
 
 func TestCallAfterClose(t *testing.T) {
-	client := newStubClient(t, &stubServer{prepareResponse: &pb.PrepareAddressResponse{}})
+	client := newStubClient(t, &stubServer{response: &pb.CreateFeeReceiversResponse{}})
 
 	if err := client.Close(); err != nil {
 		t.Fatalf("Close returned %v", err)
 	}
 
-	if _, err := client.Generate(context.Background(), &pb.PrepareAddressRequest{}); err == nil {
-		t.Error("Generate after Close returned no error")
+	if _, err := client.Create(context.Background(), &pb.CreateFeeReceiversRequest{}); err == nil {
+		t.Error("Create after Close returned no error")
 	}
 }

@@ -19,8 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FeeReceiver_Generateaddresses_FullMethodName = "/feereceiver.v1.FeeReceiver/Generateaddresses"
-	FeeReceiver_Send_FullMethodName              = "/feereceiver.v1.FeeReceiver/Send"
+	FeeReceiver_CreateFeeReceivers_FullMethodName = "/feereceiver.v1.FeeReceiver/CreateFeeReceivers"
 )
 
 // FeeReceiverClient is the client API for FeeReceiver service.
@@ -28,13 +27,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FeeReceiverClient interface {
 	// Derives one-time stealth fee receivers, 7702-delegates each to the relayer
-	// and approves the sweeper for the fee token. Returns the ephemeral public
-	// keys to store; the addresses themselves come back from Send.
-	Generateaddresses(ctx context.Context, in *PrepareAddressRequest, opts ...grpc.CallOption) (*PrepareAddressResponse, error)
-	// Re-derives the receivers from their stored ephemeral keys, confirms the
-	// approvals are in place, and returns the addresses with the fee signer's
+	// and approves the sweeper for the fee token, waiting for every approval to
+	// be mined before it answers. Returns the addresses with the fee signer's
 	// authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
-	Send(ctx context.Context, in *VerifyAddressesRequest, opts ...grpc.CallOption) (*VerifyAddressesResponse, error)
+	CreateFeeReceivers(ctx context.Context, in *CreateFeeReceiversRequest, opts ...grpc.CallOption) (*CreateFeeReceiversResponse, error)
 }
 
 type feeReceiverClient struct {
@@ -45,20 +41,10 @@ func NewFeeReceiverClient(cc grpc.ClientConnInterface) FeeReceiverClient {
 	return &feeReceiverClient{cc}
 }
 
-func (c *feeReceiverClient) Generateaddresses(ctx context.Context, in *PrepareAddressRequest, opts ...grpc.CallOption) (*PrepareAddressResponse, error) {
+func (c *feeReceiverClient) CreateFeeReceivers(ctx context.Context, in *CreateFeeReceiversRequest, opts ...grpc.CallOption) (*CreateFeeReceiversResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PrepareAddressResponse)
-	err := c.cc.Invoke(ctx, FeeReceiver_Generateaddresses_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *feeReceiverClient) Send(ctx context.Context, in *VerifyAddressesRequest, opts ...grpc.CallOption) (*VerifyAddressesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VerifyAddressesResponse)
-	err := c.cc.Invoke(ctx, FeeReceiver_Send_FullMethodName, in, out, cOpts...)
+	out := new(CreateFeeReceiversResponse)
+	err := c.cc.Invoke(ctx, FeeReceiver_CreateFeeReceivers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +56,10 @@ func (c *feeReceiverClient) Send(ctx context.Context, in *VerifyAddressesRequest
 // for forward compatibility.
 type FeeReceiverServer interface {
 	// Derives one-time stealth fee receivers, 7702-delegates each to the relayer
-	// and approves the sweeper for the fee token. Returns the ephemeral public
-	// keys to store; the addresses themselves come back from Send.
-	Generateaddresses(context.Context, *PrepareAddressRequest) (*PrepareAddressResponse, error)
-	// Re-derives the receivers from their stored ephemeral keys, confirms the
-	// approvals are in place, and returns the addresses with the fee signer's
+	// and approves the sweeper for the fee token, waiting for every approval to
+	// be mined before it answers. Returns the addresses with the fee signer's
 	// authorization to pass on-chain as `_feeReceiver(s)` / `_data`.
-	Send(context.Context, *VerifyAddressesRequest) (*VerifyAddressesResponse, error)
+	CreateFeeReceivers(context.Context, *CreateFeeReceiversRequest) (*CreateFeeReceiversResponse, error)
 	mustEmbedUnimplementedFeeReceiverServer()
 }
 
@@ -87,11 +70,8 @@ type FeeReceiverServer interface {
 // pointer dereference when methods are called.
 type UnimplementedFeeReceiverServer struct{}
 
-func (UnimplementedFeeReceiverServer) Generateaddresses(context.Context, *PrepareAddressRequest) (*PrepareAddressResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Generateaddresses not implemented")
-}
-func (UnimplementedFeeReceiverServer) Send(context.Context, *VerifyAddressesRequest) (*VerifyAddressesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
+func (UnimplementedFeeReceiverServer) CreateFeeReceivers(context.Context, *CreateFeeReceiversRequest) (*CreateFeeReceiversResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateFeeReceivers not implemented")
 }
 func (UnimplementedFeeReceiverServer) mustEmbedUnimplementedFeeReceiverServer() {}
 func (UnimplementedFeeReceiverServer) testEmbeddedByValue()                     {}
@@ -114,38 +94,20 @@ func RegisterFeeReceiverServer(s grpc.ServiceRegistrar, srv FeeReceiverServer) {
 	s.RegisterService(&FeeReceiver_ServiceDesc, srv)
 }
 
-func _FeeReceiver_Generateaddresses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PrepareAddressRequest)
+func _FeeReceiver_CreateFeeReceivers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateFeeReceiversRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FeeReceiverServer).Generateaddresses(ctx, in)
+		return srv.(FeeReceiverServer).CreateFeeReceivers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FeeReceiver_Generateaddresses_FullMethodName,
+		FullMethod: FeeReceiver_CreateFeeReceivers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FeeReceiverServer).Generateaddresses(ctx, req.(*PrepareAddressRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _FeeReceiver_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VerifyAddressesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FeeReceiverServer).Send(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: FeeReceiver_Send_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FeeReceiverServer).Send(ctx, req.(*VerifyAddressesRequest))
+		return srv.(FeeReceiverServer).CreateFeeReceivers(ctx, req.(*CreateFeeReceiversRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -158,12 +120,8 @@ var FeeReceiver_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FeeReceiverServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Generateaddresses",
-			Handler:    _FeeReceiver_Generateaddresses_Handler,
-		},
-		{
-			MethodName: "Send",
-			Handler:    _FeeReceiver_Send_Handler,
+			MethodName: "CreateFeeReceivers",
+			Handler:    _FeeReceiver_CreateFeeReceivers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -22,14 +22,13 @@ Platform fees are collected through one-time stealth addresses issued by the [fe
 | POST   | [`/v1/invoices/{invoiceId}/disputes/resolution`](#endpoint-resolve-dispute) | Resolve a dispute |
 | GET    | [`/v1/settlements/status`](#endpoint-settlement-status) | Simple processor settlement window |
 | GET    | [`/v1/exchangeRate`](#endpoint-exchange-rates)    | How much of a token one USD buys     |
-| POST   | [`/v1/fee-receivers`](#endpoint-create-fee-receivers) | Derive and approve stealth fee receivers |
-| POST   | [`/v1/fee-receivers/authorization`](#endpoint-authorize-fee-receivers) | Sign the fee authorization |
+| POST   | [`/v1/fee-receivers`](#endpoint-create-fee-receivers) | Derive, approve and authorize stealth fee receivers |
 | POST   | [`/v1/notes`](#endpoint-write-note)              | Write an encrypted note to an invoice |
 | POST   | [`/v1/notes/open`](#endpoint-open-note)          | Mark a note as opened                |
 
 The invoice id is a path segment on every invoice operation, so the request body carries only what is specific to that operation. `release`, `cancel` and `disputes` take no body at all.
 
-Every endpoint requires an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the two [fee receiver](#endpoint-create-fee-receivers) endpoints.
+Every endpoint requires an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the [fee receiver](#endpoint-create-fee-receivers) endpoint.
 
 ---
 
@@ -428,57 +427,13 @@ curl "https://sapphiredaotesting.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
 ### Endpoint: Create fee receivers
 
 - **Method**: POST `/v1/fee-receivers`
-- **Description**: Derives one-time [EIP-5564](https://eips.ethereum.org/EIPS/eip-5564) stealth addresses to collect platform fees, upgrades each to an EIP-7702 delegator, and approves the sweeper to move the fee token out of them later.
+- **Description**: Derives one-time [EIP-5564](https://eips.ethereum.org/EIPS/eip-5564) stealth addresses to collect platform fees for an invoice, upgrades each to an EIP-7702 delegator, approves the sweeper to move the fee token out of them later, and returns the addresses with the fee signer's signature to pass on-chain as the processor's `_feeReceiver(s)` / `_data` arguments.
 
 The work is done by the [fee-receiver sidecar](services/fee-receiver/README.md), reached over gRPC at `services.feeReceiver`. This API forwards the request and translates the sidecar's gRPC status into an HTTP one.
 
-**No `X-API-KEY`.** Both fee receiver endpoints are unauthenticated, unlike the rest of the API. Each call to this one sends a relayer-sponsored transaction per receiver, so whatever fronts the API is what limits who can spend that gas.
+**No `X-API-KEY`.** This endpoint is unauthenticated, unlike the rest of the API. Each call sends a relayer-sponsored transaction per receiver, so whatever fronts the API is what limits who can spend that gas.
 
-Fee receivers are issued in **two steps**, and the split is the point. This call spends gas but hands back only the *ephemeral public keys* — never the addresses. Those keys are the only way to recover the addresses, so **store them before doing anything else**: they cannot be re-derived, and the gas is spent whether or not they are kept.
-
-#### **Request Body**
-
-```json
-{ "processor": "intermediated", "quantity": 3, "paymentToken": "USDC" }
-```
-
-| Field          | Type    | Required | Description                                                                                   |
-| :------------: | :-----: | :------: | :-------------------------------------------------------------------------------------------: |
-| `processor`    | string  | ✅       | `simple` or `intermediated` — which processor will verify the authorization.                   |
-| `quantity`     | integer | ❌       | How many receivers to derive, `1`–`5`. Defaults to `1`. A meta invoice needs one per sub-invoice. |
-| `paymentToken` | string  | ❌       | Token **symbol** the fee is collected in, e.g. `"USDC"`. Omit for a native-token payment.       |
-
-**About `paymentToken`**: as with `paymentTokens` on invoice creation, callers name the token by symbol and it is resolved through the `tokens` table for the selected network. Omitting it — or naming `ETH`, which maps to the zero address — means the payment is native, and the sidecar approves the chain's wrapped native token (`contracts.wrappedNative`) instead.
-
-#### **Response**
-
-**Success (200)** — one key per receiver, in the order they were derived:
-
-```json
-{
-  "status": "success",
-  "ephemeralPublicKeys": [
-    "0x02f7a1c3b45d6e89f0123456789abcdef0123456789abcdef0123456789abcdef01"
-  ]
-}
-```
-
-**Example**:
-
-```bash
-curl -X POST https://sapphiredaotesting.com/v1/fee-receivers \
--H "Content-Type: application/json" \
--d '{ "processor": "intermediated", "quantity": 1, "paymentToken": "USDC" }'
-```
-
----
-
-### Endpoint: Authorize fee receivers
-
-- **Method**: POST `/v1/fee-receivers/authorization`
-- **Description**: Turns the stored ephemeral public keys back into fee receiver addresses and returns the fee signer's signature over them, to pass on-chain as the processor's `_feeReceiver(s)` / `_data` arguments.
-
-Re-deriving is what makes it safe to accept these keys back from a client: a key can only ever resolve to an address the platform's spending and viewing keys control, never to one the caller chose.
+**The response waits for the approvals.** Each receiver's delegation and approval is sent in turn and its receipt awaited; only once every one has been mined does the sidecar sign and answer. A `200` therefore means the receivers are ready to collect fees. Any failure along the way returns an error, and no addresses or signature come back; gas already spent on receivers approved before the failure is lost, and the next call derives fresh ones.
 
 #### **Request Body**
 
@@ -487,52 +442,55 @@ Re-deriving is what makes it safe to accept these keys back from a client: a key
   "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
   "processor": "intermediated",
   "kind": "meta",
-  "paymentToken": "USDC",
-  "ephemeralPublicKeys": ["0x02f7a1c3...", "0x03b8d2e4..."]
+  "quantity": 2,
+  "paymentToken": "USDC"
 }
 ```
 
-| Field                 | Type     | Required | Description                                                                           |
-| :-------------------: | :------: | :------: | :-------------------------------------------------------------------------------------: |
-| `invoiceId`           | string   | ✅       | The on-chain invoice id, base-10. For `kind: "meta"`, the meta-invoice id.               |
-| `processor`           | string   | ✅       | `simple` or `intermediated`. Must match the processor the invoice lives on.              |
-| `kind`                | string   | ❌       | `single` (default) or `meta`. `meta` requires `processor: "intermediated"`.              |
-| `ephemeralPublicKeys` | string[] | ✅       | The keys from the previous call, **in sub-invoice order**. At most 5.                    |
-| `paymentToken`        | string   | ❌       | Token symbol, as above.                                                                  |
+| Field          | Type    | Required | Description                                                                                     |
+| :------------: | :-----: | :------: | :---------------------------------------------------------------------------------------------: |
+| `invoiceId`    | string  | ✅       | The on-chain invoice id, base-10. For `kind: "meta"`, the meta-invoice id.                       |
+| `processor`    | string  | ✅       | `simple` or `intermediated`. Must match the processor the invoice lives on.                      |
+| `kind`         | string  | ❌       | `single` (default) or `meta`. `meta` requires `processor: "intermediated"`.                      |
+| `quantity`     | integer | ❌       | How many receivers to derive, `1`–`5`. Defaults to `1`. A meta invoice needs one per sub-invoice; a `single` invoice takes exactly one. |
+| `paymentToken` | string  | ❌       | Token **symbol** the fee is collected in, e.g. `"USDC"`. Omit for a native-token payment.         |
 
-**About `kind`**: it is never inferred from how many keys you send. A meta invoice signs one digest over the whole address array, and a meta invoice holding a single sub-invoice still needs that array form — so a `single` request must carry exactly one key, and a meta invoice must say so explicitly.
+**About `kind`**: it is never inferred from `quantity`. A meta invoice signs one digest over the whole address array, and a meta invoice holding a single sub-invoice still needs that array form — so a meta invoice must say so explicitly.
+
+**About `paymentToken`**: as with `paymentTokens` on invoice creation, callers name the token by symbol and it is resolved through the `tokens` table for the selected network. Omitting it — or naming `ETH`, which maps to the zero address — means the payment is native, and the sidecar approves the chain's wrapped native token (`contracts.wrappedNative`) instead.
 
 #### **Response**
 
-**Success (200)** — `feeReceivers` is index-aligned with the meta-invoice's `subInvoiceIds`, and the one `signature` covers the whole array:
+**Success (200)** — `feeReceivers` is index-aligned with the meta-invoice's `subInvoiceIds`, and the one `signature` covers the whole array. `ephemeralPublicKeys` holds one key per receiver in the same order; they are the only way to recover a receiver's key, so store them.
 
 ```json
 {
   "status": "success",
   "feeReceivers": ["0x9ba1...", "0x4cd2..."],
-  "signature": "0x7f3e..."
+  "signature": "0x7f3e...",
+  "ephemeralPublicKeys": ["0x02f7a1c3...", "0x03b8d2e4..."]
 }
 ```
 
 **Example**:
 
 ```bash
-curl -X POST https://sapphiredaotesting.com/v1/fee-receivers/authorization \
+curl -X POST https://sapphiredaotesting.com/v1/fee-receivers \
 -H "Content-Type: application/json" \
 -d '{
   "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
   "processor": "intermediated",
   "kind": "single",
-  "ephemeralPublicKeys": ["0x02f7a1c3..."]
+  "paymentToken": "USDC"
 }'
 ```
 
-#### Errors (both endpoints)
+#### Errors
 
 | Status | Meaning                                                                                                         |
 | :----: | :---------------------------------------------------------------------------------------------------------------: |
-| `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`; no keys) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with several keys). |
-| `502`  | The sidecar failed internally — a chain error, or one of its keys is unset. Its own message is generic by design.  |
+| `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with `quantity` above 1). Nothing is sent on-chain. |
+| `502`  | The sidecar failed internally — a chain error, a reverted approval, or one of its keys is unset. Its own message is generic by design. |
 | `503`  | `services.feeReceiver` is not configured for this network, or the relayer has no native balance to sponsor the delegations. |
 | `504`  | The sidecar did not answer within its 25s call budget.                                                            |
 
@@ -748,7 +706,7 @@ The last four are read by the sidecar rather than by this API, but live in the s
 
 ## Notes
 
-- All endpoints require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the two fee receiver endpoints.
+- All endpoints require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the fee receiver endpoint.
 - Invoice states are: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
 - The contracts use Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting the native token and ERC20 tokens.
 - The intermediated platform operator, retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
