@@ -1,19 +1,12 @@
 package note
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const MaxContentBytes = 4096
-
-var (
-	ErrContentRequired = errors.New("content is required")
-	ErrContentHex      = errors.New("content must be 0x-prefixed hex")
-	ErrContentTooLong  = errors.New("content is too large")
-)
 
 // ParseContent decodes the hex ciphertext a caller sends.
 func ParseContent(value string) ([]byte, error) {

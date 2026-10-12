@@ -26,20 +26,20 @@ func (r RPC) validate() error {
 		{"ws", r.WS, []string{"ws", "wss"}},
 	} {
 		if field.raw == "" {
-			return fmt.Errorf("rpc.%s is required", field.key)
+			return fmt.Errorf("rpc.%s %w", field.key, ErrRequired)
 		}
 		parsed, err := url.Parse(field.raw)
 		if err != nil {
-			return fmt.Errorf("rpc.%s is not a valid URL: %w", field.key, err)
+			return fmt.Errorf("rpc.%s %w: %w", field.key, ErrInvalidURL, err)
 		}
 		if !slices.Contains(field.schemes, parsed.Scheme) {
-			return fmt.Errorf("rpc.%s must use one of %s, got %q",
-				field.key, strings.Join(field.schemes, "/"), parsed.Scheme)
+			return fmt.Errorf("rpc.%s %w %q, want %s",
+				field.key, ErrUnsupportedScheme, parsed.Scheme, strings.Join(field.schemes, "/"))
 		}
 	}
 
 	if r.DialTimeout < 0 {
-		return fmt.Errorf("rpc.dialTimeout cannot be negative")
+		return fmt.Errorf("rpc.dialTimeout %w", ErrNegative)
 	}
 	return nil
 }

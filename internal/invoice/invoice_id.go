@@ -66,12 +66,12 @@ func DecodeID(encoded string) (*big.Int, error) {
 	trimmed := strings.TrimPrefix(strings.TrimSpace(encoded), MetaPrefix)
 	trimmed = strings.TrimRight(trimmed, "=")
 	if trimmed == "" {
-		return nil, fmt.Errorf("invoice id is empty")
+		return nil, ErrEmptyInvoiceID
 	}
 
 	b, err := base64.RawURLEncoding.DecodeString(trimmed)
 	if err != nil {
-		return nil, fmt.Errorf("invoice id is not valid base64url: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInvoiceID, err)
 	}
 
 	return new(big.Int).SetBytes(b), nil

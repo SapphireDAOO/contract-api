@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -28,14 +28,14 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 	}
 	if !strings.EqualFold(from, usdCurrency) {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest,
-			errors.New("only USD is priced"), "from must be "+usdCurrency)
+			ErrOnlyUSD, "from must be "+usdCurrency)
 		return
 	}
 
 	symbols := query["to"]
 	if len(symbols) == 0 {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest,
-			errors.New("no token requested"), "to is required, e.g. to=ETH&to=USDC")
+			ErrNoTokenRequested, "to is required, e.g. to=ETH&to=USDC")
 		return
 	}
 
@@ -44,7 +44,7 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 		address, ok := h.Tokens.Address(symbol)
 		if !ok {
 			httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest,
-				errors.New("unknown token "+symbol),
+				fmt.Errorf("%w %s", ErrUnknownToken, symbol),
 				"unknown token "+symbol+" (known: "+strings.Join(h.Tokens.Symbols(), ", ")+")")
 			return
 		}
@@ -53,7 +53,7 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 
 	if h.Oracle == nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
-			errors.New("oracle unavailable"), "exchange rates are unavailable")
+			ErrOracleUnavailable, "exchange rates are unavailable")
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 		price := prices[i]
 		if price == nil || price.Sign() <= 0 {
 			httpx.WriteHTTPErrorWithStatus(w, http.StatusBadGateway,
-				errors.New("oracle returned a non-positive price"),
+				ErrNonPositivePrice,
 				"invalid price for "+symbol)
 			return
 		}
@@ -86,7 +86,7 @@ func (h *ContractHandler) ExchangeRate(w http.ResponseWriter, r *http.Request) {
 		rate := units.Invert(price, decimals, priceDecimals)
 		if rate == nil {
 			httpx.WriteHTTPErrorWithStatus(w, http.StatusBadGateway,
-				errors.New("price cannot be inverted"),
+				ErrPriceNotInvertible,
 				"invalid price for "+symbol)
 			return
 		}

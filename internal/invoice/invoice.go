@@ -55,8 +55,8 @@ func toPaymentTokens(symbols []string, tokens TokenResolver) ([]common.Address, 
 	for _, symbol := range symbols {
 		address, ok := tokens.Address(strings.TrimSpace(symbol))
 		if !ok {
-			return nil, fmt.Errorf("unknown payment token %q (known: %s)",
-				symbol, strings.Join(tokens.Symbols(), ", "))
+			return nil, fmt.Errorf("%w %q (known: %s)",
+				ErrUnknownPaymentToken, symbol, strings.Join(tokens.Symbols(), ", "))
 		}
 		addresses = append(addresses, address)
 	}
@@ -65,28 +65,28 @@ func toPaymentTokens(symbols []string, tokens TokenResolver) ([]common.Address, 
 
 func ValidateCreateInvoiceParams(request CreateInvoiceRequest, tokens TokenResolver) error {
 	if len(request.Invoices) == 0 {
-		return fmt.Errorf("no invoice parameters provided")
+		return ErrNoInvoices
 	}
 
 	if len(request.PaymentTokens) == 0 {
-		return fmt.Errorf("at least one payment token is required")
+		return ErrNoPaymentTokens
 	}
 	for _, symbol := range request.PaymentTokens {
 		if _, ok := tokens.Address(strings.TrimSpace(symbol)); !ok {
-			return fmt.Errorf("unknown payment token %q (known: %s)",
-				symbol, strings.Join(tokens.Symbols(), ", "))
+			return fmt.Errorf("%w %q (known: %s)",
+				ErrUnknownPaymentToken, symbol, strings.Join(tokens.Symbols(), ", "))
 		}
 	}
 
 	for i, p := range request.Invoices {
 		if strings.TrimSpace(p.OrderId) == "" {
-			return fmt.Errorf("invoice %d: orderId is required", i)
+			return fmt.Errorf("invoice %d: %w", i, ErrOrderIDRequired)
 		}
 		if _, ok := ParseAddress(p.Seller); !ok {
-			return fmt.Errorf("invoice %d: seller %q is not a valid address", i, p.Seller)
+			return fmt.Errorf("invoice %d: seller %q %w", i, p.Seller, ErrInvalidAddress)
 		}
 		if p.Price <= 0 {
-			return fmt.Errorf("invoice %d: price must be greater than zero", i)
+			return fmt.Errorf("invoice %d: %w", i, ErrPriceNotPositive)
 		}
 	}
 	return nil
@@ -124,16 +124,16 @@ func ConvertParam(request CreateInvoiceRequest, tokens TokenResolver) ([]interme
 func ValidateInvoices(invoices []intermediatedpaymentprocessor.IIntermediatedPaymentProcessorInvoiceCreationParam) error {
 	for i, inv := range invoices {
 		if strings.TrimSpace(inv.InvoiceId) == "" {
-			return fmt.Errorf("invoice %d missing orderId", i)
+			return fmt.Errorf("invoice %d %w", i, ErrMissingOrderID)
 		}
 		if (inv.Seller == common.Address{}) {
-			return fmt.Errorf("invoice %d missing seller", i)
+			return fmt.Errorf("invoice %d %w", i, ErrMissingSeller)
 		}
 		if inv.Price == nil {
-			return fmt.Errorf("invoice %d missing price", i)
+			return fmt.Errorf("invoice %d %w", i, ErrMissingPrice)
 		}
 		if len(inv.PaymentTokens) == 0 {
-			return fmt.Errorf("invoice %d missing payment tokens", i)
+			return fmt.Errorf("invoice %d %w", i, ErrMissingPaymentTokens)
 		}
 	}
 	return nil

@@ -12,12 +12,12 @@ import (
 func (c *Client) buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, amount *big.Int,
 	transactionTimestamp int64) ([]byte, error) {
 	if amount == nil {
-		return nil, fmt.Errorf("invalid amount")
+		return nil, ErrInvalidAmount
 	}
 
 	symbol, decimals, ok := c.tokens.ByAddress(paymentToken)
 	if !ok {
-		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
+		return nil, fmt.Errorf("%w %s", ErrUnsupportedPaymentToken, paymentToken)
 	}
 
 	currentDefaultReleaseTime := 10 * time.Minute
@@ -40,12 +40,12 @@ func (c *Client) buildRefundCallbackPayload(paymentToken string, amount *big.Int
 	refundShare *big.Int, transactionURL string, transactionTimestamp int64) ([]byte, error) {
 
 	if amount == nil {
-		return nil, fmt.Errorf("invalid amount")
+		return nil, ErrInvalidAmount
 	}
 
 	symbol, decimals, ok := c.tokens.ByAddress(paymentToken)
 	if !ok {
-		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
+		return nil, fmt.Errorf("%w %s", ErrUnsupportedPaymentToken, paymentToken)
 	}
 
 	refundAmount := new(big.Int)
@@ -70,12 +70,12 @@ func (c *Client) buildReleaseCallbackPayload(paymentToken, receiver string, rele
 	transactionTimestamp int64) ([]byte, error) {
 
 	if releaseAmount == nil {
-		return nil, fmt.Errorf("invalid amount")
+		return nil, ErrInvalidAmount
 	}
 
 	symbol, decimals, ok := c.tokens.ByAddress(paymentToken)
 	if !ok {
-		return nil, fmt.Errorf("unsupported payment token %s", paymentToken)
+		return nil, fmt.Errorf("%w %s", ErrUnsupportedPaymentToken, paymentToken)
 	}
 
 	payload := releaseCallbackPayload{

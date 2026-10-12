@@ -2,7 +2,6 @@ package paymentprocessorstorage
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
@@ -54,7 +53,7 @@ func (c *PaymentProcessorStorage) GetIntermediatedPlatformsOperator() (*common.A
 // passes, so it is only meaningful compared against the current time.
 func (c *PaymentProcessorStorage) PauseState(ctx context.Context) (bool, *big.Int, error) {
 	if c == nil || c.instance == nil {
-		return false, nil, errors.New("payment processor storage contract is not initialized")
+		return false, nil, ErrNotInitialized
 	}
 
 	state, err := bind.Call(c.instance, &bind.CallOpts{Context: ctx},

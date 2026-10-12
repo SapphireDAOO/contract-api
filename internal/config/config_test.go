@@ -188,7 +188,7 @@ func TestLoadErrors(t *testing.T) {
 			mutate: func(s string) string {
 				return strings.Replace(s, "http: https://sepolia.example.com/v3/key", "http: ftp://sepolia.example.com", 1)
 			},
-			wantErr: "rpc.http must use one of http/https",
+			wantErr: "rpc.http has an unsupported scheme",
 		},
 		{
 			name: "invalid urls",

@@ -68,12 +68,12 @@ func Path() string {
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading config %s: %w", path, err)
+		return nil, fmt.Errorf("%w %s: %w", ErrReadConfig, path, err)
 	}
 
 	var parsed file
 	if err := yaml.Unmarshal([]byte(os.ExpandEnv(string(data))), &parsed); err != nil {
-		return nil, fmt.Errorf("parsing config %s: %w", path, err)
+		return nil, fmt.Errorf("%w %s: %w", ErrParseConfig, path, err)
 	}
 
 	name := parsed.Network
@@ -82,13 +82,13 @@ func Load(path string) (*Config, error) {
 	}
 
 	if name == "" {
-		return nil, fmt.Errorf("config %s: no network selected: set the network key or %s", path, NetworkEnv)
+		return nil, fmt.Errorf("config %s: %w: set the network key or %s", path, ErrNoNetwork, NetworkEnv)
 	}
 
 	selected, ok := parsed.Networks[name]
 	if !ok {
-		return nil, fmt.Errorf("config %s: network %q is not defined (available: %s)",
-			path, name, strings.Join(slices.Sorted(maps.Keys(parsed.Networks)), ", "))
+		return nil, fmt.Errorf("config %s: network %q %w (available: %s)",
+			path, name, ErrUnknownNetwork, strings.Join(slices.Sorted(maps.Keys(parsed.Networks)), ", "))
 	}
 
 	if selected.RPC.DialTimeout == 0 {

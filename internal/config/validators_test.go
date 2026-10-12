@@ -88,22 +88,22 @@ func TestRPCValidate(t *testing.T) {
 		{
 			name:    "http with a ws scheme",
 			mutate:  func(r *RPC) { r.HTTP = "wss://mainnet.example.com" },
-			wantErr: "rpc.http must use one of http/https",
+			wantErr: "rpc.http has an unsupported scheme",
 		},
 		{
 			name:    "ws with an http scheme",
 			mutate:  func(r *RPC) { r.WS = "https://mainnet.example.com" },
-			wantErr: "rpc.ws must use one of ws/wss",
+			wantErr: "rpc.ws has an unsupported scheme",
 		},
 		{
 			name:    "no scheme",
 			mutate:  func(r *RPC) { r.HTTP = "mainnet.example.com" },
-			wantErr: "rpc.http must use one of http/https",
+			wantErr: "rpc.http has an unsupported scheme",
 		},
 		{
 			name:    "unsupported scheme",
 			mutate:  func(r *RPC) { r.HTTP = "ftp://mainnet.example.com" },
-			wantErr: "rpc.http must use one of http/https",
+			wantErr: "rpc.http has an unsupported scheme",
 		},
 		{
 			name:    "unparseable url",
@@ -167,17 +167,17 @@ func TestURLsValidate(t *testing.T) {
 		{
 			name:    "non-http scheme",
 			mutate:  func(u *URLs) { u.Callback = "ftp://market.example.com" },
-			wantErr: "urls.callback must use http/https",
+			wantErr: "urls.callback has an unsupported scheme",
 		},
 		{
 			name:    "websocket scheme is not a URL here",
 			mutate:  func(u *URLs) { u.Subgraph = "wss://subgraph.example.com" },
-			wantErr: "urls.subgraph must use http/https",
+			wantErr: "urls.subgraph has an unsupported scheme",
 		},
 		{
 			name:    "no scheme",
 			mutate:  func(u *URLs) { u.Dashboard = "dashboard.example.com" },
-			wantErr: "urls.dashboard must use http/https",
+			wantErr: "urls.dashboard has an unsupported scheme",
 		},
 		{
 			name:    "unparseable url",
@@ -192,7 +192,7 @@ func TestURLsValidate(t *testing.T) {
 		{
 			name:    "an optional field that is set is still checked",
 			mutate:  func(u *URLs) { u.DiscordWebhook = "not a url at all" },
-			wantErr: "urls.discordWebhook must use http/https",
+			wantErr: "urls.discordWebhook has an unsupported scheme",
 		},
 	}
 

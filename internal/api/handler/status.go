@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
@@ -21,7 +20,7 @@ func (h *ContractHandler) HandleSettlement(w http.ResponseWriter, r *http.Reques
 	if exp {
 		httpx.WriteHTTPErrorWithStatus(w,
 			http.StatusBadRequest,
-			errors.New("settlement window has expired"),
+			ErrSettlementExpired,
 			"settlement time passed",
 		)
 		return

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -13,7 +12,7 @@ import (
 func (h *ContractHandler) GetInvoiceData(w http.ResponseWriter, r *http.Request) {
 	invoiceId := r.PathValue("invoiceId")
 	if invoiceId == "" {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("empty invoice id in path"), "Missing invoiceId parameter")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, ErrEmptyInvoiceID, "Missing invoiceId parameter")
 		return
 	}
 

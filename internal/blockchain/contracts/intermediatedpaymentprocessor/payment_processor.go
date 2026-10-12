@@ -2,7 +2,6 @@ package intermediatedpaymentprocessor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -42,7 +41,7 @@ func (c *PaymentProcessor) CreateInvoice(
 ) (*InvoiceResponse, error) {
 
 	if len(param) != 1 {
-		return nil, errors.New("CreateInvoice expects exactly one parameter")
+		return nil, ErrSingleInvoiceExpected
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -86,7 +85,7 @@ func (c *PaymentProcessor) CreateInvoices(
 	intermediatedOperatorAddress common.Address,
 ) (*InvoiceResponse, error) {
 	if len(param) < 2 {
-		return nil, errors.New("parameter has to be greater than one")
+		return nil, ErrMultipleInvoicesExpected
 	}
 
 	invoices := make(map[string]struct {
@@ -106,7 +105,7 @@ func (c *PaymentProcessor) CreateInvoices(
 	}
 
 	if c.address == nil {
-		return nil, errors.New("payment processor contract address is not initialized")
+		return nil, ErrAddressNotInitialized
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -142,7 +141,7 @@ func (c *PaymentProcessor) CreateInvoices(
 // and how many is the contract's business, not this code's.
 func (c *PaymentProcessor) metaInvoiceIDFromLogs(receipt *types.Receipt) (*string, error) {
 	if receipt == nil {
-		return nil, errors.New("no receipt returned for meta invoice creation")
+		return nil, ErrNoReceipt
 	}
 
 	for _, log := range receipt.Logs {
@@ -159,8 +158,7 @@ func (c *PaymentProcessor) metaInvoiceIDFromLogs(receipt *types.Receipt) (*strin
 		return &id, nil
 	}
 
-	return nil, fmt.Errorf(
-		"MetaInvoiceCreated event not found in receipt logs for tx %s", receipt.TxHash.Hex())
+	return nil, fmt.Errorf("%w for tx %s", ErrMetaInvoiceEventMissing, receipt.TxHash.Hex())
 }
 
 func (c *PaymentProcessor) CreateDispute(invoiceId *big.Int, intermediatedOperatorAddress common.Address) (*common.Hash, error) {
@@ -206,7 +204,7 @@ func (c *PaymentProcessor) HandleDispute(
 			c.getDisputeResolution(blockchain.DismissDispute), sellersShare)
 
 	default:
-		return nil, errors.New("unsupported marketplace action")
+		return nil, ErrUnsupportedAction
 
 	}
 
@@ -221,7 +219,7 @@ func (c *PaymentProcessor) HandleDispute(
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
+		return nil, fmt.Errorf("%w: %s", ErrTransactionReverted, tx.Hash().Hex())
 	}
 
 	hash := tx.Hash()
@@ -250,7 +248,7 @@ func (c *PaymentProcessor) Cancel(invoiceId *big.Int) (*common.Hash, error) {
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
+		return nil, fmt.Errorf("%w: %s", ErrTransactionReverted, tx.Hash().Hex())
 	}
 
 	hash := tx.Hash()
@@ -280,7 +278,7 @@ func (c *PaymentProcessor) Refund(invoiceId *big.Int, refundShare *big.Int) (*co
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
+		return nil, fmt.Errorf("%w: %s", ErrTransactionReverted, tx.Hash().Hex())
 	}
 
 	hash := tx.Hash()
@@ -315,7 +313,7 @@ func (c *PaymentProcessor) Release(invoiceId *big.Int) (*ReleaseResult, error) {
 	}
 
 	if receipt.Status == types.ReceiptStatusFailed {
-		return nil, fmt.Errorf("transaction reverted: %s", tx.Hash().Hex())
+		return nil, fmt.Errorf("%w: %s", ErrTransactionReverted, tx.Hash().Hex())
 	}
 
 	result := &ReleaseResult{TxHash: tx.Hash()}
@@ -342,7 +340,7 @@ func (c *PaymentProcessor) blockTimestampMillis(ctx context.Context, vLog *types
 		return int64(vLog.BlockTimestamp) * 1000, nil
 	}
 	if c.client == nil || c.client.HTTP == nil {
-		return 0, errors.New("blockchain client not initialized")
+		return 0, ErrClientNotInitialized
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

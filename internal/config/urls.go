@@ -36,21 +36,21 @@ func (u URLs) validate() error {
 	} {
 		if field.raw == "" {
 			if field.required {
-				return fmt.Errorf("urls.%s is required", field.key)
+				return fmt.Errorf("urls.%s %w", field.key, ErrRequired)
 			}
 			continue
 		}
 		parsed, err := url.Parse(field.raw)
 		if err != nil {
-			return fmt.Errorf("urls.%s is not a valid URL: %w", field.key, err)
+			return fmt.Errorf("urls.%s %w: %w", field.key, ErrInvalidURL, err)
 		}
 		if parsed.Scheme != "http" && parsed.Scheme != "https" {
-			return fmt.Errorf("urls.%s must use http/https, got %q", field.key, parsed.Scheme)
+			return fmt.Errorf("urls.%s %w %q, want http/https", field.key, ErrUnsupportedScheme, parsed.Scheme)
 		}
 	}
 
 	if strings.HasSuffix(u.Explorer, "/") {
-		return fmt.Errorf("urls.explorer must not end in a slash")
+		return fmt.Errorf("urls.explorer %w", ErrTrailingSlash)
 	}
 	return nil
 }

@@ -1,7 +1,6 @@
 package oraclemanager
 
 import (
-	"errors"
 	"fmt"
 
 	"math/big"
@@ -40,7 +39,7 @@ func (c *OracleManager) Address() common.Address {
 
 func (c *OracleManager) UsdPerTokenBatch(tokens []common.Address) ([]*big.Int, error) {
 	if c == nil || c.instance == nil {
-		return nil, errors.New("oracle manager contract is not initialized")
+		return nil, ErrNotInitialized
 	}
 	if len(tokens) == 0 {
 		return nil, nil
@@ -53,7 +52,7 @@ func (c *OracleManager) UsdPerTokenBatch(tokens []common.Address) ([]*big.Int, e
 		return nil, err
 	}
 	if len(prices) != len(tokens) {
-		return nil, fmt.Errorf("oracle returned %d prices for %d tokens", len(prices), len(tokens))
+		return nil, fmt.Errorf("%w: %d prices for %d tokens", ErrPriceCountMismatch, len(prices), len(tokens))
 	}
 
 	return prices, nil
@@ -61,7 +60,7 @@ func (c *OracleManager) UsdPerTokenBatch(tokens []common.Address) ([]*big.Int, e
 
 func (c *OracleManager) Decimals() (uint8, error) {
 	if c == nil || c.instance == nil {
-		return 0, errors.New("oracle manager contract is not initialized")
+		return 0, ErrNotInitialized
 	}
 
 	data := c.contract.PackDEFAULTDECIMAL()

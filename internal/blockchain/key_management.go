@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"errors"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 )
 
@@ -11,7 +9,7 @@ import (
 // the local chain's account without touching the deployed networks' key.
 func (c *Client) Auth() (*bind.TransactOpts, error) {
 	if c == nil || c.signer == nil {
-		return nil, errors.New("signer key is not configured")
+		return nil, ErrSignerNotConfigured
 	}
 	return bind.NewKeyedTransactor(c.signer, c.ChainId), nil
 }

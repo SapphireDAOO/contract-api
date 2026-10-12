@@ -22,7 +22,7 @@ type Client struct {
 func NewClient(target string) (*Client, error) {
 	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("fee receiver at %s: %w", target, err)
+		return nil, fmt.Errorf("%w at %s: %w", ErrConnect, target, err)
 	}
 
 	return &Client{conn: conn, client: pb.NewFeeReceiverClient(conn), target: target}, nil

@@ -16,7 +16,7 @@ func ParseProcessorKind(value string) (pb.ProcessorKind, error) {
 		return pb.ProcessorKind_PROCESSOR_KIND_INTERMEDIATED, nil
 	default:
 		return pb.ProcessorKind_PROCESSOR_KIND_UNSPECIFIED,
-			fmt.Errorf("processor must be simple or intermediated, got %q", value)
+			fmt.Errorf("%w, got %q", ErrInvalidProcessor, value)
 	}
 }
 
@@ -28,7 +28,7 @@ func ParseInvoiceKind(value string) (pb.InvoiceKind, error) {
 		return pb.InvoiceKind_INVOICE_KIND_META, nil
 	default:
 		return pb.InvoiceKind_INVOICE_KIND_UNSPECIFIED,
-			fmt.Errorf("kind must be single or meta, got %q", value)
+			fmt.Errorf("%w, got %q", ErrInvalidKind, value)
 	}
 }
 
@@ -40,8 +40,8 @@ func ResolveFeeToken(tokens config.Tokens, symbol string) (string, error) {
 
 	address, ok := tokens.Address(symbol)
 	if !ok {
-		return "", fmt.Errorf("unknown token %s (known: %s)",
-			symbol, strings.Join(tokens.Symbols(), ", "))
+		return "", fmt.Errorf("%w %s (known: %s)",
+			ErrUnknownToken, symbol, strings.Join(tokens.Symbols(), ", "))
 	}
 	return address.Hex(), nil
 }

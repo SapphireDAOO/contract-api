@@ -12,7 +12,7 @@ func loadEnv() error {
 		return nil
 	}
 	if err := godotenv.Load(); err != nil {
-		return fmt.Errorf("error loading .env file: %w", err)
+		return fmt.Errorf("%w: %w", ErrLoadEnv, err)
 	}
 	return nil
 }

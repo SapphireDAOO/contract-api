@@ -9,13 +9,13 @@ import (
 func validateSignerKey(key string) error {
 	trimmed := strings.TrimPrefix(strings.TrimSpace(key), "0x")
 	if trimmed == "" {
-		return fmt.Errorf("signerKey is required")
+		return fmt.Errorf("signerKey %w", ErrRequired)
 	}
 	if len(trimmed) != 64 {
-		return fmt.Errorf("signerKey must be 32 bytes of hex, got %d characters", len(trimmed))
+		return fmt.Errorf("signerKey %w, got %d characters", ErrKeyLength, len(trimmed))
 	}
 	if _, err := hex.DecodeString(trimmed); err != nil {
-		return fmt.Errorf("signerKey is not valid hex")
+		return fmt.Errorf("signerKey %w", ErrInvalidHex)
 	}
 	return nil
 }

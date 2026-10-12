@@ -2,7 +2,6 @@ package paymentautomation
 
 import (
 	"context"
-	"errors"
 
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	gen "github.com/SapphireDAOO/contract-api/internal/blockchain/gen/paymentautomation"
@@ -26,7 +25,7 @@ func NewPaymentAutomation(client *blockchain.Client, address common.Address) *Pa
 
 func (c *PaymentAutomation) HasDueTasks(ctx context.Context) (bool, error) {
 	if c == nil || c.instance == nil {
-		return false, errors.New("payment automation contract is not initialized")
+		return false, ErrNotInitialized
 	}
 
 	data := c.contract.PackHasDueTasks()
@@ -35,7 +34,7 @@ func (c *PaymentAutomation) HasDueTasks(ctx context.Context) (bool, error) {
 
 func (c *PaymentAutomation) ProcessDueTasks(ctx context.Context) (*types.Receipt, error) {
 	if c == nil || c.instance == nil || c.address == nil {
-		return nil, errors.New("payment automation contract is not initialized")
+		return nil, ErrNotInitialized
 	}
 
 	auth, err := c.client.Auth()

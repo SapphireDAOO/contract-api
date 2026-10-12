@@ -36,10 +36,10 @@ func NewClient(baseURL, apiKey string, tokens TokenLookup) *Client {
 
 func (c *Client) post(payload []byte, orderId, action string) (*http.Response, error) {
 	if c == nil || c.baseURL == "" {
-		return nil, fmt.Errorf("callback URL is not configured")
+		return nil, ErrURLNotConfigured
 	}
 	if c.apiKey == "" {
-		return nil, fmt.Errorf("callback API key is not configured")
+		return nil, ErrAPIKeyNotConfigured
 	}
 
 	url, err := buildCallbackURL(c.baseURL, orderId, action)
@@ -73,10 +73,10 @@ func (c *Client) post(payload []byte, orderId, action string) (*http.Response, e
 
 func buildCallbackURL(baseURL, orderId, action string) (string, error) {
 	if strings.TrimSpace(orderId) == "" {
-		return "", fmt.Errorf("orderId is required for callback URL")
+		return "", ErrOrderIDRequired
 	}
 	if strings.TrimSpace(action) == "" {
-		return "", fmt.Errorf("action is required for callback URL")
+		return "", ErrActionRequired
 	}
 
 	if strings.Contains(baseURL, "%s") || strings.Contains(baseURL, "%[") {

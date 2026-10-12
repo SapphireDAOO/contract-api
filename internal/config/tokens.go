@@ -62,17 +62,17 @@ func (t Tokens) lookup(symbol string) (Token, bool) {
 // contracts denote the native token.
 func (t Tokens) validate() error {
 	if len(t) == 0 {
-		return fmt.Errorf("tokens: at least one payment token is required")
+		return fmt.Errorf("tokens: %w", ErrNoTokens)
 	}
 	for symbol, token := range t {
 		if strings.TrimSpace(symbol) == "" {
-			return fmt.Errorf("tokens: a symbol cannot be empty")
+			return fmt.Errorf("tokens: %w", ErrEmptySymbol)
 		}
 		if !common.IsHexAddress(token.Address) {
-			return fmt.Errorf("tokens.%s.address %q is not a valid address", symbol, token.Address)
+			return fmt.Errorf("tokens.%s.address %q %w", symbol, token.Address, ErrInvalidAddress)
 		}
 		if token.Decimals < 0 || token.Decimals > 77 {
-			return fmt.Errorf("tokens.%s.decimals %d is out of range", symbol, token.Decimals)
+			return fmt.Errorf("tokens.%s.decimals %d %w", symbol, token.Decimals, ErrOutOfRange)
 		}
 	}
 	return nil

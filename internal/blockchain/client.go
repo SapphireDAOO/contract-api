@@ -31,12 +31,12 @@ func NewClient(rpc config.RPC, signerKey string) (*Client, error) {
 
 	httpClient, err := ethclient.Dial(rpc.HTTP)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RPC: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrRPCConnect, err)
 	}
 
 	wsClient, err := ethclient.Dial(rpc.WS)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to WSS: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrWSSConnect, err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rpc.DialTimeout)
@@ -44,7 +44,7 @@ func NewClient(rpc config.RPC, signerKey string) (*Client, error) {
 
 	chainId, err := httpClient.ChainID(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve chain ID: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrChainID, err)
 	}
 
 	return &Client{
@@ -60,17 +60,17 @@ func NewClient(rpc config.RPC, signerKey string) (*Client, error) {
 func parseSignerKey(key string) (*ecdsa.PrivateKey, error) {
 	raw := strings.TrimPrefix(strings.TrimSpace(key), "0x")
 	if raw == "" {
-		return nil, fmt.Errorf("signer key is not configured")
+		return nil, ErrSignerNotConfigured
 	}
 
 	decoded, err := hex.DecodeString(raw)
 	if err != nil {
-		return nil, fmt.Errorf("signer key is not valid hex")
+		return nil, ErrSignerNotHex
 	}
 
 	signer, err := crypto.ToECDSA(decoded)
 	if err != nil {
-		return nil, fmt.Errorf("signer key is not a valid private key")
+		return nil, ErrSignerInvalid
 	}
 	return signer, nil
 }

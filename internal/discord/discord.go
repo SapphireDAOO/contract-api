@@ -125,7 +125,7 @@ func post(webhookURL string, payload []byte) error {
 			if resp.StatusCode < 300 {
 				return nil
 			}
-			lastErr = fmt.Errorf("discord webhook returned status %d", resp.StatusCode)
+			lastErr = fmt.Errorf("%w %d", ErrWebhookStatus, resp.StatusCode)
 
 			if resp.StatusCode == http.StatusTooManyRequests {
 				if secs, parseErr := strconv.ParseFloat(retryAfter, 64); parseErr == nil && secs > 0 {

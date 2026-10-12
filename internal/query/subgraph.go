@@ -11,7 +11,7 @@ import (
 
 func (c *Client) GetUserInvoiceData(address string, first, skip int) (*Data, error) {
 	if address == "" {
-		return nil, fmt.Errorf("address cannot be empty")
+		return nil, ErrEmptyAddress
 	}
 
 	payload := map[string]any{
@@ -42,7 +42,7 @@ func (c *Client) GetUserInvoiceData(address string, first, skip int) (*Data, err
 
 func (c *Client) GetInvoiceData(id string) (*SmartInvoice, error) {
 	if id == "" {
-		return nil, fmt.Errorf("id cannot be empty")
+		return nil, ErrEmptyID
 	}
 
 	payload := map[string]any{
@@ -79,7 +79,7 @@ func (c *Client) handleRequest(payload map[string]any) ([]byte, error) {
 	}
 
 	if c == nil || c.endpoint == "" {
-		return nil, fmt.Errorf("subgraph URL is not configured")
+		return nil, ErrNotConfigured
 	}
 	endpoint := c.endpoint
 
@@ -104,7 +104,7 @@ func (c *Client) handleRequest(payload map[string]any) ([]byte, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("non-200 status code: %d, body: %s", res.StatusCode, string(body))
+		return nil, fmt.Errorf("%w: %d, body: %s", ErrUnexpectedStatus, res.StatusCode, string(body))
 	}
 
 	return body, nil

@@ -2,7 +2,6 @@ package notes
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
@@ -32,7 +31,7 @@ func (c *Notes) CreateNote(
 	share bool,
 ) (*common.Hash, error) {
 	if c == nil || c.instance == nil || c.address == nil {
-		return nil, errors.New("notes contract is not initialized")
+		return nil, ErrNotInitialized
 	}
 
 	return c.send(ctx, c.contract.PackCreateNote(invoiceId, author, encryptedContent, share))
@@ -45,7 +44,7 @@ func (c *Notes) SetOpened(
 	noteId *big.Int,
 ) (*common.Hash, error) {
 	if c == nil || c.instance == nil || c.address == nil {
-		return nil, errors.New("notes contract is not initialized")
+		return nil, ErrNotInitialized
 	}
 
 	return c.send(ctx, c.contract.PackSetOpened(invoiceId, account, noteId))

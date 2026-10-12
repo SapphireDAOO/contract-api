@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -167,7 +166,7 @@ func (h *ContractHandler) Refund(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if refundShare.Sign() == 0 {
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, errors.New("share can not be zero"), "invalid request body")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, ErrZeroShare, "invalid request body")
 		return
 	}
 
@@ -307,7 +306,7 @@ func (h *ContractHandler) txURL(txHash string) string {
 func parseBigInt(field, value string) (*big.Int, error) {
 	n, ok := new(big.Int).SetString(strings.TrimSpace(value), 10)
 	if !ok {
-		return nil, fmt.Errorf("%s must be a base-10 integer, got %q", field, value)
+		return nil, fmt.Errorf("%s %w, got %q", field, ErrNotBase10, value)
 	}
 	return n, nil
 }
@@ -315,7 +314,7 @@ func parseBigInt(field, value string) (*big.Int, error) {
 func (h *ContractHandler) feeReceiverReady(w http.ResponseWriter) bool {
 	if h.FeeReceiver == nil || h.ChainID == nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusServiceUnavailable,
-			errors.New("fee receiver service is not configured"),
+			ErrFeeReceiverNotConfigured,
 			"fee receivers are unavailable")
 		return false
 	}

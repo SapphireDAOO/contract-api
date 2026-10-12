@@ -56,13 +56,13 @@ func (c ContractAddresses) validate() error {
 		{"notes", c.Notes},
 	} {
 		if field.address == "" {
-			return fmt.Errorf("contracts.%s is required", field.key)
+			return fmt.Errorf("contracts.%s %w", field.key, ErrRequired)
 		}
 		if !common.IsHexAddress(field.address) {
-			return fmt.Errorf("contracts.%s %q is not a valid address", field.key, field.address)
+			return fmt.Errorf("contracts.%s %q %w", field.key, field.address, ErrInvalidAddress)
 		}
 		if common.HexToAddress(field.address) == (common.Address{}) {
-			return fmt.Errorf("contracts.%s cannot be the zero address", field.key)
+			return fmt.Errorf("contracts.%s %w", field.key, ErrZeroAddress)
 		}
 	}
 	return nil

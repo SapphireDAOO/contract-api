@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -53,8 +52,7 @@ func (h *ContractHandler) CreateFeeReceivers(w http.ResponseWriter, r *http.Requ
 	}
 
 	if processor == pb.ProcessorKind_PROCESSOR_KIND_SIMPLE && kind == pb.InvoiceKind_INVOICE_KIND_META {
-		err := errors.New("meta invoices are intermediated only")
-		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, ErrMetaNotIntermediated, ErrMetaNotIntermediated.Error())
 		return
 	}
 
@@ -78,7 +76,7 @@ func (h *ContractHandler) CreateFeeReceivers(w http.ResponseWriter, r *http.Requ
 	}
 
 	if !allowed {
-		err := fmt.Errorf("invoice %s is not in a state that takes fee receivers", invoiceID)
+		err := fmt.Errorf("invoice %s %w", invoiceID, ErrNoFeeReceiverState)
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusConflict, err, "invoice cannot take fee receivers")
 		return
 	}

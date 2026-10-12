@@ -22,10 +22,10 @@ func (s Services) validate() error {
 
 	host, port, err := net.SplitHostPort(s.FeeReceiver)
 	if err != nil {
-		return fmt.Errorf("services.feeReceiver %q must be host:port: %w", s.FeeReceiver, err)
+		return fmt.Errorf("services.feeReceiver %q %w: %w", s.FeeReceiver, ErrNotHostPort, err)
 	}
 	if strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" {
-		return fmt.Errorf("services.feeReceiver %q must be host:port", s.FeeReceiver)
+		return fmt.Errorf("services.feeReceiver %q %w", s.FeeReceiver, ErrNotHostPort)
 	}
 	return nil
 }
