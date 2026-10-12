@@ -37,6 +37,9 @@ const (
 
 	notes     = v1 + "/notes"
 	notesOpen = notes + "/open"
+
+	authNonce  = v1 + "/auth/nonce"
+	authVerify = v1 + "/auth/verify"
 )
 
 func Route(contractHandler *handler.ContractHandler) http.Handler {
@@ -66,9 +69,17 @@ func Route(contractHandler *handler.ContractHandler) http.Handler {
 	router.POST(feeReceivers, middleware.CORS(contractHandler.CreateFeeReceivers))
 	router.OPTIONS(feeReceivers, middleware.Preflight)
 
-	router.POST(notes, middleware.CORS(contractHandler.WriteNote))
+	router.GET(authNonce, middleware.CORS(contractHandler.AuthNonce))
+	router.POST(authVerify, middleware.CORS(contractHandler.SignIn))
+	router.OPTIONS(authVerify, middleware.Preflight)
+
+	signedIn := func(next http.HandlerFunc) http.HandlerFunc {
+		return middleware.CORS(middleware.RequireSession(contractHandler.Auth, next))
+	}
+
+	router.POST(notes, signedIn(contractHandler.WriteNote))
 	router.OPTIONS(notes, middleware.Preflight)
-	router.POST(notesOpen, middleware.CORS(contractHandler.OpenNote))
+	router.POST(notesOpen, signedIn(contractHandler.OpenNote))
 	router.OPTIONS(notesOpen, middleware.Preflight)
 
 	return middleware.Logging(router.mux.ServeHTTP)

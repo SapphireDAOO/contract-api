@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/SapphireDAOO/contract-api/internal/auth"
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
 	"github.com/SapphireDAOO/contract-api/internal/invoice"
 	"github.com/SapphireDAOO/contract-api/internal/note"
@@ -14,8 +18,13 @@ import (
 
 const noteCallTimeout = 30 * time.Second
 
-// WriteNote stores an already-encrypted note against an invoice.
 func (h *ContractHandler) WriteNote(w http.ResponseWriter, r *http.Request) {
+	signedIn, ok := auth.AddressFrom(r.Context())
+	if !ok {
+		httpx.WriteFailure(w, http.StatusUnauthorized, auth.ErrSignInRequired.Error())
+		return
+	}
+
 	var req struct {
 		InvoiceId string `json:"invoiceId"`
 		Author    string `json:"author"`
@@ -34,9 +43,8 @@ func (h *ContractHandler) WriteNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, ok := invoice.ParseAddress(req.Author)
+	author, ok := signedInAuthor(w, req.Author, signedIn)
 	if !ok {
-		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid author address")
 		return
 	}
 
@@ -62,9 +70,34 @@ func (h *ContractHandler) WriteNote(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, map[string]any{"txHash": txHash.Hex()})
 }
 
-// OpenNote records that the author has opened a note. Closing is a
+// signedInAuthor accepts a body "author" only when it is the signed-in
+// account; leaving it out means the signed-in account.
+func signedInAuthor(w http.ResponseWriter, raw string, signedIn common.Address) (common.Address, bool) {
+	if strings.TrimSpace(raw) == "" {
+		return signedIn, true
+	}
+
+	author, ok := invoice.ParseAddress(raw)
+	if !ok {
+		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid author address")
+		return common.Address{}, false
+	}
+	if author != signedIn {
+		httpx.WriteFailure(w, http.StatusForbidden, "author is not the signed-in account")
+		return common.Address{}, false
+	}
+	return author, true
+}
+
+// OpenNote records that the signed-in account has opened a note. Closing is a
 // client-side state and is not written on chain.
 func (h *ContractHandler) OpenNote(w http.ResponseWriter, r *http.Request) {
+	signedIn, ok := auth.AddressFrom(r.Context())
+	if !ok {
+		httpx.WriteFailure(w, http.StatusUnauthorized, auth.ErrSignInRequired.Error())
+		return
+	}
+
 	var req struct {
 		InvoiceId string `json:"invoiceId"`
 		Author    string `json:"author"`
@@ -88,9 +121,8 @@ func (h *ContractHandler) OpenNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, ok := invoice.ParseAddress(req.Author)
+	author, ok := signedInAuthor(w, req.Author, signedIn)
 	if !ok {
-		httpx.WriteFailure(w, http.StatusBadRequest, "Invalid author address")
 		return
 	}
 

@@ -23,12 +23,14 @@ Platform fees are collected through one-time stealth addresses issued by the [fe
 | GET    | [`/v1/settlements/status`](#endpoint-settlement-status) | Simple processor settlement window |
 | GET    | [`/v1/exchangeRate`](#endpoint-exchange-rates)    | How much of a token one USD buys     |
 | POST   | [`/v1/fee-receivers`](#endpoint-create-fee-receivers) | Derive, approve and authorize stealth fee receivers |
+| GET    | [`/v1/auth/nonce`](#endpoint-sign-in)            | Issue a single-use sign-in nonce     |
+| POST   | [`/v1/auth/verify`](#endpoint-sign-in)           | Sign in with Ethereum; returns a session token |
 | POST   | [`/v1/notes`](#endpoint-write-note)              | Write an encrypted note to an invoice |
 | POST   | [`/v1/notes/open`](#endpoint-open-note)          | Mark a note as opened                |
 
 The invoice id is a path segment on every invoice operation, so the request body carries only what is specific to that operation. `release`, `cancel` and `disputes` take no body at all.
 
-Every endpoint requires an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the [fee receiver](#endpoint-create-fee-receivers) endpoint.
+The invoice endpoints that send transactions (create, release, cancel, refund and both dispute endpoints) require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`. The read endpoints, the [fee receiver](#endpoint-create-fee-receivers) endpoint and [sign-in](#endpoint-sign-in) need no key. The notes endpoints act for a user, so instead of a key they require a session token from sign-in.
 
 ---
 
@@ -96,7 +98,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 
 ```json
 {
-  "url": "https://sapphire-dao-website-six.vercel.app/checkout/?id=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
+  "url": "https://sapphire-dao-website.pages.dev/checkout/?id=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
   "invoices": {
     "550e8400-e29b-41d4-a716-446655440000": {
       "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
@@ -503,6 +505,64 @@ A rejection from the sidecar keeps the sidecar's own wording in `reason`:
 
 ---
 
+### Endpoint: Sign in <a id="endpoint-sign-in"></a>
+
+- **Method**: GET `/v1/auth/nonce`, then POST `/v1/auth/verify`
+- **Description**: Signs a wallet in with [Sign-In with Ethereum](https://eips.ethereum.org/EIPS/eip-4361) and returns a session token. The notes endpoints take the author from that session, so a caller can only write or open notes as the account it signed in with. The user signs once per session, with no gas.
+
+**Flow**:
+
+1. `GET /v1/auth/nonce` returns a single-use nonce, valid for 5 minutes.
+2. The website builds an EIP-4361 message with that nonce (viem's `createSiweMessage` does this) and the user signs it with `personal_sign`.
+3. `POST /v1/auth/verify` with the message and signature returns a token valid for 12 hours.
+4. Send the token as `Authorization: Bearer <token>` on `/v1/notes` and `/v1/notes/open`.
+
+The message must name one of the network's `auth.domains` on its first line and the network's chain id, and must still be within any `Expiration Time` it sets. Each nonce works once.
+
+**One sign-in covers every note.** The user signs only in step 2. After that, the same token is sent on every `/v1/notes` and `/v1/notes/open` call until `expiresAt`, any number of times; the API checks the token itself and never asks the wallet again. Keep the token in `sessionStorage` or `localStorage` so a page reload does not lose it.
+
+Sign in again when:
+
+- a notes call returns `401` (`Session is invalid or expired`) — the token has passed `expiresAt`, or `SESSION_SECRET` was changed;
+- the token was lost, e.g. it was held only in memory and the page reloaded;
+- the user switches wallet account — the token belongs to the address that signed in, so notes sent with it are written as that address. Sign in again for the new account and replace the stored token.
+
+**Nonce response (200)**:
+
+```json
+{ "success": true, "nonce": "3f9a...c21e", "expiresAt": "2026-10-12T12:05:00Z" }
+```
+
+**Verify request**:
+
+```json
+{
+  "message": "app.example.com wants you to sign in with your Ethereum account:\n0x329C...7082\n\nSign in to write and read invoice notes.\n\nURI: https://app.example.com\nVersion: 1\nChain ID: 84532\nNonce: 3f9a...c21e\nIssued At: 2026-10-12T12:00:00Z",
+  "signature": "0x5c1b...1b"
+}
+```
+
+**Verify response (200)**:
+
+```json
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "address": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",
+  "expiresAt": "2026-10-13T00:00:00Z"
+}
+```
+
+**Errors**: `400` for a malformed body or a message that is not EIP-4361; `401` with the reason for another domain or chain, an expired message, a nonce that is unknown, expired or already used, or a signature that does not match the message's address; `503` when sign-in is not configured (no `SESSION_SECRET` or `auth.domains`).
+
+**Notes**:
+
+- Only signatures from ordinary wallets (EOAs) are accepted. Smart-contract wallets that sign through ERC-1271, such as Coinbase Smart Wallet, cannot sign in yet.
+- Sessions are signed tokens, not stored server-side, so one cannot be revoked before it expires; rotating `SESSION_SECRET` ends every session at once.
+- Used nonces are remembered in memory, so they reset on restart and are not shared between API instances. A nonce still expires 5 minutes after it was issued either way.
+
+---
+
 ### Endpoint: `/v1/notes` <a id="endpoint-write-note"></a>
 
 - **Method**: POST `/v1/notes`
@@ -510,7 +570,7 @@ A rejection from the sidecar keeps the sidecar's own wording in `reason`:
 
 #### Authorization
 
-The `X-API-KEY` header is the only check. This API pays the gas and signs on the author's behalf, so the caller is trusted to have authenticated whoever the `author` field names, and to have confirmed that they are a party on the invoice. Do not expose this endpoint to browsers directly.
+Requires `Authorization: Bearer <token>` from [sign-in](#endpoint-sign-in). The note is written as the signed-in account. This API pays the gas; it does not yet check that the account is a party on the invoice.
 
 #### **Request Body**
 
@@ -528,7 +588,7 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 | Field       | Type    | Required | Description                                                        |
 | :---------: | :-----: | :------: | :----------------------------------------------------------------: |
 | `invoiceId` | string  | ✅       | On-chain invoice ID, base-10.                                      |
-| `author`    | string  | ✅       | Address the note is attributed to; must be a party on the invoice. |
+| `author`    | string  | ❌       | Defaults to the signed-in account; if sent, it must be that account. |
 | `content`   | string  | ✅       | Already-encrypted note, `0x`-prefixed hex, at most 4096 bytes.     |
 | `share`     | boolean | ❌       | `true` publishes the note to both parties; private otherwise.      |
 
@@ -547,7 +607,10 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 ```
 
 - `400` for a malformed body, a bad `invoiceId` or `author`, or a `content` that is missing or not `0x`-prefixed hex.
+- `401` without a valid session token.
+- `403` when `author` is not the signed-in account.
 - `413` for a `content` payload over 4096 bytes.
+- `503` when sign-in is not configured.
 
 **Notes**:
 
@@ -559,10 +622,9 @@ The `X-API-KEY` header is the only check. This API pays the gas and signs on the
 ```bash
 curl -X POST https://sapphiredaotesting.com/v1/notes \
 -H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE" \
+-H "Authorization: Bearer YOUR_SESSION_TOKEN" \
 -d '{
   "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
-  "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
   "content": "0x4a6f8b2c1d",
   "share": true
 }'
@@ -573,7 +635,7 @@ curl -X POST https://sapphiredaotesting.com/v1/notes \
 ### Endpoint: `/v1/notes/open` <a id="endpoint-open-note"></a>
 
 - **Method**: POST `/v1/notes/open`
-- **Description**: Records that the author has opened a note, via `setOpened`. Only opening is written on chain; closing is a client-side state.
+- **Description**: Records that the signed-in account has opened a note, via `setOpened`. Only opening is written on chain; closing is a client-side state. Requires `Authorization: Bearer <token>` from [sign-in](#endpoint-sign-in).
 
 #### **Request Body**
 
@@ -590,7 +652,7 @@ curl -X POST https://sapphiredaotesting.com/v1/notes \
 | Field       | Type   | Required | Description                          |
 | :---------: | :----: | :------: | :----------------------------------: |
 | `invoiceId` | string | ✅       | On-chain invoice ID, base-10.        |
-| `author`    | string | ✅       | Address opening the note.            |
+| `author`    | string | ❌       | Defaults to the signed-in account; if sent, it must be that account. |
 | `noteId`    | string | ✅       | Id of the note to mark opened.       |
 
 #### **Response**
@@ -607,15 +669,16 @@ curl -X POST https://sapphiredaotesting.com/v1/notes \
 { "success": false, "error": "noteId must be a base-10 integer" }
 ```
 
+As for `/v1/notes`: `401` without a valid session, `403` when `author` is not the signed-in account, `503` when sign-in is not configured.
+
 **Example**:
 
 ```bash
 curl -X POST https://sapphiredaotesting.com/v1/notes/open \
 -H "Content-Type: application/json" \
--H "X-API-KEY: YOUR_API_KEY_HERE" \
+-H "Authorization: Bearer YOUR_SESSION_TOKEN" \
 -d '{
   "invoiceId": "59808737901387817475691215581034097896123425895641016234844280889",
-  "author": "0x0f447989b14A3f0bbf08808020Ec1a6DE0b8cbC4",
   "noteId": "1"
 }'
 ```
@@ -660,6 +723,9 @@ networks:
     services:
       # host:port of the fee-receiver sidecar; empty disables /v1/fee-receivers
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
+    auth:
+      # hosts the website signs in from; empty disables sign-in and notes
+      domains: ["localhost:3000"]
 ```
 
 - **`${VAR}` references** are resolved from the environment at load time. Endpoints whose URL embeds a credential (the RPC provider key, the Discord webhook) are written this way so the secret stays in `.env` and out of the repository. An unset variable fails startup naming the variable.
@@ -668,6 +734,7 @@ networks:
 - **`signerKey`** selects which key signs transactions, per network: `${LOCAL_CALLER}` on `local` and `${PASS}` on the deployed networks, so a local run cannot touch a deployed network's key. It is parsed once at startup, and a malformed key fails startup rather than the first transaction.
 - **`services.feeReceiver`** is the fee-receiver sidecar as `host:port` — a gRPC target, not a URL. Leaving it empty disables `/v1/fee-receivers` with a `503` and a line in the startup log, the same way an unset `oracleManager` disables exchange rates. The connection is plaintext and expects a loopback sidecar; it holds the platform's stealth keys and must not be exposed off-host.
 - **`contracts.sweeper`** and **`contracts.wrappedNative`** are read only by the sidecar — the Go API ignores them. `sweeper` is the contract each fee receiver approves for the fee token; `wrappedNative` is what a native-token payment is approved in. Either may be empty, and the sidecar warns at startup then fails the calls that need them.
+- **`auth.domains`** lists the hosts the website [signs in](#endpoint-sign-in) from, exactly as they appear on the first line of the SIWE message: a host, with a port if it has one (`localhost:3000`), never a URL. A message from any other host is refused, which stops a lookalike site from reusing a signature it collected. Sign-in also needs `SESSION_SECRET`; without either, sign-in and the notes endpoints return `503` and the startup log says why.
 - **`CONFIG_PATH`** points at a different config file.
 
 Run against a local chain with:
@@ -683,6 +750,7 @@ Values that are secrets rather than settings stay in `.env`:
 | Variable                   | Purpose                                                    |
 | :------------------------: | :--------------------------------------------------------: |
 | `KEY`                      | Value clients must send in `X-API-KEY`.                    |
+| `SESSION_SECRET`           | Signs sign-in nonces and session tokens. At least 32 characters, e.g. `openssl rand -hex 32`; shorter fails startup. Unset disables sign-in and notes. Changing it ends every session. |
 | `API_KEY`                  | Key this API sends when posting callbacks.                 |
 | `PASS`                     | Private key that signs transactions on the deployed networks. |
 | `LOCAL_CALLER`             | Private key that signs on `local` (anvil's default account). |

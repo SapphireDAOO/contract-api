@@ -1,12 +1,14 @@
 package server
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/SapphireDAOO/contract-api/internal/api/handler"
+	"github.com/SapphireDAOO/contract-api/internal/auth"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/multisig"
@@ -30,6 +32,7 @@ type dependencies struct {
 	callbacks   *callback.Client
 	subgraph    *query.Client
 	feeReceiver *feereceiver.Client
+	auth        *auth.Service
 
 	oracle                  *oraclemanager.OracleManager
 	paymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
@@ -87,6 +90,16 @@ func newDependencies(cfg *config.Config) (*dependencies, error) {
 		slog.Warn("fee receivers disabled", "reason", "services.feeReceiver is not configured")
 	}
 
+	secret := os.Getenv("SESSION_SECRET")
+	if secret != "" && len(cfg.Auth.Domains) > 0 {
+		deps.auth, err = auth.New(secret, cfg.Auth.Domains, client.ChainId.Int64())
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrSignIn, err)
+		}
+	} else {
+		slog.Warn("sign-in disabled", "reason", "SESSION_SECRET or auth.domains is not configured")
+	}
+
 	if (addresses.OracleManager != common.Address{}) {
 		deps.oracle = oraclemanager.NewOracleManager(client, addresses.OracleManager)
 	} else {
@@ -111,6 +124,7 @@ func (d *dependencies) contractHandler(cfg *config.Config) *handler.ContractHand
 			Subgraph:                d.subgraph,
 			FeeReceiver:             d.feeReceiver,
 			ChainID:                 d.client.ChainId,
+			Auth:                    d.auth,
 		},
 	)
 }

@@ -38,6 +38,7 @@ type Config struct {
 	Tokens    Tokens
 	Contracts ContractAddresses
 	Services  Services
+	Auth      Auth
 }
 
 // file mirrors the config file's layout.
@@ -53,6 +54,7 @@ type network struct {
 	Tokens    Tokens            `yaml:"tokens"`
 	Contracts ContractAddresses `yaml:"contracts"`
 	Services  Services          `yaml:"services"`
+	Auth      Auth              `yaml:"auth"`
 }
 
 // Path returns CONFIG_PATH, falling back to DefaultPath.
@@ -113,6 +115,9 @@ func Load(path string) (*Config, error) {
 	if err := selected.Services.validate(); err != nil {
 		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
 	}
+	if err := selected.Auth.validate(); err != nil {
+		return nil, fmt.Errorf("config %s: networks.%s.%w", path, name, err)
+	}
 
 	return &Config{
 		Network:   name,
@@ -122,5 +127,6 @@ func Load(path string) (*Config, error) {
 		Tokens:    selected.Tokens,
 		Contracts: selected.Contracts,
 		Services:  selected.Services,
+		Auth:      selected.Auth,
 	}, nil
 }

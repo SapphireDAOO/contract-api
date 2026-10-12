@@ -4,7 +4,7 @@ import "net/http"
 
 const (
 	allowedMethods  = "POST, OPTIONS"
-	allowedHeaders  = "Content-Type"
+	allowedHeaders  = "Content-Type, Authorization"
 	preflightMaxAge = "86400"
 )
 

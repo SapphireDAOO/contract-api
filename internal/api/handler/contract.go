@@ -10,52 +10,10 @@ import (
 	"time"
 
 	"github.com/SapphireDAOO/contract-api/internal/blockchain"
-	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
-	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/notes"
-	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/oraclemanager"
-	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/paymentprocessorstorage"
-	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
-	"github.com/SapphireDAOO/contract-api/internal/callback"
 	"github.com/SapphireDAOO/contract-api/internal/config"
-	"github.com/SapphireDAOO/contract-api/internal/feereceiver"
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
 	"github.com/SapphireDAOO/contract-api/internal/invoice"
-	"github.com/SapphireDAOO/contract-api/internal/query"
 )
-
-type ContractHandler struct {
-	ExplorerURL             string
-	Tokens                  config.Tokens
-	Callbacks               *callback.Client
-	Subgraph                *query.Client
-	PaymentProcessor        *intermediatedpaymentprocessor.PaymentProcessor
-	PaymentProcessorStorage *paymentprocessorstorage.PaymentProcessorStorage
-	SimplePaymentProcessor  *simplepaymentprocessor.SimplePaymentProcessor
-	Oracle                  *oraclemanager.OracleManager
-	Notes                   *notes.Notes
-	BaseUrl                 string
-	// FeeReceiver is nil when services.feeReceiver is not configured, which
-	// disables the fee receiver endpoints.
-	FeeReceiver *feereceiver.Client
-	ChainID     *big.Int
-}
-
-func NewContractHandler(c *ContractHandler) *ContractHandler {
-	return &ContractHandler{
-		ExplorerURL:             c.ExplorerURL,
-		Tokens:                  c.Tokens,
-		Callbacks:               c.Callbacks,
-		Subgraph:                c.Subgraph,
-		PaymentProcessor:        c.PaymentProcessor,
-		PaymentProcessorStorage: c.PaymentProcessorStorage,
-		SimplePaymentProcessor:  c.SimplePaymentProcessor,
-		Oracle:                  c.Oracle,
-		Notes:                   c.Notes,
-		BaseUrl:                 c.BaseUrl,
-		FeeReceiver:             c.FeeReceiver,
-		ChainID:                 c.ChainID,
-	}
-}
 
 func (h *ContractHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	var request invoice.CreateInvoiceRequest

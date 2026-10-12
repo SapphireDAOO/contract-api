@@ -7,7 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SapphireDAOO/contract-api/internal/auth"
 	"github.com/SapphireDAOO/contract-api/internal/note"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -20,8 +22,12 @@ func noteResponse(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 	return body
 }
 
+const signedInAccount = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+
+// noteRequestFor is signed in as signedInAccount, the author the tests send.
 func noteRequestFor(path, body string) *http.Request {
-	return httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+	return req.WithContext(auth.WithAddress(req.Context(), common.HexToAddress(signedInAccount)))
 }
 
 func TestWriteNoteRejectsAMalformedBody(t *testing.T) {

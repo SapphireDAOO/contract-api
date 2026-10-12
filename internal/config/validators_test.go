@@ -253,6 +253,28 @@ func TestServicesValidate(t *testing.T) {
 	}
 }
 
+func TestAuthValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		domains []string
+		wantErr string
+	}{
+		{name: "empty disables sign-in", domains: nil},
+		{name: "host", domains: []string{"app.example.com"}},
+		{name: "host and port", domains: []string{"localhost:3000"}},
+		{name: "several hosts", domains: []string{"app.example.com", "preview.example.com"}},
+		{name: "blank entry", domains: []string{"app.example.com", " "}, wantErr: "auth.domains[1] is empty"},
+		{name: "a URL is not a domain", domains: []string{"https://app.example.com"}, wantErr: "must be a host"},
+		{name: "a path is not a domain", domains: []string{"app.example.com/login"}, wantErr: "must be a host"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requireErr(t, Auth{Domains: tt.domains}.validate(), tt.wantErr)
+		})
+	}
+}
+
 func validContracts() ContractAddresses {
 	return ContractAddresses{
 		PaymentProcessor:        "0x1111111111111111111111111111111111111111",

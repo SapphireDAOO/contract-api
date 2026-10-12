@@ -42,6 +42,9 @@ networks:
       wrappedNative: "0x4a1E2AB38b64a82ef43fe3fD5921E915BfA4920c"
     services:
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
+    auth:
+      # Hosts the website signs in from, as on the SIWE message's first line.
+      domains: ["localhost:3000"]
 
   # Base Sepolia.
   testnet:
@@ -52,8 +55,8 @@ networks:
       dialTimeout: 10s
     urls:
       explorer: "https://sepolia.basescan.org"
-      checkout: "https://sapphire-dao-website-six.vercel.app/checkout/?id="
-      dashboard: "https://sapphire-dao-website-six.vercel.app/multisig/"
+      checkout: "https://sapphire-dao-website.pages.dev/checkout/?id="
+      dashboard: "https://sapphire-dao-website.pages.dev/multisig/"
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
@@ -79,6 +82,8 @@ networks:
       wrappedNative: "0x4200000000000000000000000000000000000006"
     services:
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
+    auth:
+      domains: ["sapphire-dao-website.pages.dev", "app.sapphiredaotesting.com", "localhost:3000"]
 
   # Not deployed yet.
   mainnet:
@@ -89,8 +94,8 @@ networks:
       dialTimeout: 10s
     urls:
       explorer: "https://basescan.org"
-      checkout: "https://sapphire-dao-website-six.vercel.app/checkout/?id="
-      dashboard: "https://sapphire-dao-website-six.vercel.app/multisig/"
+      checkout: "https://sapphire-dao-website.pages.dev/checkout/?id="
+      dashboard: "https://sapphire-dao-website.pages.dev/multisig/"
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
@@ -109,3 +114,5 @@ networks:
       wrappedNative: "0x4200000000000000000000000000000000000006"
     services:
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
+    auth:
+      domains: ["sapphire-dao-website.pages.dev"]
