@@ -8,11 +8,13 @@ import {
   signFeeAuthorization,
 } from "../fees/authorization";
 import { delegateAndApprove } from "../fees/approval";
+import { deriveEphemeralKey } from "../fees/derive";
 import {
   generateStealthFeeReceiver,
   type StealthFeeReceiver,
 } from "../fees/stealth";
 import { logger } from "../logger";
+import type { InvoiceKind } from "../types";
 import {
   invalid,
   parseInvoiceId,
@@ -36,6 +38,8 @@ const approveAll = async (
   }
 };
 
+const inFlight = new Map<string, Promise<CreateFeeReceiversResponse>>();
+
 export const createFeeReceivers = async (
   request: CreateFeeReceiversRequest,
 ): Promise<CreateFeeReceiversResponse> => {
@@ -52,16 +56,57 @@ export const createFeeReceivers = async (
     invalid("A single invoice takes one fee receiver");
   }
   const paymentToken = parsePaymentToken(request.paymentToken);
+  const processorAddress = getProcessorAddress(processor);
 
+  const key = [
+    request.chainId,
+    processorAddress.toLowerCase(),
+    kind,
+    invoiceId,
+    quantity,
+    paymentToken?.toLowerCase() ?? "native",
+  ].join(":");
+
+  const pending = inFlight.get(key);
+  if (pending) {
+    logger.info("joining an identical fee receiver request in flight", {
+      invoiceId,
+      quantity,
+    });
+    return pending;
+  }
+
+  const run = prepareFeeReceivers(
+    request.chainId,
+    processorAddress,
+    kind,
+    invoiceId,
+    quantity,
+    paymentToken,
+  ).finally(() => inFlight.delete(key));
+  inFlight.set(key, run);
+  return run;
+};
+
+const prepareFeeReceivers = async (
+  chain: number,
+  processorAddress: Address,
+  kind: InvoiceKind,
+  invoiceId: bigint,
+  quantity: number,
+  paymentToken?: Address,
+): Promise<CreateFeeReceiversResponse> => {
   logger.info("generating fee receivers", {
     invoiceId,
     quantity,
-    chainId: request.chainId,
+    chainId: chain,
     paymentToken: paymentToken ?? "default",
   });
 
-  const receivers = Array.from({ length: quantity }, () =>
-    generateStealthFeeReceiver(),
+  const receivers = Array.from({ length: quantity }, (_, index) =>
+    generateStealthFeeReceiver(
+      deriveEphemeralKey(chain, processorAddress, kind, invoiceId, index),
+    ),
   );
   await approveAll(receivers, paymentToken);
 
@@ -75,7 +120,7 @@ export const createFeeReceivers = async (
   });
 
   const signature = await signFeeAuthorization(
-    getProcessorAddress(processor),
+    processorAddress,
     invoiceId,
     addresses,
     kind,
@@ -83,7 +128,7 @@ export const createFeeReceivers = async (
 
   logger.info("fee receivers authorized", {
     invoiceId,
-    processor,
+    processorAddress,
     kind,
     addresses,
   });

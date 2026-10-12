@@ -699,6 +699,7 @@ Values that are secrets rather than settings stay in `.env`:
 | `SPONSOR`                  | Sidecar: relayer key that sponsors the delegations and signs the fee authorization. |
 | `SPENDING`, `VIEWING`      | Sidecar: EIP-5564 keys the stealth addresses are derived from. |
 | `META_STEALTH_ADDRESS`     | Sidecar: stealth meta-address URI new receivers derive from. |
+| `RECEIVER_SEED`            | Sidecar: 32-byte hex secret receivers are derived from, so a repeated `/v1/fee-receivers` call returns the same receivers. |
 
 The last four are read by the sidecar rather than by this API, but live in the same repo-root `.env` — it loads that file explicitly, since it runs from its own directory.
 

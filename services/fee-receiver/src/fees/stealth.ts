@@ -31,12 +31,20 @@ export const restoreStealthFeeReceiver = (
   };
 };
 
-export const generateStealthFeeReceiver = (): StealthFeeReceiver => {
+/**
+ * Builds the receiver for a given ephemeral key. The key comes from
+ * deriveEphemeralKey, so the same invoice and index always give the same
+ * receiver and a retried request repeats its answer instead of minting more.
+ */
+export const generateStealthFeeReceiver = (
+  ephemeralPrivateKey: Uint8Array,
+): StealthFeeReceiver => {
   const stealthMetaAddressURI = process.env.META_STEALTH_ADDRESS;
   if (!stealthMetaAddressURI) throw new Error("Missing META_STEALTH_ADDRESS");
 
   const { stealthAddress, ephemeralPublicKey } = generateStealthAddress({
     stealthMetaAddressURI,
+    ephemeralPrivateKey,
   });
 
   const receiver = restoreStealthFeeReceiver(ephemeralPublicKey);
@@ -55,7 +63,7 @@ export const generateStealthFeeReceiver = (): StealthFeeReceiver => {
     );
   }
 
-  logger.info("stealth fee receiver created", {
+  logger.info("stealth fee receiver derived", {
     ephemeralPublicKey: receiver.ephemeralPublicKey,
     address: receiver.stealthAccount.address,
   });

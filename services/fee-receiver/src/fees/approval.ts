@@ -8,6 +8,7 @@ import {
   signDelegation,
 } from "@metamask/smart-accounts-kit";
 import {
+  concat,
   encodeFunctionData,
   erc20Abi,
   maxUint256,
@@ -34,31 +35,22 @@ export const resolveApprovalToken = (paymentToken?: Address): Address => {
   return wrappedNative;
 };
 
-export const delegateAndApprove = async (
-  stealthAccount: PrivateKeyAccount,
-  stealthPrivateKey: Hex,
-  paymentToken?: Address,
-): Promise<void> => {
-  const chain = chainId();
+type Clients = ReturnType<typeof getClients>;
+type SmartAccountsEnvironment = ReturnType<typeof getSmartAccountsEnvironment>;
+type Authorization = Awaited<
+  ReturnType<PrivateKeyAccount["signAuthorization"]>
+>;
 
-  let environment;
+const loadEnvironment = (chain: number) => {
+  let environment: SmartAccountsEnvironment;
   try {
     environment = getSmartAccountsEnvironment(chain);
   } catch {
     logger.warn("no smart accounts environment; skipping 7702 delegation", {
       chainId: chain,
     });
-    return;
+    return undefined;
   }
-
-  const approvalToken = resolveApprovalToken(paymentToken);
-
-  const { sweeper, network } = config();
-  if (!sweeper) {
-    throw new Error(`No sweeper contract configured for network ${network}`);
-  }
-
-  const { relayerAccount, publicClient, walletClient } = getClients();
 
   const delegatorImpl =
     environment.implementations.EIP7702StatelessDeleGatorImpl;
@@ -67,18 +59,67 @@ export const delegateAndApprove = async (
       `No EIP7702StatelessDeleGatorImpl in the smart accounts environment for chain ${chain}`,
     );
   }
+  return { environment, delegatorImpl };
+};
 
-  const nonce = await publicClient.getTransactionCount({
-    address: stealthAccount.address,
-  });
-  const authorization = await stealthAccount.signAuthorization({
+const requireSweeper = (): Address => {
+  const { sweeper, network } = config();
+  if (!sweeper) {
+    throw new Error(`No sweeper contract configured for network ${network}`);
+  }
+  return sweeper;
+};
+
+const readReceiverState = async (
+  publicClient: Clients["publicClient"],
+  receiver: Address,
+  approvalToken: Address,
+  sweeper: Address,
+  delegatorImpl: Address,
+) => {
+  const [code, allowance] = await Promise.all([
+    publicClient.getCode({ address: receiver }),
+    publicClient.readContract({
+      address: approvalToken,
+      abi: erc20Abi,
+      functionName: "allowance",
+      args: [receiver, sweeper],
+    }),
+  ]);
+
+  return {
+    delegated:
+      code?.toLowerCase() ===
+      concat(["0xef0100", delegatorImpl]).toLowerCase(),
+    approved: allowance === maxUint256,
+  };
+};
+
+const authorizeDelegator = async (
+  publicClient: Clients["publicClient"],
+  stealthAccount: PrivateKeyAccount,
+  delegatorImpl: Address,
+  chain: number,
+) =>
+  stealthAccount.signAuthorization({
     address: delegatorImpl,
     chainId: chain,
-    nonce,
+    nonce: await publicClient.getTransactionCount({
+      address: stealthAccount.address,
+    }),
   });
 
+const encodeApproval = async (
+  environment: SmartAccountsEnvironment,
+  relayer: Address,
+  stealthAccount: PrivateKeyAccount,
+  stealthPrivateKey: Hex,
+  chain: number,
+  approvalToken: Address,
+  sweeper: Address,
+): Promise<Hex> => {
   const delegation = {
-    delegate: relayerAccount.address as Hex,
+    delegate: relayer as Hex,
     delegator: stealthAccount.address as Hex,
     authority: ROOT_AUTHORITY as Hex,
     caveats: [],
@@ -92,7 +133,7 @@ export const delegateAndApprove = async (
     allowInsecureUnrestrictedDelegation: true,
   });
 
-  const data = contracts.DelegationManager.encode.redeemDelegations({
+  return contracts.DelegationManager.encode.redeemDelegations({
     delegations: [[{ ...delegation, signature: delegationSignature }]],
     modes: [ExecutionMode.SingleDefault],
     executions: [
@@ -109,30 +150,99 @@ export const delegateAndApprove = async (
       ],
     ],
   });
+};
 
-  logger.debug("sending delegation and approval", {
-    address: stealthAccount.address,
-    approvalToken,
-    sweeper,
-  });
-
+const sendAndConfirm = async (
+  { publicClient, walletClient }: Clients,
+  to: Address,
+  data: Hex,
+  authorizationList: Authorization[] | undefined,
+  receiver: Address,
+) => {
   const hash = await walletClient.sendTransaction({
-    to: environment.DelegationManager,
+    to,
     data,
-    authorizationList: [authorization],
+    authorizationList,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") {
     logger.error("delegation transaction reverted", {
-      address: stealthAccount.address,
+      address: receiver,
       txHash: hash,
       block: receipt.blockNumber,
     });
     throw new Error("Stealth fee receiver delegation transaction failed");
   }
+  return { hash, receipt };
+};
+
+export const delegateAndApprove = async (
+  stealthAccount: PrivateKeyAccount,
+  stealthPrivateKey: Hex,
+  paymentToken?: Address,
+): Promise<void> => {
+  const chain = chainId();
+  const setup = loadEnvironment(chain);
+  if (!setup) return;
+  const { environment, delegatorImpl } = setup;
+
+  const approvalToken = resolveApprovalToken(paymentToken);
+  const sweeper = requireSweeper();
+  const clients = getClients();
+  const receiver = stealthAccount.address;
+
+  const { delegated, approved } = await readReceiverState(
+    clients.publicClient,
+    receiver,
+    approvalToken,
+    sweeper,
+    delegatorImpl,
+  );
+  if (delegated && approved) {
+    logger.info("stealth fee receiver already delegated and approved", {
+      address: receiver,
+      approvalToken,
+    });
+    return;
+  }
+
+  const authorizationList = delegated
+    ? undefined
+    : [
+        await authorizeDelegator(
+          clients.publicClient,
+          stealthAccount,
+          delegatorImpl,
+          chain,
+        ),
+      ];
+  const data = await encodeApproval(
+    environment,
+    clients.relayerAccount.address,
+    stealthAccount,
+    stealthPrivateKey,
+    chain,
+    approvalToken,
+    sweeper,
+  );
+
+  logger.debug("sending delegation and approval", {
+    address: receiver,
+    approvalToken,
+    sweeper,
+    alreadyDelegated: delegated,
+  });
+
+  const { hash, receipt } = await sendAndConfirm(
+    clients,
+    environment.DelegationManager,
+    data,
+    authorizationList,
+    receiver,
+  );
 
   logger.info("stealth fee receiver delegated and approved", {
-    address: stealthAccount.address,
+    address: receiver,
     approvalToken,
     txHash: hash,
     gasUsed: receipt.gasUsed,

@@ -29,11 +29,24 @@ answer with the addresses, the signature to pass on-chain as
 happens for a receiver that is not yet approved, so a successful response means
 the receivers are ready to collect fees.
 
-The keys are the only way to recover a receiver's key, so callers should store
-them. They are also logged before signing, so a signer failure still leaves a
-record of receivers whose gas is spent. At most 5 receivers per call: each
+Callers should store the keys: with the `SPENDING` and `VIEWING` keys they
+recover each receiver's private key. Receivers can also be re-derived from
+`RECEIVER_SEED` (see below). The keys are logged before signing too, so a signer
+failure still leaves a record of receivers whose gas is spent. At most 5 receivers per call: each
 costs a sponsored transaction, and past that the caller would wait long enough
 to look hung.
+
+**Retries are idempotent.** Each receiver's ephemeral key is
+HMAC-SHA256(`RECEIVER_SEED`, chain id, processor address, invoice kind,
+invoice id, index), not random, so repeating a request returns the same
+addresses, keys and signature. Before sending, each receiver's on-chain state
+is checked: one already delegated and approved costs no transaction, and one
+delegated but missing the token's approval gets only the approval. A retry
+after a partial failure therefore sends only what is left. Identical requests
+arriving together share one run. The payment token is not part of the
+derivation, because the signature does not cover it: switching tokens keeps the
+receivers and adds an approval. Rotating `RECEIVER_SEED` gives unpaid invoices
+new receivers on their next request.
 
 A meta invoice needs one receiver per sub-invoice, index-aligned with its
 `subInvoiceIds`, all covered by the single signature over the whole array. Pass
@@ -88,6 +101,7 @@ the environment always wins over the file, and the file is skipped entirely when
 | `SPONSOR` | Relayer key: sponsors the delegations and signs the fee authorization |
 | `SPENDING` / `VIEWING` | EIP-5564 keys the stealth addresses derive from |
 | `META_STEALTH_ADDRESS` | Stealth meta-address URI new receivers derive from |
+| `RECEIVER_SEED` | 32-byte hex secret the receivers' ephemeral keys are derived from, which makes retries idempotent. Keep it apart from the other keys; a leak links receivers to invoices but cannot spend from them |
 | `SWEEPER_CONTRACT` | Expanded into `contracts.sweeper` |
 | `GRPC_ADDRESS` | Listen address, default `127.0.0.1:50051` |
 | `CONFIG_PATH` | Override the path to `config.yaml` |
