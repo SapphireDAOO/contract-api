@@ -18,23 +18,26 @@ Defined in [`proto/fee_receiver.proto`](../../proto/fee_receiver.proto).
 
 **`CreateFeeReceivers(CreateFeeReceiversRequest)`** validates the whole request
 first, so a bad one never spends gas. It then derives `quantity` stealth
-addresses and, one at a time, upgrades each to a MetaMask Stateless7702
-delegator, hands the relayer a delegation over it and — in the same sponsored
-transaction — approves the Sweeper for max uint256 of the fee token. Each
-receipt is awaited, and a reverted one fails the call.
+addresses, signs the fee authorization over them and answers straight away with
+the addresses, the signature to pass on-chain as `_feeReceiver(s)` / `_data`,
+and the ephemeral public keys. None of this touches the chain.
 
-Only after every approval is mined does it sign the fee authorization and
-answer with the addresses, the signature to pass on-chain as
-`_feeReceiver(s)` / `_data`, and the ephemeral public keys. Signing never
-happens for a receiver that is not yet approved, so a successful response means
-the receivers are ready to collect fees.
+**Approvals run in the background, in parallel.** After answering, the service
+upgrades every receiver at once to a MetaMask Stateless7702 delegator, hands
+the relayer a delegation over it and — in the same sponsored transaction —
+approves the Sweeper for max uint256 of the fee token. The relayer's nonces are
+tracked locally, so the parallel transactions do not collide. A run waits for
+every receiver before deciding whether it failed; a failed run is retried
+after 5 s, 30 s and 2 min, skipping receivers already done, then logged as
+`fee receiver approval failed, giving up` with each receiver's error. A successful response therefore means the receivers can be paid, not that
+they are ready to sweep: paying a receiver needs no approval, and a fee that
+arrives first simply waits for it. Calling again for the same invoice finishes
+whatever a failed or interrupted run left behind.
 
 Callers should store the keys: with the `SPENDING` and `VIEWING` keys they
 recover each receiver's private key. Receivers can also be re-derived from
-`RECEIVER_SEED` (see below). The keys are logged before signing too, so a signer
-failure still leaves a record of receivers whose gas is spent. At most 5 receivers per call: each
-costs a sponsored transaction, and past that the caller would wait long enough
-to look hung.
+`RECEIVER_SEED` (see below). At most 5 receivers per call, each costing one
+sponsored transaction.
 
 **Retries are idempotent.** Each receiver's ephemeral key is
 HMAC-SHA256(`RECEIVER_SEED`, chain id, processor address, invoice kind,
@@ -42,8 +45,9 @@ invoice id, index), not random, so repeating a request returns the same
 addresses, keys and signature. Before sending, each receiver's on-chain state
 is checked: one already delegated and approved costs no transaction, and one
 delegated but missing the token's approval gets only the approval. A retry
-after a partial failure therefore sends only what is left. Identical requests
-arriving together share one run. The payment token is not part of the
+after a partial failure therefore sends only what is left. Requests that
+overlap on a receiver share one run for it, and a receiver this process has
+already set up is not read from the chain again. The payment token is not part of the
 derivation, because the signature does not cover it: switching tokens keeps the
 receivers and adds an approval. Rotating `RECEIVER_SEED` gives unpaid invoices
 new receivers on their next request.

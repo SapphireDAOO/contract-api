@@ -433,7 +433,7 @@ The work is done by the [fee-receiver sidecar](services/fee-receiver/README.md),
 
 **No `X-API-KEY`.** This endpoint is unauthenticated, unlike the rest of the API. Each call sends a relayer-sponsored transaction per receiver, so whatever fronts the API is what limits who can spend that gas.
 
-**The response waits for the approvals.** Each receiver's delegation and approval is sent in turn and its receipt awaited; only once every one has been mined does the sidecar sign and answer. A `200` therefore means the receivers are ready to collect fees. Any failure along the way returns an error, and no addresses or signature come back; gas already spent on receivers approved before the failure is lost, and the next call derives fresh ones.
+**The response does not wait for the approvals.** The sidecar derives the receivers, signs over them and answers at once; each receiver's delegation and approval is then sent in the background, retried after 5 s, 30 s and 2 min, and logged by the sidecar if it still fails. A `200` therefore means the receivers can be paid — paying needs no approval — not that they are ready to sweep. Receivers are derived from `RECEIVER_SEED`, so calling again for the same invoice returns the same addresses and finishes any approval a failed or interrupted run left behind.
 
 #### **Request Body**
 

@@ -89,8 +89,7 @@ const readReceiverState = async (
 
   return {
     delegated:
-      code?.toLowerCase() ===
-      concat(["0xef0100", delegatorImpl]).toLowerCase(),
+      code?.toLowerCase() === concat(["0xef0100", delegatorImpl]).toLowerCase(),
     approved: allowance === maxUint256,
   };
 };
@@ -176,17 +175,40 @@ const sendAndConfirm = async (
   return { hash, receipt };
 };
 
-export const delegateAndApprove = async (
+const finished = new Set<string>();
+const running = new Map<string, Promise<void>>();
+
+export const delegateAndApprove = (
   stealthAccount: PrivateKeyAccount,
   stealthPrivateKey: Hex,
   paymentToken?: Address,
+): Promise<void> => {
+  const approvalToken = resolveApprovalToken(paymentToken);
+  const key = `${stealthAccount.address}:${approvalToken}`.toLowerCase();
+
+  if (finished.has(key)) return Promise.resolve();
+  const pending = running.get(key);
+  if (pending) return pending;
+
+  const run = setUpReceiver(stealthAccount, stealthPrivateKey, approvalToken)
+    .then(() => {
+      finished.add(key);
+    })
+    .finally(() => running.delete(key));
+  running.set(key, run);
+  return run;
+};
+
+const setUpReceiver = async (
+  stealthAccount: PrivateKeyAccount,
+  stealthPrivateKey: Hex,
+  approvalToken: Address,
 ): Promise<void> => {
   const chain = chainId();
   const setup = loadEnvironment(chain);
   if (!setup) return;
   const { environment, delegatorImpl } = setup;
 
-  const approvalToken = resolveApprovalToken(paymentToken);
   const sweeper = requireSweeper();
   const clients = getClients();
   const receiver = stealthAccount.address;

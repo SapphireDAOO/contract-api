@@ -29,16 +29,67 @@ const approveAll = async (
   receivers: StealthFeeReceiver[],
   paymentToken?: Address,
 ): Promise<void> => {
-  for (const receiver of receivers) {
-    await delegateAndApprove(
-      receiver.stealthAccount,
-      receiver.stealthPrivateKey,
-      paymentToken,
+  const results = await Promise.allSettled(
+    receivers.map((receiver) =>
+      delegateAndApprove(
+        receiver.stealthAccount,
+        receiver.stealthPrivateKey,
+        paymentToken,
+      ),
+    ),
+  );
+
+  const failures = results.filter(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures.map((failure) => failure.reason),
+      `${failures.length} of ${receivers.length} fee receivers failed to approve`,
     );
   }
 };
 
-const inFlight = new Map<string, Promise<CreateFeeReceiversResponse>>();
+const RETRY_DELAYS_MS = [5_000, 30_000, 120_000];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const approveInBackground = (
+  invoiceId: bigint,
+  receivers: StealthFeeReceiver[],
+  paymentToken?: Address,
+): void => {
+  const addresses = receivers.map((r) => r.stealthAccount.address);
+
+  void (async () => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await approveAll(receivers, paymentToken);
+        logger.info("fee receivers approved", { invoiceId, addresses });
+        return;
+      } catch (error) {
+        const retryIn = RETRY_DELAYS_MS[attempt];
+        if (retryIn === undefined) {
+          logger.error("fee receiver approval failed, giving up", {
+            invoiceId,
+            addresses,
+            attempts: attempt + 1,
+            error,
+          });
+          return;
+        }
+        logger.warn("fee receiver approval failed, retrying", {
+          invoiceId,
+          addresses,
+          attempt: attempt + 1,
+          retryInMs: retryIn,
+          error,
+        });
+        await sleep(retryIn);
+      }
+    }
+  })();
+};
 
 export const createFeeReceivers = async (
   request: CreateFeeReceiversRequest,
@@ -58,34 +109,14 @@ export const createFeeReceivers = async (
   const paymentToken = parsePaymentToken(request.paymentToken);
   const processorAddress = getProcessorAddress(processor);
 
-  const key = [
-    request.chainId,
-    processorAddress.toLowerCase(),
-    kind,
-    invoiceId,
-    quantity,
-    paymentToken?.toLowerCase() ?? "native",
-  ].join(":");
-
-  const pending = inFlight.get(key);
-  if (pending) {
-    logger.info("joining an identical fee receiver request in flight", {
-      invoiceId,
-      quantity,
-    });
-    return pending;
-  }
-
-  const run = prepareFeeReceivers(
+  return prepareFeeReceivers(
     request.chainId,
     processorAddress,
     kind,
     invoiceId,
     quantity,
     paymentToken,
-  ).finally(() => inFlight.delete(key));
-  inFlight.set(key, run);
-  return run;
+  );
 };
 
 const prepareFeeReceivers = async (
@@ -108,16 +139,8 @@ const prepareFeeReceivers = async (
       deriveEphemeralKey(chain, processorAddress, kind, invoiceId, index),
     ),
   );
-  await approveAll(receivers, paymentToken);
-
   const addresses = receivers.map((r) => r.stealthAccount.address);
   const ephemeralPublicKey = receivers.map((r) => r.ephemeralPublicKey);
-  // Logged before signing, so a signer failure cannot lose keys whose gas is spent.
-  logger.info("fee receivers ready", {
-    invoiceId,
-    addresses,
-    ephemeralPublicKey,
-  });
 
   const signature = await signFeeAuthorization(
     processorAddress,
@@ -131,7 +154,10 @@ const prepareFeeReceivers = async (
     processorAddress,
     kind,
     addresses,
+    ephemeralPublicKey,
   });
+
+  approveInBackground(invoiceId, receivers, paymentToken);
 
   return { addresses, signature, ephemeralPublicKey };
 };
