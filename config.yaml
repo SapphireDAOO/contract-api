@@ -83,7 +83,12 @@ networks:
     services:
       feeReceiver: "${FEE_RECEIVER_ADDRESS}"
     auth:
-      domains: ["sapphire-dao-website.pages.dev", "app.sapphiredaotesting.com", "localhost:3000"]
+      domains:
+        [
+          "sapphire-dao-website.pages.dev",
+          "sapphire-dao-website-six.vercel.app",
+          "localhost:3000",
+        ]
 
   # Not deployed yet.
   mainnet:
