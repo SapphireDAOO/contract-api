@@ -1,10 +1,16 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
+	"math/big"
 	"net/http"
 
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/intermediatedpaymentprocessor"
+	"github.com/SapphireDAOO/contract-api/internal/blockchain/contracts/simplepaymentprocessor"
 	"github.com/SapphireDAOO/contract-api/internal/feereceiver"
 	"github.com/SapphireDAOO/contract-api/internal/httpx"
 	pb "github.com/SapphireDAOO/contract-api/proto/feereceiverpb"
@@ -46,6 +52,12 @@ func (h *ContractHandler) CreateFeeReceivers(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if processor == pb.ProcessorKind_PROCESSOR_KIND_SIMPLE && kind == pb.InvoiceKind_INVOICE_KIND_META {
+		err := errors.New("meta invoices are intermediated only")
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
+		return
+	}
+
 	// One receiver covers a single invoice; a meta invoice asks for one per
 	// sub-invoice.
 	if input.Quantity == 0 {
@@ -55,6 +67,19 @@ func (h *ContractHandler) CreateFeeReceivers(w http.ResponseWriter, r *http.Requ
 	paymentToken, err := feereceiver.ResolveFeeToken(h.Tokens, input.PaymentToken)
 	if err != nil {
 		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadRequest, err, err.Error())
+		return
+	}
+
+	allowed, err := h.invoiceAllowsFeeReceivers(r.Context(), processor, kind, invoiceID)
+	if err != nil {
+		slog.Error("invoice state read failed", "invoiceId", invoiceID.String(), "error", err)
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusBadGateway, nil, "unable to verify the invoice")
+		return
+	}
+
+	if !allowed {
+		err := fmt.Errorf("invoice %s is not in a state that takes fee receivers", invoiceID)
+		httpx.WriteHTTPErrorWithStatus(w, http.StatusConflict, err, "invoice cannot take fee receivers")
 		return
 	}
 
@@ -79,5 +104,40 @@ func (h *ContractHandler) CreateFeeReceivers(w http.ResponseWriter, r *http.Requ
 		"ephemeralPublicKeys": res.GetEphemeralPublicKey(),
 	}); err != nil {
 		slog.Error("writing the response failed", "error", err)
+	}
+}
+
+func (h *ContractHandler) invoiceAllowsFeeReceivers(ctx context.Context, processor pb.ProcessorKind,
+	kind pb.InvoiceKind, invoiceID *big.Int) (bool, error) {
+	switch {
+	case processor == pb.ProcessorKind_PROCESSOR_KIND_SIMPLE:
+		invoice, err := h.SimplePaymentProcessor.GetInvoiceData(ctx, invoiceID)
+		if err != nil {
+			return false, err
+		}
+		return invoice.State == simplepaymentprocessor.StatePaid, nil
+
+	case kind == pb.InvoiceKind_INVOICE_KIND_META:
+		subInvoiceIDs, err := h.PaymentProcessor.SubInvoiceIDs(ctx, invoiceID)
+		if err != nil {
+			return false, err
+		}
+		for _, id := range subInvoiceIDs {
+			invoice, err := h.PaymentProcessor.GetInvoiceData(id)
+			if err != nil {
+				return false, err
+			}
+			if invoice.State == intermediatedpaymentprocessor.StatePaid {
+				return true, nil
+			}
+		}
+		return false, nil
+
+	default:
+		invoice, err := h.PaymentProcessor.GetInvoiceData(invoiceID)
+		if err != nil {
+			return false, err
+		}
+		return invoice.State == intermediatedpaymentprocessor.StateCreated, nil
 	}
 }

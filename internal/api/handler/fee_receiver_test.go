@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"net"
 	"net/http"
@@ -54,11 +55,13 @@ func newFeeReceiverHandler(t *testing.T, stub *stubFeeReceiver) *ContractHandler
 	}
 	t.Cleanup(func() { client.Close() })
 
-	return &ContractHandler{
+	h := &ContractHandler{
 		Tokens:      testTokens(),
 		ChainID:     big.NewInt(8453),
 		FeeReceiver: client,
 	}
+	readyChain().install(t, h)
+	return h
 }
 
 func feeReceiverRequest(path, body string) *http.Request {
@@ -175,6 +178,7 @@ func TestCreateFeeReceiversBadRequests(t *testing.T) {
 		{"invoice id is not a number", `{"invoiceId":"abc","processor":"simple"}`, "invoiceId must be a base-10 integer"},
 		{"missing invoice id", `{"processor":"simple"}`, "invoiceId must be a base-10 integer"},
 		{"unknown payment token", `{"invoiceId":"42","processor":"simple","paymentToken":"DOGE"}`, "unknown token DOGE"},
+		{"meta invoice on the simple processor", `{"invoiceId":"42","processor":"simple","kind":"meta"}`, "meta invoices are intermediated only"},
 	}
 
 	for _, tt := range tests {
@@ -258,5 +262,90 @@ func TestCreateFeeReceiversWithoutTheSidecar(t *testing.T) {
 	}
 	if body := decodeError(t, rec); !strings.Contains(body["error"], "fee receivers are unavailable") {
 		t.Errorf("error = %q, want it to say the endpoint is unavailable", body["error"])
+	}
+}
+
+func TestCreateFeeReceiversChecksTheInvoiceState(t *testing.T) {
+	const (
+		simpleSingle        = `{"invoiceId":"%d","processor":"simple"}`
+		intermediatedSingle = `{"invoiceId":"%d","processor":"intermediated"}`
+		intermediatedMeta   = `{"invoiceId":"%d","processor":"intermediated","kind":"meta","quantity":2}`
+	)
+
+	tests := []struct {
+		name    string
+		body    string
+		id      int64
+		prepare func(*fakeChain)
+		allowed bool
+	}{
+		{"simple paid", simpleSingle, 42, nil, true},
+		{"simple not yet paid", simpleSingle, 42, func(c *fakeChain) { c.simple[42] = 1 }, false},
+		{"simple never created", simpleSingle, 99, nil, false},
+		{"intermediated created", intermediatedSingle, 42, nil, true},
+		{"intermediated already paid", intermediatedSingle, 42, func(c *fakeChain) { c.intermediated[42] = 2 }, false},
+		{"intermediated never created", intermediatedSingle, 99, nil, false},
+		{"meta with one sub-invoice paid", intermediatedMeta, 42, nil, true},
+		{"meta with no sub-invoice paid", intermediatedMeta, 42, func(c *fakeChain) { c.intermediated[43] = 1 }, false},
+		{"meta never created", intermediatedMeta, 99, nil, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stub := &stubFeeReceiver{response: &pb.CreateFeeReceiversResponse{}}
+			h := newFeeReceiverHandler(t, stub)
+			chain := readyChain()
+			if tt.prepare != nil {
+				tt.prepare(chain)
+			}
+			chain.install(t, h)
+			rec := httptest.NewRecorder()
+
+			h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers", fmt.Sprintf(tt.body, tt.id)))
+
+			if tt.allowed {
+				successBody(t, rec)
+				if stub.got == nil {
+					t.Error("an invoice in the right state was not forwarded to the sidecar")
+				}
+				return
+			}
+
+			if rec.Code != http.StatusConflict {
+				t.Fatalf("status = %d, want %d (body %q)", rec.Code, http.StatusConflict, rec.Body.String())
+			}
+			body := decodeError(t, rec)
+			if body["error"] != "invoice cannot take fee receivers" {
+				t.Errorf("error = %q, want %q", body["error"], "invoice cannot take fee receivers")
+			}
+			if want := fmt.Sprintf("invoice %d is not in a state that takes fee receivers", tt.id); !strings.Contains(body["reason"], want) {
+				t.Errorf("reason = %q, want it to contain %q", body["reason"], want)
+			}
+			if stub.got != nil {
+				t.Error("an invoice in the wrong state was still forwarded to the sidecar")
+			}
+		})
+	}
+}
+
+func TestCreateFeeReceiversWhenTheStateReadFails(t *testing.T) {
+	stub := &stubFeeReceiver{response: &pb.CreateFeeReceiversResponse{}}
+	h := newFeeReceiverHandler(t, stub)
+	chain := readyChain()
+	chain.failWith = `Post "https://rpc.example.com/v2/SECRET": dial tcp: refused`
+	chain.install(t, h)
+	rec := httptest.NewRecorder()
+
+	h.CreateFeeReceivers(rec, feeReceiverRequest("/v1/fee-receivers",
+		`{"invoiceId":"42","processor":"intermediated"}`))
+
+	if rec.Code != http.StatusBadGateway {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadGateway)
+	}
+	if strings.Contains(rec.Body.String(), "SECRET") {
+		t.Errorf("response leaks the RPC error: %s", rec.Body.String())
+	}
+	if stub.got != nil {
+		t.Error("a request whose invoice could not be verified was forwarded to the sidecar")
 	}
 }

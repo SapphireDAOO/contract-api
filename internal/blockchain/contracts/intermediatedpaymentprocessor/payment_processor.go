@@ -371,13 +371,6 @@ func (c *PaymentProcessor) findPaymentReleasedEvent(receipt *types.Receipt) *gen
 }
 
 func (c *PaymentProcessor) GetInvoiceData(invoiceId *big.Int) (gen.IIntermediatedPaymentProcessorInvoice, error) {
-	if c == nil || c.client == nil || c.client.HTTP == nil {
-		return gen.IIntermediatedPaymentProcessorInvoice{}, errors.New("blockchain client not initialized")
-	}
-	if c.address == nil {
-		return gen.IIntermediatedPaymentProcessorInvoice{}, errors.New("payment processor address not initialized")
-	}
-
 	data := c.contract.PackGetInvoice(invoiceId)
 
 	out, err := c.client.HTTP.CallContract(context.Background(), ethereum.CallMsg{
@@ -393,6 +386,8 @@ func (c *PaymentProcessor) GetInvoiceData(invoiceId *big.Int) (gen.IIntermediate
 }
 
 const (
+	StateCreated     uint8 = 1
+	StatePaid        uint8 = 2
 	disputeDismissed uint8 = 7
 	disputeSettled   uint8 = 8
 )
@@ -405,4 +400,20 @@ func (c *PaymentProcessor) getDisputeResolution(action blockchain.MarketplaceAct
 		return disputeSettled
 	}
 	return 0
+}
+
+func (c *PaymentProcessor) SubInvoiceIDs(ctx context.Context, metaInvoiceId *big.Int) ([]*big.Int, error) {
+	out, err := c.client.HTTP.CallContract(ctx, ethereum.CallMsg{
+		To:   c.address,
+		Data: c.contract.PackGetMetaInvoice(metaInvoiceId),
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	meta, err := c.contract.UnpackGetMetaInvoice(out)
+	if err != nil {
+		return nil, err
+	}
+	return meta.SubInvoiceIds, nil
 }

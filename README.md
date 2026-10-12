@@ -489,8 +489,9 @@ curl -X POST https://sapphiredaotesting.com/v1/fee-receivers \
 
 | Status | Meaning                                                                                                         |
 | :----: | :---------------------------------------------------------------------------------------------------------------: |
-| `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with `quantity` above 1). Nothing is sent on-chain. |
-| `502`  | The sidecar failed internally — a chain error, a reverted approval, or one of its keys is unset. Its own message is generic by design. |
+| `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`; a meta invoice on the simple processor) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with `quantity` above 1). Nothing is sent on-chain. |
+| `409`  | The invoice is not in a state that takes fee receivers: a simple invoice must be `PAID`, an intermediated invoice `CREATED`, and a meta invoice needs at least one `PAID` sub-invoice. An id that was never created is refused the same way. Checked before the sidecar is called, so nothing is sent on-chain. |
+| `502`  | The sidecar failed internally — a chain error, a reverted approval, or one of its keys is unset. Its own message is generic by design. Also returned when this API cannot read the invoice's state from the chain. |
 | `503`  | `services.feeReceiver` is not configured for this network, or the relayer has no native balance to sponsor the delegations. |
 | `504`  | The sidecar did not answer within its 25s call budget.                                                            |
 

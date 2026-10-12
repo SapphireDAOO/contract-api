@@ -38,9 +38,7 @@ type ContractHandler struct {
 	// FeeReceiver is nil when services.feeReceiver is not configured, which
 	// disables the fee receiver endpoints.
 	FeeReceiver *feereceiver.Client
-	// ChainID is sent with every fee receiver call so the sidecar refuses a
-	// request meant for another network.
-	ChainID *big.Int
+	ChainID     *big.Int
 }
 
 func NewContractHandler(c *ContractHandler) *ContractHandler {

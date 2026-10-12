@@ -2,7 +2,6 @@ package simplepaymentprocessor
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"time"
 
@@ -65,16 +64,12 @@ func (c *SimplePaymentProcessor) IsSettlementExpired() (bool, error) {
 	return currentTime > exp, nil
 }
 
-// GetInvoiceData reads a single invoice. A zero state means the invoice does
-// not exist on this processor.
 func (c *SimplePaymentProcessor) GetInvoiceData(
 	ctx context.Context, invoiceId *big.Int,
 ) (gen.ISimplePaymentProcessorInvoice, error) {
-	if c == nil || c.instance == nil {
-		return gen.ISimplePaymentProcessorInvoice{},
-			errors.New("simple payment processor contract is not initialized")
-	}
 
 	data := c.contract.PackGetInvoiceData(invoiceId)
 	return bind.Call(c.instance, &bind.CallOpts{Context: ctx}, data, c.contract.UnpackGetInvoiceData)
 }
+
+const StatePaid uint8 = 2
