@@ -87,7 +87,10 @@ Returns `200` with the current time. Any other unrouted path returns `404`.
 The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoPaymentTokens` on an empty list, so an empty or missing list is rejected with `400`. An unknown symbol is rejected with the list of configured ones:
 
 ```json
-{ "error": "invoice 0: unknown payment token \"DOGE\" (known: ETH, USDC, wBTC)", "reason": "" }
+{
+  "error": "unknown payment token \"DOGE\" (known: ETH, USDC, wBTC)",
+  "reason": "unknown payment token \"DOGE\" (known: ETH, USDC, wBTC)"
+}
 ```
 
 `ETH` maps to the zero address, which is how the contracts denote the native token.
@@ -123,23 +126,25 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 
 **Error Responses**:
 
-**Error (400)** — malformed JSON, or failed validation such as an invalid seller address, a non-positive price, or a missing `paymentTokens` entry:
+**Error (400)** — malformed JSON, or failed validation such as an invalid seller address, a non-positive price, or a missing `paymentTokens` entry. Per-invoice problems name the invoice's index:
 
 ```json
 {
-  "error": "invoice 0: at least one payment token is required",
-  "reason": "<validation error>"
+  "error": "invoice 0: seller \"0x123\" is not a valid address",
+  "reason": "invoice 0: seller \"0x123\" is not a valid address"
 }
 ```
 
-**Error (500)** — fetching the operator address failed, or the transaction reverted:
+**Creating the same single invoice again** returns `200` with the same `invoiceId`, so a retry is safe. A **meta invoice** that already exists is refused with `409`:
 
 ```json
 {
-  "error": "error creating invoice",
-  "reason": "An invoice with this identifier already exists."
+  "error": "error creating meta invoice",
+  "reason": "A meta-invoice with this identifier already exists."
 }
 ```
+
+Other contract reverts map to a status as described under [Notes](#notes); fetching the operator address failing, or an unmapped revert, is `500`.
 
 **Example**:
 
@@ -182,8 +187,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices \
 **Example**:
 
 ```bash
-curl https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889 \
--H "X-API-KEY: YOUR_API_KEY_HERE"
+curl https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889
 ```
 
 ---
@@ -204,7 +208,7 @@ curl https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034
 
 **Error (400)**: `invoiceId` in the path is not a base-10 integer.
 
-**Error (500)**:
+**Error (409)** — the contract reverted because of the invoice's state; other reverts map as described under [Notes](#notes), and an unmapped one is `500`:
 
 ```json
 {
@@ -236,7 +240,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 }
 ```
 
-**Error (500)**: transaction reverted (e.g., `InvalidInvoiceState`, `NotAuthorized`).
+**Errors**: a revert maps to a status as described under [Notes](#notes) — e.g. `InvalidInvoiceState` is `409`, `NotAuthorized` is `403`; an unmapped revert is `500`.
 
 **Example**:
 
@@ -279,7 +283,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 
 - Also returned when `refundShare` is zero (`"share can not be zero"`).
 
-**Error (500)**: transaction reverted (e.g., `InsufficientBalance`, `InvalidInvoiceState`).
+**Errors**: a revert maps to a status as described under [Notes](#notes) — e.g. `InsufficientBalance` is `400`, `InvalidInvoiceState` is `409`; an unmapped revert is `500`.
 
 **Example**:
 
@@ -306,7 +310,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 }
 ```
 
-**Error (500)**: fetching the operator address failed, or the transaction reverted.
+**Errors**: `500` when fetching the operator address fails; a revert maps to a status as described under [Notes](#notes), and an unmapped one is `500`.
 
 **Example**:
 
@@ -326,7 +330,7 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 
 ```json
 {
-  "resolution": 2,
+  "resolution": 3,
   "sellerShare": "9000"
 }
 ```
@@ -334,15 +338,17 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 | Field         | Type    | Required                                    | Description                                                              |
 | :-----------: | :-----: | :-----------------------------------------: | :----------------------------------------------------------------------: |
 | `resolution`  | integer | ✅                                          | Enum value specifying the action type (see MarketplaceAction below).     |
-| `sellerShare` | string  | ❌ Only if `resolution = 2` (SettleDispute) | Seller's share in basis points (e.g., `"10000"` = 100%, `"9000"` = 90%). |
+| `sellerShare` | string  | ❌ Only if `resolution = 3` (SettleDispute) | Seller's share in basis points (e.g., `"10000"` = 100%, `"9000"` = 90%). |
 
 #### MarketplaceAction Enum (`resolution`)
 
 | Value | Name           | Description                                                                                            | Contract Function                        |
 | :---: | :------------: | :----------------------------------------------------------------------------------------------------: | :--------------------------------------: |
 | `1`   | ResolveDispute | Both buyer and seller agree to dismiss the dispute, with escrow allocation unchanged (fully to seller) | `resolveDispute`                         |
-| `2`   | SettleDispute  | Dispute resolved by an arbitrator, with `sellerShare` to the seller and the rest to the buyer          | `handleDispute` with `DISPUTE_SETTLED`   |
-| `3`   | DismissDispute | Arbitrator dismisses the dispute, leaving escrow allocation unchanged (fully to seller)                | `handleDispute` with `DISPUTE_DISMISSED` |
+| `2`   | DismissDispute | Arbitrator dismisses the dispute, leaving escrow allocation unchanged (fully to seller)                | `handleDispute` with `DISPUTE_DISMISSED` |
+| `3`   | SettleDispute  | Dispute resolved by an arbitrator, with `sellerShare` to the seller and the rest to the buyer          | `handleDispute` with `DISPUTE_SETTLED`   |
+
+Any other value is refused with `500` (`unsupported marketplace action`).
 
 **Notes**:
 
@@ -360,15 +366,15 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 }
 ```
 
-**Error (500)**: transaction reverted (e.g., `InvalidDisputeResolution`, `InvalidInvoiceState`).
+**Errors**: a revert maps to a status as described under [Notes](#notes) — e.g. `InvalidDisputeResolution` is `400`, `InvalidInvoiceState` is `409`; an unmapped revert is `500`.
 
-**Example**:
+**Example** — settle with 90% to the seller:
 
 ```bash
 curl -X POST https://sapphiredaotesting.com/v1/invoices/59808737901387817475691215581034097896123425895641016234844280889/disputes/resolution \
 -H "Content-Type: application/json" \
 -H "X-API-KEY: YOUR_API_KEY_HERE" \
--d '{ "resolution": 2, "sellerShare": "9000" }'
+-d '{ "resolution": 3, "sellerShare": "9000" }'
 ```
 
 ---
@@ -385,17 +391,19 @@ curl -X POST https://sapphiredaotesting.com/v1/invoices/598087379013878174756912
 { "error": "settlement time passed", "reason": "settlement window has expired" }
 ```
 
+- **500**: the window could not be read from the chain (`"failed to determine settlement status"`).
+
 ---
 
 ### Endpoint: Exchange rates
 
-- **Method**: GET `/v1/exchangeRate?From=USD&to=wBTC&to=ETH`
-- **Description**: Reports how much of each requested token one USD buys, inverting the `OracleManager` contract's `getUsdPerToken`. The oracle address comes from `contracts.oracleManager` for the selected network.
+- **Method**: GET `/v1/exchangeRate?from=USD&to=wBTC&to=ETH`
+- **Description**: Reports how much of each requested token one USD buys, inverting the `OracleManager` contract's `getUsdPerTokenBatch`, which prices every requested token in one call. The oracle address comes from `contracts.oracleManager` for the selected network.
 
 | Query  | Required | Description                                                                                     |
 | :----: | :------: | :---------------------------------------------------------------------------------------------: |
-| `from` | ❌       | Must be `USD`, the only currency the oracle prices against. Defaults to `USD`. `From` also works. |
-| `to`   | ✅       | A token symbol from the network's `tokens` table. Repeat the parameter for several.              |
+| `from` | ❌       | Must be `USD`, the only currency the oracle prices against. Defaults to `USD`. The name is case-sensitive: `From` is ignored, so it falls back to `USD` whatever its value. |
+| `to`   | ✅       | A token symbol from the network's `tokens` table, matched case-insensitively. Repeat the parameter for several. |
 
 Each token is its own `to` parameter: `to=wBTC&to=ETH`. A comma-separated list is not split.
 
@@ -406,22 +414,21 @@ Each token is its own `to` parameter: `to=wBTC&to=ETH`. A comma-separated list i
 ```
 
 - Values are JSON numbers carrying the full precision of the token's own decimals, so an 18-decimal token keeps all 18.
-- A token the oracle cannot price falls back to a rate of `1`, treating it as a dollar-pegged token. The response does not distinguish that from a quoted rate.
+- There is no fallback rate: if any requested token has no price feed, the oracle reverts the whole batch and the request fails with `400`.
 - The conversion truncates, as any fixed-point division must: at $90,000 wBTC resolves to `0.00001111`, not a repeating `0.0000111111…`, because the token has 8 decimals.
 
-**Error (400)** — an unknown symbol, a `from` other than `USD`, or a missing `to`:
+**Error (400)** — an unknown symbol, a `from` other than `USD`, a missing `to`, or a token the oracle has no feed for:
 
 ```json
 { "error": "unknown token BTC (known: ETH, USDC, wBTC)", "reason": "unknown token BTC" }
 ```
 
-**Error (502)** — the oracle call failed for a reason other than a missing feed (a stale price, or the sequencer being down). **503** — `contracts.oracleManager` is not configured for this network, so rates are disabled.
+**Errors (502 / 503)** — `502` when the oracle returns a price that is zero, negative or cannot be inverted. `503` when the price is stale or the sequencer is down (retrying later can succeed), or when `contracts.oracleManager` is not configured for this network, so rates are disabled. An unmapped oracle revert is `500`.
 
 **Example**:
 
 ```bash
-curl "https://sapphiredaotesting.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
--H "X-API-KEY: YOUR_API_KEY_HERE"
+curl "https://sapphiredaotesting.com/v1/exchangeRate?from=USD&to=ETH&to=wBTC"
 ```
 
 ---
@@ -429,11 +436,16 @@ curl "https://sapphiredaotesting.com/v1/exchangeRate?From=USD&to=ETH&to=wBTC" \
 ### Endpoint: Create fee receivers
 
 - **Method**: POST `/v1/fee-receivers`
-- **Description**: Derives one-time [EIP-5564](https://eips.ethereum.org/EIPS/eip-5564) stealth addresses to collect platform fees for an invoice, upgrades each to an EIP-7702 delegator, approves the sweeper to move the fee token out of them later, and returns the addresses with the fee signer's signature to pass on-chain as the processor's `_feeReceiver(s)` / `_data` arguments.
+- **Description**: Derives one-time [EIP-5564](https://eips.ethereum.org/EIPS/eip-5564) stealth addresses to collect platform fees for an invoice and returns them with the fee signer's signature to pass on-chain as the processor's `_feeReceiver(s)` / `_data` arguments. Afterwards, in the background, each receiver is upgraded to an EIP-7702 delegator and approves the sweeper to move the fee token out later.
 
 The work is done by the [fee-receiver sidecar](services/fee-receiver/README.md), reached over gRPC at `services.feeReceiver`. This API forwards the request and translates the sidecar's gRPC status into an HTTP one.
 
-**No `X-API-KEY`.** This endpoint is unauthenticated, unlike the rest of the API. Each call sends a relayer-sponsored transaction per receiver, so whatever fronts the API is what limits who can spend that gas.
+**No `X-API-KEY`.** Anyone can call this endpoint, but what a caller can make the relayer spend is bounded:
+
+- Only an invoice whose on-chain state allows fee receivers gets any: a simple invoice must be `PAID`, an intermediated invoice `CREATED`, and a meta invoice needs at least one `PAID` sub-invoice. Anything else, including an id that was never created, is refused with `409` before the sidecar is called.
+- Receivers are derived from `RECEIVER_SEED`, so repeating a request returns the same receivers, and one already delegated and approved costs no transaction. A sponsored transaction is sent only the first time a receiver is set up, and once more for each new payment token it is approved for.
+
+There is no per-caller rate limit, so the relayer's spend is at most one transaction per receiver per payment token across all eligible invoices.
 
 **The response does not wait for the approvals.** The sidecar derives the receivers, signs over them and answers at once; each receiver's delegation and approval is then sent in the background, retried after 5 s, 30 s and 2 min, and logged by the sidecar if it still fails. A `200` therefore means the receivers can be paid — paying needs no approval — not that they are ready to sweep. Receivers are derived from `RECEIVER_SEED`, so calling again for the same invoice returns the same addresses and finishes any approval a failed or interrupted run left behind.
 
@@ -463,7 +475,7 @@ The work is done by the [fee-receiver sidecar](services/fee-receiver/README.md),
 
 #### **Response**
 
-**Success (200)** — `feeReceivers` is index-aligned with the meta-invoice's `subInvoiceIds`, and the one `signature` covers the whole array. `ephemeralPublicKeys` holds one key per receiver in the same order; they are the only way to recover a receiver's key, so store them.
+**Success (200)** — `feeReceivers` is index-aligned with the meta-invoice's `subInvoiceIds`, and the one `signature` covers the whole array. `ephemeralPublicKeys` holds one key per receiver in the same order; with the sidecar's `SPENDING` and `VIEWING` keys they recover each receiver's private key, so store them. Calling again for the same invoice also returns the same receivers and keys, since they are derived from `RECEIVER_SEED`.
 
 ```json
 {
@@ -493,8 +505,8 @@ curl -X POST https://sapphiredaotesting.com/v1/fee-receivers \
 | :----: | :---------------------------------------------------------------------------------------------------------------: |
 | `400`  | Rejected by this API (unknown `processor`, `kind` or token symbol; a non-integer `invoiceId`; a meta invoice on the simple processor) or by the sidecar (`quantity` out of range, a meta invoice on a simple processor, a `single` invoice with `quantity` above 1). Nothing is sent on-chain. |
 | `409`  | The invoice is not in a state that takes fee receivers: a simple invoice must be `PAID`, an intermediated invoice `CREATED`, and a meta invoice needs at least one `PAID` sub-invoice. An id that was never created is refused the same way. Checked before the sidecar is called, so nothing is sent on-chain. |
-| `502`  | The sidecar failed internally — a chain error, a reverted approval, or one of its keys is unset. Its own message is generic by design. Also returned when this API cannot read the invoice's state from the chain. |
-| `503`  | `services.feeReceiver` is not configured for this network, or the relayer has no native balance to sponsor the delegations. |
+| `502`  | The sidecar failed internally, e.g. one of its keys (`SPONSOR`, `SPENDING`, `VIEWING`, `META_STEALTH_ADDRESS`, `RECEIVER_SEED`) is unset or invalid. Its own message is generic by design; the sidecar's log has the cause. Also returned when this API cannot read the invoice's state from the chain. Approval failures never reach the caller: they happen after the response and are only logged. |
+| `503`  | `services.feeReceiver` is not configured for this network, or the sidecar cannot be reached. |
 | `504`  | The sidecar did not answer within its 25s call budget.                                                            |
 
 A rejection from the sidecar keeps the sidecar's own wording in `reason`:
@@ -687,7 +699,7 @@ curl -X POST https://sapphiredaotesting.com/v1/notes/open \
 
 ## Configuration
 
-[`config.yaml`](config.yaml) holds one section per network. `network:` selects which one; it is itself an `${NETWORK}` reference, so the network is chosen by the environment — `.env` locally, and `NETWORK=testnet` in [`docker-compose.yml`](docker-compose.yml). Setting `NETWORK` always wins, and leaving it unset is an error rather than a silent default. Only the selected section is validated, so a network that is not deployed yet cannot break startup.
+[`config.yaml`](config.yaml) holds one section per network. `network:` selects which one; it is itself an `${NETWORK}` reference, so the network is chosen by the environment — `.env` locally, and in Docker the host's `NETWORK`, which [`docker-compose.yml`](docker-compose.yml) passes through as `NETWORK=${NETWORK}`. Setting `NETWORK` always wins, and leaving it unset is an error rather than a silent default. Only the selected section is validated, so a network that is not deployed yet cannot break startup.
 
 ```yaml
 network: ${NETWORK}
@@ -728,7 +740,7 @@ networks:
       domains: ["localhost:3000"]
 ```
 
-- **`${VAR}` references** are resolved from the environment at load time. Endpoints whose URL embeds a credential (the RPC provider key, the Discord webhook) are written this way so the secret stays in `.env` and out of the repository. An unset variable fails startup naming the variable.
+- **`${VAR}` references** are resolved from the environment at load time. Endpoints whose URL embeds a credential (the RPC provider key, the Discord webhook) are written this way so the secret stays in `.env` and out of the repository. An unset variable becomes an empty string: if the field it fills is required, startup fails naming the field (e.g. `urls.subgraph is required`), not the variable; if the field is optional, its feature is simply off.
 - **`urls.explorer`** is a block explorer root with no trailing slash. When empty, transaction links fall back to the bare hash.
 - **`tokens`** is the one place a payment token is defined. `paymentTokens` in a create request names a symbol from this table, and callback payloads render an event's token address back to its symbol and decimals through the same table.
 - **`signerKey`** selects which key signs transactions, per network: `${LOCAL_CALLER}` on `local` and `${PASS}` on the deployed networks, so a local run cannot touch a deployed network's key. It is parsed once at startup, and a malformed key fails startup rather than the first transaction.
@@ -770,29 +782,26 @@ Values that are secrets rather than settings stay in `.env`:
 | `META_STEALTH_ADDRESS`     | Sidecar: stealth meta-address URI new receivers derive from. |
 | `RECEIVER_SEED`            | Sidecar: 32-byte hex secret receivers are derived from, so a repeated `/v1/fee-receivers` call returns the same receivers. |
 
-The last four are read by the sidecar rather than by this API, but live in the same repo-root `.env` — it loads that file explicitly, since it runs from its own directory.
+The rows marked *Sidecar* (and `SWEEPER_CONTRACT`, through `contracts.sweeper`) are read by the sidecar rather than by this API, but live in the same repo-root `.env` — it loads that file explicitly, since it runs from its own directory.
 
 ---
 
 ## Notes
 
-- All endpoints require an `X-API-KEY` header, enforced by `AccessControlMiddleWare`, except `GET /` and the fee receiver endpoint.
-- Invoice states are: `INITIATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
+- Which endpoints need `X-API-KEY`, a session token, or nothing is described under [Endpoints](#endpoints).
+- Invoice states differ by processor, and `0` always means the id was never created:
+  - **Intermediated**: `CREATED` (1), `PAID` (2), `REFUNDED` (3), `CANCELED` (4), `DISPUTED` (5), `DISPUTE_RESOLVED` (6), `DISPUTE_DISMISSED` (7), `DISPUTE_SETTLED` (8), `RELEASED` (9).
+  - **Simple**: `CREATED` (1), `PAID` (2), `ACCEPTED` (3), `REJECTED` (4), `CANCELED` (5), `REFUNDED` (6), `RELEASED` (7), `BURNED` (8).
 - The contracts use Chainlink price feeds (`AggregatorV3Interface`) for USD-to-token conversions, supporting the native token and ERC20 tokens.
 - The intermediated platform operator, retrieved via `PaymentProcessorStorage.GetIntermediatedPlatformsOperator`, controls privileged operations (`createSingleInvoice`, `createMetaInvoice`, `createDispute`).
 - Transaction links are built from `urls.explorer` for the selected network — `https://sepolia.basescan.org` on Base Sepolia.
 - The client-provided `orderId` is hashed to a `uint216` by `invoice.InvoiceIDToUint216` for on-chain storage, producing a numeric string (e.g., `"59808737901387817475691215581034097896123425895641016234844280889"`). That value is the `{invoiceId}` path segment.
-- Blockchain reverts are mapped to human-readable messages by `revert.Descriptions`, and to status codes by `revert.StatusCodes`:
-  - `The buyer and seller addresses cannot be the same.`
-  - `The account balance is insufficient to perform this action.`
-  - `The provided dispute resolution is invalid.`
-  - `The invoice is not in a valid state for this action.`
-  - `The native token payment is invalid for this invoice.`
-  - `The specified payment token is not supported or invalid.`
-  - `The seller's payout share is invalid.`
-  - `An invoice with this identifier already exists.`
-  - `The specified invoice does not exist.`
-  - `A meta-invoice with this identifier already exists.`
-  - `The caller is not authorized to perform this action.`
-  - `The price cannot be zero.`
-  - `The price specified is too low.`
+- Contract reverts become a readable `reason` through [`revert.Descriptions`](internal/revert/descriptions.go), and that reason picks the status through [`revert.StatusCodes`](internal/revert/status.go):
+  - `400` — the contract rejected the input (e.g. `The price specified is too low.`, `The provided dispute resolution is invalid.`).
+  - `403` — the caller may not take the action (e.g. `The caller is not authorized to perform this action.`).
+  - `404` — the invoice, note, task or transaction does not exist.
+  - `409` — the action conflicts with on-chain state (e.g. `The invoice is not in a valid state for this action.`, `A meta-invoice with this identifier already exists.`).
+  - `503` — temporary: the contract is paused, or the oracle price is stale or unavailable.
+  - `500` — any reason not in the table.
+
+  Those two files are the full, current lists.
