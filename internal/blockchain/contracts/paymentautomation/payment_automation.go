@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+const minProcessDueTasksGas uint64 = 5_000_000
+
 func NewPaymentAutomation(client *blockchain.Client, address common.Address) *PaymentAutomation {
 	contract := gen.NewPaymentautomation()
 	instance := contract.Instance(client.HTTP, address)
@@ -44,14 +46,15 @@ func (c *PaymentAutomation) ProcessDueTasks(ctx context.Context) (*types.Receipt
 
 	data := c.contract.PackProcessDueTasks()
 
-	// Simulate first so a reverting call never costs gas.
-	if _, err := c.client.HTTP.CallContract(ctx, ethereum.CallMsg{
+	estimate, err := c.client.HTTP.EstimateGas(ctx, ethereum.CallMsg{
 		From: auth.From,
 		To:   c.address,
 		Data: data,
-	}, nil); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
+	auth.GasLimit = max(estimate, minProcessDueTasksGas)
 
 	tx, err := bind.Transact(c.instance, auth, data)
 	if err != nil {
