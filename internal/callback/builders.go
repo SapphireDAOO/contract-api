@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"time"
 )
 
 // get the paymnet token address and amount via event
 
 func (c *Client) buildPaymentReceivedCallbackPayload(transactionURL, paymentToken string, amount *big.Int,
-	transactionTimestamp int64) ([]byte, error) {
+	transactionTimestamp, releaseAt int64) ([]byte, error) {
 	if amount == nil {
 		return nil, ErrInvalidAmount
 	}
@@ -19,9 +18,6 @@ func (c *Client) buildPaymentReceivedCallbackPayload(transactionURL, paymentToke
 	if !ok {
 		return nil, fmt.Errorf("%w %s", ErrUnsupportedPaymentToken, paymentToken)
 	}
-
-	currentDefaultReleaseTime := 10 * time.Minute
-	releaseAt := time.Now().Add(currentDefaultReleaseTime).UnixMilli()
 
 	amountText := formatTokenAmount(amount, decimals)
 	payload := paymentReceivedCallbackPayload{

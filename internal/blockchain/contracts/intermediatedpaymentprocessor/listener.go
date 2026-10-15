@@ -74,8 +74,10 @@ func (c *PaymentProcessor) ListenToPaymentReceivedEvent(ctx context.Context) {
 			}
 
 			transactionURL := c.txURL(vLog.TxHash.Hex())
+			// releaseAt is the contract's own release time, in Unix seconds.
+			releaseAt := event.ReleaseAt.Int64() * 1000
 			go c.callbacks.SendPaymentReceivedCallback(event.InvoiceId.String(), transactionURL, event.PaymentToken.Hex(),
-				event.Amount, transactionTimestamp)
+				event.Amount, transactionTimestamp, releaseAt)
 		}
 	}
 }

@@ -34,9 +34,10 @@ func (c *Client) SendReleaseCallback(invoiceId, paymentToken, receiver string, r
 	c.sendCallbackWithRetry(payload, invoiceId, releaseCallbackAction)
 }
 
-func (c *Client) SendPaymentReceivedCallback(invoiceId, transactionURL, paymentToken string, amount *big.Int, transactionTimestamp int64) {
+func (c *Client) SendPaymentReceivedCallback(invoiceId, transactionURL, paymentToken string, amount *big.Int,
+	transactionTimestamp, releaseAt int64) {
 	payload, err := c.buildPaymentReceivedCallbackPayload(transactionURL, paymentToken,
-		amount, transactionTimestamp)
+		amount, transactionTimestamp, releaseAt)
 	if err != nil {
 		slog.Error("payment received callback payload build failed", "invoiceId", invoiceId, "error", err)
 		return

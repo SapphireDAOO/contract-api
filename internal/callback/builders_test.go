@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"strings"
 	"testing"
-	"time"
 )
 
 type stubToken struct {
@@ -47,13 +46,13 @@ func wei(t *testing.T, s string) *big.Int {
 
 func TestBuildPaymentReceivedCallbackPayload(t *testing.T) {
 	client := testClient()
-	before := time.Now().Add(10 * time.Minute).UnixMilli()
+	const releaseAt = 1701382400000 // 16 days after the payment below
 
-	raw, err := client.buildPaymentReceivedCallbackPayload(txURL, ethAddress, wei(t, "1500000000000000000"), 1700000000)
+	raw, err := client.buildPaymentReceivedCallbackPayload(txURL, ethAddress, wei(t, "1500000000000000000"),
+		1700000000000, releaseAt)
 	if err != nil {
 		t.Fatalf("buildPaymentReceivedCallbackPayload returned %v", err)
 	}
-	after := time.Now().Add(10 * time.Minute).UnixMilli()
 
 	var payload paymentReceivedCallbackPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
@@ -73,19 +72,19 @@ func TestBuildPaymentReceivedCallbackPayload(t *testing.T) {
 	if payload.TransactionUrl != txURL {
 		t.Errorf("transactionUrl = %q, want %q", payload.TransactionUrl, txURL)
 	}
-	if payload.TransactionTimestamp != 1700000000 {
-		t.Errorf("transactionTimestamp = %d, want 1700000000", payload.TransactionTimestamp)
+	if payload.TransactionTimestamp != 1700000000000 {
+		t.Errorf("transactionTimestamp = %d, want 1700000000000", payload.TransactionTimestamp)
 	}
 
-	if payload.Releases < before || payload.Releases > after {
-		t.Errorf("releases = %d, want it between %d and %d", payload.Releases, before, after)
+	if payload.Releases != releaseAt {
+		t.Errorf("releases = %d, want the contract's release time %d", payload.Releases, releaseAt)
 	}
 }
 
 func TestBuildPaymentReceivedCallbackPayloadUsesTokenDecimals(t *testing.T) {
 	client := testClient()
 
-	raw, err := client.buildPaymentReceivedCallbackPayload(txURL, usdcAddress, wei(t, "1500000"), 1700000000)
+	raw, err := client.buildPaymentReceivedCallbackPayload(txURL, usdcAddress, wei(t, "1500000"), 1700000000, 0)
 	if err != nil {
 		t.Fatalf("buildPaymentReceivedCallbackPayload returned %v", err)
 	}
@@ -254,7 +253,7 @@ func TestBuildersRejectANilAmount(t *testing.T) {
 
 	builders := map[string]func() ([]byte, error){
 		"paymentReceived": func() ([]byte, error) {
-			return client.buildPaymentReceivedCallbackPayload(txURL, ethAddress, nil, 0)
+			return client.buildPaymentReceivedCallbackPayload(txURL, ethAddress, nil, 0, 0)
 		},
 		"refund": func() ([]byte, error) {
 			return client.buildRefundCallbackPayload(ethAddress, nil, big.NewInt(10000), txURL, 0)
@@ -287,7 +286,7 @@ func TestBuildersRejectAnUnknownToken(t *testing.T) {
 
 	builders := map[string]func() ([]byte, error){
 		"paymentReceived": func() ([]byte, error) {
-			return client.buildPaymentReceivedCallbackPayload(txURL, unknown, big.NewInt(1), 0)
+			return client.buildPaymentReceivedCallbackPayload(txURL, unknown, big.NewInt(1), 0, 0)
 		},
 		"refund": func() ([]byte, error) {
 			return client.buildRefundCallbackPayload(unknown, big.NewInt(1), nil, txURL, 0)
