@@ -101,7 +101,7 @@ The contract's `InvoiceCreationParam` takes an `address[]` and reverts with `NoP
 
 ```json
 {
-  "url": "https://sapphire-dao-website.pages.dev/checkout/?id=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
+  "url": "https://app.sapphiredaotesting.com/checkout/?id=kWMRqBU-7H64tqp04CM5IfzKRMP1DbH2Ytg5",
   "invoices": {
     "550e8400-e29b-41d4-a716-446655440000": {
       "seller": "0x329C3E1bEa46Abc22F307eE30Cbb522B82Fe7082",

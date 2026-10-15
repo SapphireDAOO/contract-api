@@ -55,8 +55,8 @@ networks:
       dialTimeout: 10s
     urls:
       explorer: "https://sepolia.basescan.org"
-      checkout: "https://sapphire-dao-website.pages.dev/checkout/?id="
-      dashboard: "https://sapphire-dao-website.pages.dev/multisig/"
+      checkout: "https://app.sapphiredaotesting.com/checkout/?id="
+      dashboard: "https://app.sapphiredaotesting.com/multisig/"
       subgraph: "${END_POINT}"
       callback: "${URL}"
       discordWebhook: "${DISCORD_WEBHOOK_URL}"
@@ -85,6 +85,7 @@ networks:
     auth:
       domains:
         [
+          "app.sapphiredaotesting.com",
           "sapphire-dao-website.pages.dev",
           "sapphire-dao-website-six.vercel.app",
           "localhost:3000",
